@@ -1,0 +1,20 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables & secrets
+.env
+
+# Vector database & raw data
+vector_db/
+data/raw/*.pdf
+
+# IDE settings
+.vscode/
+.idea/

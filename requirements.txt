@@ -1,0 +1,19 @@
+# RAG Core
+langchain
+langchain-community
+sentence-transformers
+chromadb
+
+# Document Parsing
+pdfplumber
+pypdf
+
+# API & Web Interface
+fastapi
+uvicorn
+streamlit
+
+# Utilities
+python-dotenv
+pydantic
+requests
