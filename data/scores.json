@@ -1,0 +1,625 @@
+{
+  "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf": {
+    "timestamp": "2026-08-05T01:36:34.826973",
+    "status": "PASSED",
+    "gate1_score": 68.0,
+    "master_score": 88.4,
+    "total_pages": 180
+  },
+  "brochure-pmr-fevr-2020-fr-final.pdf": {
+    "timestamp": "2026-08-05T01:36:56.959661",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 88.6,
+    "total_pages": 18
+  },
+  "conseils-reussir-sa-maison-basse-consommation.pdf": {
+    "timestamp": "2026-08-05T01:37:30.979986",
+    "status": "BLACKLISTED",
+    "gate1_score": 62.0,
+    "master_score": 9.3,
+    "total_pages": 16
+  },
+  "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf": {
+    "timestamp": "2026-08-05T01:37:54.991100",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 95.0,
+    "total_pages": 54
+  },
+  "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf": {
+    "timestamp": "2026-08-05T01:38:03.868500",
+    "status": "PASSED",
+    "gate1_score": 98.0,
+    "master_score": 98.0,
+    "total_pages": 117
+  },
+  "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf": {
+    "timestamp": "2026-08-05T01:38:24.584729",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 89.85,
+    "total_pages": 148
+  },
+  "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf": {
+    "timestamp": "2026-08-05T01:38:44.511584",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 87.55,
+    "total_pages": 24
+  },
+  "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-20232024.pdf": {
+    "timestamp": "2026-08-05T01:39:04.412420",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 86.05,
+    "total_pages": 23
+  },
+  "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf": {
+    "timestamp": "2026-08-05T01:39:28.259749",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 90.3,
+    "total_pages": 26
+  },
+  "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf": {
+    "timestamp": "2026-08-05T01:39:56.509579",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 83.5,
+    "total_pages": 30
+  },
+  "good-practices-constructing-rehabilitating-dwelling-arabic_1-1-1.pdf": {
+    "timestamp": "2026-08-05T01:40:24.175445",
+    "status": "BLACKLISTED",
+    "gate1_score": 85.0,
+    "master_score": 42.5,
+    "total_pages": 29
+  },
+  "guide-conducteur-conduite-economique.pdf": {
+    "timestamp": "2026-08-05T01:40:46.130667",
+    "status": "BLACKLISTED",
+    "gate1_score": 45.0,
+    "master_score": 22.05,
+    "total_pages": 9
+  },
+  "guide-detaille-des-energies-renouvelables-en-tunisie.pdf": {
+    "timestamp": "2026-08-05T01:41:11.451772",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 80.55,
+    "total_pages": 329
+  },
+  "guide-eco-construction-pour-les-collectivites-locales.pdf": {
+    "timestamp": "2026-08-05T01:41:31.930350",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 88.0,
+    "total_pages": 40
+  },
+  "guide-gestion-des-eaux-pluviales-en-milieu-urbain-1.pdf": {
+    "timestamp": "2026-08-05T01:41:54.027368",
+    "status": "BLACKLISTED",
+    "gate1_score": 32.0,
+    "master_score": 17.55,
+    "total_pages": 86
+  },
+  "guide-gouvernance-energerique-locale-1.pdf": {
+    "timestamp": "2026-08-05T01:42:15.125743",
+    "status": "PASSED",
+    "gate1_score": 62.0,
+    "master_score": 79.0,
+    "total_pages": 61
+  },
+  "guide-livret-de-mesures-plan-d_amenagement-urbain-durable-1_1.pdf": {
+    "timestamp": "2026-08-05T01:42:36.659146",
+    "status": "BLACKLISTED",
+    "gate1_score": 48.0,
+    "master_score": 19.95,
+    "total_pages": 57
+  },
+  "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf": {
+    "timestamp": "2026-08-05T01:42:57.721079",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 86.05,
+    "total_pages": 69
+  },
+  "guide-referentiel-plan-d_amenagement-urbain-durable-1.pdf": {
+    "timestamp": "2026-08-05T01:43:17.100368",
+    "status": "BLACKLISTED",
+    "gate1_score": 62.0,
+    "master_score": 28.0,
+    "total_pages": 45
+  },
+  "guide-sur-la-vapeur-chaufferie-vapeur-1.pdf": {
+    "timestamp": "2026-08-05T01:43:36.731246",
+    "status": "BLACKLISTED",
+    "gate1_score": 60.0,
+    "master_score": 47.25,
+    "total_pages": 98
+  },
+  "guide-sur-la-vapeur-mesure-regulation-distribution-1.pdf": {
+    "timestamp": "2026-08-05T01:44:05.898176",
+    "status": "BLACKLISTED",
+    "gate1_score": 62.0,
+    "master_score": 28.0,
+    "total_pages": 122
+  },
+  "guide-sur-la-vapeur-principes-physiques-de-la-vapeur-1.pdf": {
+    "timestamp": "2026-08-05T01:44:25.159629",
+    "status": "BLACKLISTED",
+    "gate1_score": 45.0,
+    "master_score": 32.25,
+    "total_pages": 34
+  },
+  "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf": {
+    "timestamp": "2026-08-05T01:44:49.016244",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 57.55,
+    "total_pages": 188
+  },
+  "guide-sur-les-bonnes-pratqiues-de-gestion-de-parcs-de-vehicules-utilises-pour-le-transport-touristique_0.pdf": {
+    "timestamp": "2026-08-05T01:45:12.577251",
+    "status": "BLACKLISTED",
+    "gate1_score": 38.0,
+    "master_score": 52.45,
+    "total_pages": 187
+  },
+  "guide-technique-installations-de-production-de-froid.pdf": {
+    "timestamp": "2026-08-05T01:45:28.794358",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 79.05,
+    "total_pages": 50
+  },
+  "guide-technique-installations-de-production-d_air-comprime_0.pdf": {
+    "timestamp": "2026-08-05T01:45:49.387011",
+    "status": "BLACKLISTED",
+    "gate1_score": 65.0,
+    "master_score": 36.95,
+    "total_pages": 50
+  },
+  "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf": {
+    "timestamp": "2026-08-05T01:46:18.727212",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 66.95,
+    "total_pages": 146
+  },
+  "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf": {
+    "timestamp": "2026-08-05T01:46:24.204952",
+    "status": "PASSED",
+    "gate1_score": 98.0,
+    "master_score": 98.0,
+    "total_pages": 10
+  },
+  "manuel-des-batiments-a-usage-de-bureaux.pdf": {
+    "timestamp": "2026-08-05T01:47:02.804964",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 89.05,
+    "total_pages": 104
+  },
+  "manuel-des-formateurs-specialisation-en-conduite-economique-2.pdf": {
+    "timestamp": "2026-08-05T01:47:26.059349",
+    "status": "BLACKLISTED",
+    "gate1_score": 55.0,
+    "master_score": 8.25,
+    "total_pages": 90
+  },
+  "methodologie-suivi-evaluation-cdn-energie-en-tunisie-synthese_0.pdf": {
+    "timestamp": "2026-08-05T01:47:49.902571",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 92.0,
+    "total_pages": 14
+  },
+  "orientation-pour-la-preparation-a-la-mise-en-oeuvre-de-l_article-6-en-tunisie-vision-et-cadre-de-gouvernance.pdf": {
+    "timestamp": "2026-08-05T01:48:04.132125",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 87.1,
+    "total_pages": 48
+  },
+  "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf": {
+    "timestamp": "2026-08-05T01:48:22.314633",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 88.6,
+    "total_pages": 260
+  },
+  "projets-er-en-tunisie-guide-d_acces-au-foncier.pdf": {
+    "timestamp": "2026-08-05T01:48:42.862041",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 83.95,
+    "total_pages": 52
+  },
+  "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf": {
+    "timestamp": "2026-08-05T01:49:04.387156",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 83.5,
+    "total_pages": 90
+  },
+  "zonnage-climatique-de-la-tunisie.pdf": {
+    "timestamp": "2026-08-05T01:49:23.214946",
+    "status": "BLACKLISTED",
+    "gate1_score": 72.0,
+    "master_score": 12.5,
+    "total_pages": 17
+  },
+  "06.pdf": {
+    "timestamp": "2026-08-05T02:45:27.478535",
+    "status": "PASSED",
+    "gate1_score": 35.0,
+    "master_score": 80.05,
+    "total_pages": 1
+  },
+  "1TXH000671B0301-v3.pdf": {
+    "timestamp": "2026-08-05T02:45:45.309766",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 79.05,
+    "total_pages": 16
+  },
+  "1_-_panorama_reglementaire_-atee_-_j.adam.pdf": {
+    "timestamp": "2026-08-05T02:46:04.450270",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 72.0,
+    "total_pages": 17
+  },
+  "201506-MDE-_20Plaquette_20audit_20_C3_A9nergetique_20en_20entreprise.pdf": {
+    "timestamp": "2026-08-05T02:46:20.623088",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 91.4,
+    "total_pages": 8
+  },
+  "3_Qoaider.pdf": {
+    "timestamp": "2026-08-05T02:46:46.964248",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 82.0,
+    "total_pages": 8
+  },
+  "8_Presentation_of_global-atlas_Lima_Peru.pdf": {
+    "timestamp": "2026-08-05T02:47:08.685068",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 72.0,
+    "total_pages": 22
+  },
+  "Ademe-COP27-Programme_141122.pdf": {
+    "timestamp": "2026-08-05T02:47:31.909401",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 77.1,
+    "total_pages": 7
+  },
+  "ademe_le_mag_n130.pdf": {
+    "timestamp": "2026-08-05T02:48:05.829170",
+    "status": "BLACKLISTED",
+    "gate1_score": 42.0,
+    "master_score": 53.05,
+    "total_pages": 16
+  },
+  "bahrain_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T02:48:20.268302",
+    "status": "PASSED",
+    "gate1_score": 45.0,
+    "master_score": 67.95,
+    "total_pages": 4
+  },
+  "BENMANSOUR.Tsouma.pdf": {
+    "timestamp": "2026-08-05T02:48:40.483943",
+    "status": "PASSED",
+    "gate1_score": 20.0,
+    "master_score": 72.7,
+    "total_pages": 94
+  },
+  "CP-ADEME-Marche-et-Emploi-dans-la-TE.pdf": {
+    "timestamp": "2026-08-05T02:49:06.288773",
+    "status": "PASSED",
+    "gate1_score": 45.0,
+    "master_score": 59.45,
+    "total_pages": 5
+  },
+  "DECARBOTEX_DIGITAL_1P.pdf": {
+    "timestamp": "2026-08-05T02:49:30.461624",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 82.0,
+    "total_pages": 72
+  },
+  "DG-Speech_JIES2017-final.pdf": {
+    "timestamp": "2026-08-05T02:49:50.190464",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 73.5,
+    "total_pages": 9
+  },
+  "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf": {
+    "timestamp": "2026-08-05T02:50:19.209848",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 82.9,
+    "total_pages": 14
+  },
+  "EE-Guidelines-final-web_french.pdf": {
+    "timestamp": "2026-08-05T02:51:24.789133",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 94.55,
+    "total_pages": 100
+  },
+  "FCCQ_Guide_Decarbonation_Final-1.pdf": {
+    "timestamp": "2026-08-05T02:51:44.120165",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 83.05,
+    "total_pages": 71
+  },
+  "guide-communes.pdf": {
+    "timestamp": "2026-08-05T02:52:15.719455",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 72.7,
+    "total_pages": 84
+  },
+  "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf": {
+    "timestamp": "2026-08-05T02:52:37.229760",
+    "status": "PASSED",
+    "gate1_score": 55.0,
+    "master_score": 69.45,
+    "total_pages": 33
+  },
+  "guide_pratique.pdf": {
+    "timestamp": "2026-08-05T02:53:04.793809",
+    "status": "BLACKLISTED",
+    "gate1_score": 22.0,
+    "master_score": 3.3,
+    "total_pages": 378
+  },
+  "industry_brochure_source_fr.pdf": {
+    "timestamp": "2026-08-05T02:53:21.551139",
+    "status": "PASSED",
+    "gate1_score": 62.0,
+    "master_score": 56.05,
+    "total_pages": 44
+  },
+  "iraq_ee_fact_sheet_web.pdf": {
+    "timestamp": "2026-08-05T02:53:49.314573",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 59.5,
+    "total_pages": 3
+  },
+  "IRENA_Arab_Region_Overview_2016.pdf": {
+    "timestamp": "2026-08-05T02:54:20.974727",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 82.0,
+    "total_pages": 24
+  },
+  "IRENA_ARUBA_IRENAs-Work-on-NDC-Analysis-and-Project-ImplementationNagata.pdf": {
+    "timestamp": "2026-08-05T02:54:41.119149",
+    "status": "PASSED",
+    "gate1_score": 55.0,
+    "master_score": 77.95,
+    "total_pages": 13
+  },
+  "IRENA_C2E2_Synergies_RE_EE_paper_2015.pdf": {
+    "timestamp": "2026-08-05T02:55:03.966222",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 88.6,
+    "total_pages": 52
+  },
+  "irena_case_morocco.pdf": {
+    "timestamp": "2026-08-05T02:55:29.214237",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 87.1,
+    "total_pages": 8
+  },
+  "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf": {
+    "timestamp": "2026-08-05T02:55:58.151013",
+    "status": "PASSED",
+    "gate1_score": 62.0,
+    "master_score": 64.55,
+    "total_pages": 137
+  },
+  "IRENA_GRO_R07_MENA.pdf": {
+    "timestamp": "2026-08-05T02:56:18.201198",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 86.05,
+    "total_pages": 8
+  },
+  "IRENA_Market_GCC_2016.pdf": {
+    "timestamp": "2026-08-05T02:56:53.945482",
+    "status": "PASSED",
+    "gate1_score": 65.0,
+    "master_score": 79.45,
+    "total_pages": 96
+  },
+  "IRENA_North_Africa_policies_finance_RE_2023.pdf": {
+    "timestamp": "2026-08-05T02:57:28.183220",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 80.1,
+    "total_pages": 46
+  },
+  "IRENA_Pan-Arab_Strategy_June-2014.pdf": {
+    "timestamp": "2026-08-05T02:57:53.835313",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 88.6,
+    "total_pages": 108
+  },
+  "IRENA_Planning_Prospects_NAfrica_2023.pdf": {
+    "timestamp": "2026-08-05T02:58:25.452630",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 91.4,
+    "total_pages": 94
+  },
+  "IRENA_RE_targets_2022.pdf": {
+    "timestamp": "2026-08-05T02:59:24.199165",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 72.0,
+    "total_pages": 117
+  },
+  "IRENA_Rnewable_energy_markets_GCC_2023.pdf": {
+    "timestamp": "2026-08-05T03:00:06.260782",
+    "status": "PASSED",
+    "gate1_score": 62.0,
+    "master_score": 79.0,
+    "total_pages": 152
+  },
+  "IRENA_RRA_Jordan_2021.pdf": {
+    "timestamp": "2026-08-05T03:01:27.372516",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 82.45,
+    "total_pages": 80
+  },
+  "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf": {
+    "timestamp": "2026-08-05T03:01:56.198756",
+    "status": "PASSED",
+    "gate1_score": 95.0,
+    "master_score": 92.45,
+    "total_pages": 84
+  },
+  "jordan_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:02:15.089828",
+    "status": "PASSED",
+    "gate1_score": 65.0,
+    "master_score": 87.95,
+    "total_pages": 4
+  },
+  "krohne-academie-eau-2024-casablanca.pdf": {
+    "timestamp": "2026-08-05T03:02:40.328193",
+    "status": "PASSED",
+    "gate1_score": 65.0,
+    "master_score": 82.0,
+    "total_pages": 6
+  },
+  "legal_cairodeclaration_2008_en.pdf": {
+    "timestamp": "2026-08-05T03:03:00.354142",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 93.5,
+    "total_pages": 5
+  },
+  "libya_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:03:13.043163",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 80.5,
+    "total_pages": 4
+  },
+  "life-cycle-assessment-french-translation.pdf": {
+    "timestamp": "2026-08-05T03:03:34.422868",
+    "status": "PASSED",
+    "gate1_score": 38.0,
+    "master_score": 65.2,
+    "total_pages": 108
+  },
+  "ng-conservation-curriculum-booklet-layout.pdf": {
+    "timestamp": "2026-08-05T03:03:59.580967",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 84.75,
+    "total_pages": 56
+  },
+  "palestine_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:04:22.030497",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 79.05,
+    "total_pages": 4
+  },
+  "Pumping_fra_print_REV3.pdf": {
+    "timestamp": "2026-08-05T03:04:44.059033",
+    "status": "PASSED",
+    "gate1_score": 72.0,
+    "master_score": 81.35,
+    "total_pages": 8
+  },
+  "qat181775.pdf": {
+    "timestamp": "2026-08-05T03:05:17.259154",
+    "status": "PASSED",
+    "gate1_score": 82.0,
+    "master_score": 73.5,
+    "total_pages": 4
+  },
+  "R000405v5.pdf": {
+    "timestamp": "2026-08-05T03:05:40.052637",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 85.0,
+    "total_pages": 155
+  },
+  "Rapport-de-performance-ADEME-2018.pdf": {
+    "timestamp": "2026-08-05T03:06:03.466000",
+    "status": "PASSED",
+    "gate1_score": 85.0,
+    "master_score": 76.5,
+    "total_pages": 54
+  },
+  "reademe_lalettre_internationale50_FR_web.pdf": {
+    "timestamp": "2026-08-05T03:06:23.971473",
+    "status": "PASSED",
+    "gate1_score": 78.0,
+    "master_score": 86.5,
+    "total_pages": 4
+  },
+  "special-guidebook-practical-guidelines-adopting-energy-efficiency-measures-residential-arabic_0.pdf": {
+    "timestamp": "2026-08-05T03:07:09.189907",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 93.95,
+    "total_pages": 25
+  },
+  "sudan_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:07:37.759985",
+    "status": "PASSED",
+    "gate1_score": 70.0,
+    "master_score": 71.7,
+    "total_pages": 4
+  },
+  "Tendances-en-mati_re-de-gestion-de-leau-dans-les-municipalit_s-canadiennes.pdf": {
+    "timestamp": "2026-08-05T03:07:59.517216",
+    "status": "PASSED",
+    "gate1_score": 52.0,
+    "master_score": 63.05,
+    "total_pages": 22
+  },
+  "tunisia_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:08:16.767277",
+    "status": "PASSED",
+    "gate1_score": 92.0,
+    "master_score": 94.55,
+    "total_pages": 4
+  },
+  "unesco_eau_et_energie_resume_executif_2014.pdf": {
+    "timestamp": "2026-08-05T03:08:44.509868",
+    "status": "PASSED",
+    "gate1_score": 88.0,
+    "master_score": 82.9,
+    "total_pages": 12
+  },
+  "yemen_ee_fact_sheet_print.pdf": {
+    "timestamp": "2026-08-05T03:09:07.274155",
+    "status": "BLACKLISTED",
+    "gate1_score": 25.0,
+    "master_score": 53.05,
+    "total_pages": 4
+  }
+}

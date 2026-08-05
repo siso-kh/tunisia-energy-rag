@@ -14,6 +14,8 @@ __pycache__/
 # Vector database & raw data
 vector_db/
 data/raw/*.pdf
+data/filtered/*.pdf
+data/blacklisted/*.pdf
 
 # IDE settings
 .vscode/

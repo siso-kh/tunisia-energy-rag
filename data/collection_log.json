@@ -1,0 +1,222 @@
+{
+  "https://www.ademe.fr/wp-content/uploads/2024/12/reademe_lalettre_internationale50_FR_web.pdf": {
+    "filename": "reademe_lalettre_internationale50_FR_web.pdf",
+    "query": "site:ademe.fr filetype:pdf \"efficacité énergétique\" OR \"optimisation\" \"bâtiment\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Apr/IRENA_GRO_R07_MENA.pdf": {
+    "filename": "IRENA_GRO_R07_MENA.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2016/IRENA_Arab_Region_Overview_2016.pdf": {
+    "filename": "IRENA_Arab_Region_Overview_2016.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2023/Dec/IRENA_Rnewable_energy_markets_GCC_2023.pdf": {
+    "filename": "IRENA_Rnewable_energy_markets_GCC_2023.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2023/Jan/IRENA_Planning_Prospects_NAfrica_2023.pdf": {
+    "filename": "IRENA_Planning_Prospects_NAfrica_2023.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2024/Oct/IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf": {
+    "filename": "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA_C2E2_Synergies_RE_EE_paper_2015.pdf": {
+    "filename": "IRENA_C2E2_Synergies_RE_EE_paper_2015.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2022/Nov/IRENA_RE_targets_2022.pdf": {
+    "filename": "IRENA_RE_targets_2022.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2014/IRENA_Pan-Arab_Strategy_June-2014.pdf": {
+    "filename": "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2016/IRENA_Market_GCC_2016.pdf": {
+    "filename": "IRENA_Market_GCC_2016.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://cwn-rce.ca/wp-content/uploads/Tendances-en-matière-de-gestion-de-leau-dans-les-municipalités-canadiennes.pdf": {
+    "filename": "Tendances-en-mati_re-de-gestion-de-leau-dans-les-municipalit_s-canadiennes.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://www.habitat-groupe.be/IMG/pdf/guide_pratique.pdf": {
+    "filename": "guide_pratique.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://www.ademe.fr/wp-content/uploads/2024/12/CP-ADEME-Marche-et-Emploi-dans-la-TE.pdf": {
+    "filename": "CP-ADEME-Marche-et-Emploi-dans-la-TE.pdf",
+    "query": "site:ademe.fr filetype:pdf \"efficacité énergétique\" OR \"optimisation\" \"bâtiment\""
+  },
+  "https://www.ademe.fr/wp-content/uploads/2024/12/Ademe-COP27-Programme_141122.pdf": {
+    "filename": "Ademe-COP27-Programme_141122.pdf",
+    "query": "site:ademe.fr filetype:pdf \"efficacité énergétique\" OR \"optimisation\" \"bâtiment\""
+  },
+  "https://www.ademe.fr/wp-content/uploads/2024/12/ademe_le_mag_n130.pdf": {
+    "filename": "ademe_le_mag_n130.pdf",
+    "query": "site:ademe.fr filetype:pdf \"efficacité énergétique\" OR \"optimisation\" \"bâtiment\""
+  },
+  "https://www.ademe.fr/wp-content/uploads/2024/12/Rapport-de-performance-ADEME-2018.pdf": {
+    "filename": "Rapport-de-performance-ADEME-2018.pdf",
+    "query": "site:ademe.fr filetype:pdf \"efficacité énergétique\" OR \"optimisation\" \"bâtiment\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/palestine_ee_fact_sheet_print.pdf": {
+    "filename": "palestine_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/libya_ee_fact_sheet_print.pdf": {
+    "filename": "libya_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/yemen_ee_fact_sheet_print.pdf": {
+    "filename": "yemen_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/jordan_ee_fact_sheet_print.pdf": {
+    "filename": "jordan_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/bahrain_ee_fact_sheet_print.pdf": {
+    "filename": "bahrain_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.rcreee.org/wp-content/uploads/2013/11/tunisia_ee_fact_sheet_print.pdf": {
+    "filename": "tunisia_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://rcreee.org/wp-content/uploads/2013/11/sudan_ee_fact_sheet_print.pdf": {
+    "filename": "sudan_ee_fact_sheet_print.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://rcreee.org/wp-content/uploads/2013/11/iraq_ee_fact_sheet_web.pdf": {
+    "filename": "iraq_ee_fact_sheet_web.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://rcreee.org/wp-content/uploads/2013/11/irena_case_morocco.pdf": {
+    "filename": "irena_case_morocco.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://rcreee.org/wp-content/uploads/2024/03/legal_cairodeclaration_2008_en.pdf": {
+    "filename": "legal_cairodeclaration_2008_en.pdf",
+    "query": "site:rcreee.org filetype:pdf \"energy efficiency\" OR \"ترشيد الطاقة\" OR \"النجاعة الطاقية\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2023/Dec/IRENA_North_Africa_policies_finance_RE_2023.pdf": {
+    "filename": "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2021/Feb/IRENA_RRA_Jordan_2021.pdf": {
+    "filename": "IRENA_RRA_Jordan_2021.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Events/2013/Nov/7_1/3_Qoaider.pdf?la=en&hash=ADF420521CAECA5F72CEC3A7C1577714F622BC15": {
+    "filename": "3_Qoaider.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Speech/DG-Speech_JIES2017-final.pdf": {
+    "filename": "DG-Speech_JIES2017-final.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Events/2014/Jul/15/8_Presentation_of_global-atlas_Lima_Peru.pdf?la=en&hash=1BDB32A3F3652A46622CDFAC6A2FEFA75CC9DFDD": {
+    "filename": "8_Presentation_of_global-atlas_Lima_Peru.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2025/Nov/IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf": {
+    "filename": "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://prod-cm-islands.irena.org/-/media/Sids/Files/Events/Caribbean-Workshop-on-Renewable-Energy-in-Small-Islands-Developing-States/IRENA_ARUBA_IRENAs-Work-on-NDC-Analysis-and-Project-ImplementationNagata.pdf": {
+    "filename": "IRENA_ARUBA_IRENAs-Work-on-NDC-Analysis-and-Project-ImplementationNagata.pdf",
+    "query": "site:irena.org filetype:pdf \"MENA\" \"renewable energy\" OR \"energy efficiency\""
+  },
+  "https://espace.inrs.ca/id/eprint/1233/1/R000405v5.pdf": {
+    "filename": "R000405v5.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://library.e.abb.com/public/d83f7477640cfbb1c1257ac6003a9892/Pumping_fra_print_REV3.pdf": {
+    "filename": "Pumping_fra_print_REV3.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://www.xylem.com/siteassets/industries--applications/resources/general-industry/industry_brochure_source_fr.pdf": {
+    "filename": "industry_brochure_source_fr.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://bdd.pseau.org/outils/ouvrages/unesco_eau_et_energie_resume_executif_2014.pdf": {
+    "filename": "unesco_eau_et_energie_resume_executif_2014.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://repository.enp.edu.dz/jspui/bitstream/123456789/8677/1/BENMANSOUR.Tsouma.pdf": {
+    "filename": "BENMANSOUR.Tsouma.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://www.vireaunoireau.fr/wp-content/uploads/2020/06/R2-economiser-l-eau-et-optimiser-l-efficaicte-energetique-des-installations-d-eau-potable-et-d-assainissement.pdf": {
+    "filename": "R2-economiser-l-eau-et-optimiser-l-efficaicte-energetique-des-installations-d-eau-potable-et-d-assai",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://dam.krohne.com/image/upload/do-other/krohne-academie-eau-2024-casablanca.pdf": {
+    "filename": "krohne-academie-eau-2024-casablanca.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "http://www.mena-water.net/fileadmin/MENA-WATER/energy-efficiency/guidelines/EE-Guidelines-final-web_french.pdf": {
+    "filename": "EE-Guidelines-final-web_french.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://www.uni-bell.org/Portals/0/ResourceFile/life-cycle-assessment-french-translation.pdf": {
+    "filename": "life-cycle-assessment-french-translation.pdf",
+    "query": "filetype:pdf \"gestion de l'eau\" \"efficacité énergétique\" \"pompage\""
+  },
+  "https://www.entreprises.gouv.fr/files/files/Publications/2026/guides/DGE_Guide%20de%CC%81carbonation%20electrification_2026.pdf": {
+    "filename": "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://energie.wallonie.be/files/PEB/Pour%20les%20professionnels/Outils/Guide%20pratique%20-%20Pour%20une%20gestio/guide-communes.pdf": {
+    "filename": "guide-communes.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://atee.fr/system/files/2019-12/201506-MDE-%20Plaquette%20audit%20%C3%A9nergetique%20en%20entreprise.pdf": {
+    "filename": "201506-MDE-_20Plaquette_20audit_20_C3_A9nergetique_20en_20entreprise.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://www.hauts-de-france.developpement-durable.gouv.fr/IMG/pdf/1_-_panorama_reglementaire_-atee_-_j.adam.pdf": {
+    "filename": "1_-_panorama_reglementaire_-atee_-_j.adam.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://adelphi.de/de/system/files/mediathek/bilder/Guide%20Pratique_Management%20de%20l'%C3%A9nergie%20dans%20les%20h%C3%B4tels%20alpins1.pdf": {
+    "filename": "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://library.e.abb.com/public/fffca56af3c64b2ea6df58d68c7a7c4d/1TXH000671B0301-v3.pdf": {
+    "filename": "1TXH000671B0301-v3.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://dunsky.com/wp-content/uploads/FCCQ_Guide_Decarbonation_Final-1.pdf": {
+    "filename": "FCCQ_Guide_Decarbonation_Final-1.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://www.uith.fr/wp-content/uploads/DECARBOTEX_DIGITAL_1P.pdf": {
+    "filename": "DECARBOTEX_DIGITAL_1P.pdf",
+    "query": "filetype:pdf \"audit énergétique\" \"guide pratique\" \"industrie\""
+  },
+  "https://faolex.fao.org/docs/pdf/qat181775.pdf": {
+    "filename": "qat181775.pdf",
+    "query": "filetype:pdf \"ترشيد استهلاك الكهرباء\" OR \"النجاعة الطاقية في المباني\""
+  },
+  "https://www.unescwa.org/sites/default/files/pubs/pdf/special-guidebook-practical-guidelines-adopting-energy-efficiency-measures-residential-arabic_0.pdf": {
+    "filename": "special-guidebook-practical-guidelines-adopting-energy-efficiency-measures-residential-arabic_0.pdf",
+    "query": "filetype:pdf \"ترشيد استهلاك الكهرباء\" OR \"النجاعة الطاقية في المباني\""
+  },
+  "https://www.nama.om/media/oqedxskz/ng-conservation-curriculum-booklet-layout.pdf": {
+    "filename": "ng-conservation-curriculum-booklet-layout.pdf",
+    "query": "filetype:pdf \"ترشيد استهلاك الكهرباء\" OR \"النجاعة الطاقية في المباني\""
+  },
+  "https://pdf.alanba.com.kw/pdf/2025/04/17-04-2025/06.pdf": {
+    "filename": "06.pdf",
+    "query": "filetype:pdf \"ترشيد استهلاك الكهرباء\" OR \"النجاعة الطاقية في المباني\""
+  },
+  "https://www.derasat.org.bh/wp-content/uploads/2019/09/%D8%A7%D9%84%D8%AA%D8%BA%D8%B7%D9%8A%D8%A9-%D8%A7%D9%84%D8%B5%D8%AD%D9%81%D9%8A%D8%A9-%D8%AD%D9%88%D9%84-%D8%AF%D8%B1%D8%A7%D8%B3%D8%A7%D8%AA-%D9%8A%D8%B9%D8%AA%D8%B2%D9%85-%D8%A5%D8%AC%D8%B1%D8%A7%D8%A1-%D8%A7%D8%B3%D8%AA%D8%B7%D9%84%D8%A7%D8%B9-%D9%84%D9%84%D8%B1%D8%A3%D9%8A-%D8%AD%D9%88%D9%84-%D8%AA%D8%B1%D8%B4%D9%8A%D8%AF-%D8%A7%D8%B3%D8%AA%D9%87%D9%84%D8%A7%D9%83-%D8%A7%D9%84%D9%83%D9%87%D8%B1%D8%A8%D8%A7%D8%A1-%D9%88%D8%A7%D9%84%D9%85%D8%A7%D8%A1-Poll-on-EW-Consumption.pdf": {
+    "filename": "_D8_A7_D9_84_D8_AA_D8_BA_D8_B7_D9_8A_D8_A9-_D8_A7_D9_84_D8_B5_D8_AD_D9_81_D9_8A_D8_A9-_D8_AD_D9_88_D",
+    "query": "filetype:pdf \"ترشيد استهلاك الكهرباء\" OR \"النجاعة الطاقية في المباني\""
+  }
+}

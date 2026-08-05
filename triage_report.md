@@ -1,0 +1,38 @@
+# PDF Triage Analysis Report
+    **Generated:** 2026-08-05 03:09:07
+
+    ## Execution Metrics
+    * **Total Documents Evaluated:** 53
+    * **Accepted (Moved to `data/filtered/`):** 50
+    * **Blacklisted (Moved to `data/blacklisted/`):** 3
+    * **Gate 1 Short-circuited (Token Saved):** 0
+
+    ## Configuration Parameters Used
+    ```json
+    {
+  "paths": {
+    "raw_dir": "data/raw",
+    "filtered_dir": "data/filtered",
+    "blacklisted_dir": "data/blacklisted",
+    "scores_file": "data/scores.json",
+    "report_file": "triage_report.md"
+  },
+  "gate1": {
+    "instant_reject_threshold": 15.0,
+    "instant_pass_threshold": 95.0,
+    "weight_title": 0.3,
+    "weight_outline": 0.5
+  },
+  "gate2": {
+    "master_pass_threshold": 55.0,
+    "weight_algo": 0.15,
+    "weight_ai": 0.85,
+    "sampling": {
+      "base_ratio": 0.05,
+      "min_pages": 5,
+      "max_pages": 30
+    }
+  }
+}
+    ```
+    

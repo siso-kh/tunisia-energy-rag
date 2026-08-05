@@ -3,6 +3,9 @@ langchain
 langchain-community
 sentence-transformers
 chromadb
+openai
+langchain-text-splitters
+
 
 # Document Parsing
 pdfplumber
@@ -17,3 +20,8 @@ streamlit
 python-dotenv
 pydantic
 requests
+python-dotenv
+
+#web scrapping
+bs4
+ddgs
