@@ -6,7 +6,6 @@ chromadb
 openai
 langchain-text-splitters
 
-
 # Document Parsing
 pdfplumber
 pypdf
@@ -20,7 +19,11 @@ streamlit
 python-dotenv
 pydantic
 requests
-python-dotenv
+arabic-reshaper
+python-bidi
+pdf2image 
+pytesseract 
+easyocr
 
 #web scrapping
 bs4

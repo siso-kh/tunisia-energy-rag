@@ -1,22 +1,41 @@
-# Virtual Environment
+# ===== Project ignores =====
+
+# Virtual environments
 venv/
 .venv/
 env/
 ENV/
 
-# Python cache
+# Python cache & bytecode
 __pycache__/
 *.py[cod]
 
 # Environment variables & secrets
+# Keep a .env.example in repo, but ignore real .env files
 .env
 
-# Vector database & raw data
-vector_db/
-data/raw/*.pdf
-data/filtered/*.pdf
-data/blacklisted/*.pdf
-
-# IDE settings
+# IDE/editor settings
 .vscode/
 .idea/
+
+# ===== Data & DB artifacts (ignore generated/large files) =====
+
+# Raw and processed document stores
+data/raw/
+data/filtered/
+data/blacklisted/
+data/processed/
+
+# Local vector DB and related artifacts
+data/chroma_db/
+vector_db/
+*.sqlite3
+
+# External tools / large binaries
+poppler/
+kaggle/
+
+# ===== Test / logs / misc =====
+test_results.json
+*.log
+.pytest_cache/
