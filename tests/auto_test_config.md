@@ -23,7 +23,9 @@
 | `test_retrieval_to_prompt_chain` | `tests/test_integration.py` | **0.02s** | 0 | Retrieval → prompt formatting. |
 | `test_api_health_endpoint` | `tests/test_integration.py` | **0.01s** | 0 | HTTP health contract. |
 | `test_api_chat_rejects_empty_query` | `tests/test_integration.py` | **<0.01s** | 0 | 400 validation guard. |
-| `get_optimized_history` unit tests (×5) | `tests/test_token_manager.py` | **<0.01s each** | 0 | Token-budget truncation logic (pure function). |
+| `get_optimized_history` unit tests (×6) | `tests/test_token_manager.py` | **<0.01s each** | 0 | Token-budget truncation logic (pure function). |
+| Database tests (×17) | `tests/test_database.py` | **~0.06s each** | 0 | SQLAlchemy async layer: models, CRUD, cascades, enums, to-one loading, `get_db` (in-memory SQLite). |
+| Seed tests (×8) | `tests/test_seed.py` | **~0.9s each** | 0 | DB seeding: populate, idempotency, reset, data quality (SQLite file). |
 
 **Suite totals:** ~2:00 warm (full run) · ~3:30 first cold run (embedding model load) · ~20s model-load overhead on top of every run.
 
@@ -48,24 +50,33 @@
 
 ### ⚡ FAST RUN — no LLM, ~0.1s test time (+~20s model load)
 **When:** after every code change — the default "did I break something?" check.
-**Covers:** HTTP health/validation, ChromaDB retrieval, prompt formatting, token-budget logic. No tokens spent.
+**Covers:** HTTP health/validation, ChromaDB retrieval, prompt formatting, token-budget logic, async DB layer. No tokens spent.
+> **Note:** `-k` filters the *whole* pytest session, so the integration file is filtered
+> in its own invocation while the remaining files run unfiltered.
 ```bash
-python -m pytest tests/test_integration.py -k "health or empty or retrieval" tests/test_retrieval.py tests/test_token_manager.py
+python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py -q
 ```
-**Tests (9):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×5)
+**Tests (35):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×6) · `test_database.py` (×17) · `test_seed.py` (×8)
 
 ### 🚀 MEDIUM RUN — adds LLM unit tests, ~15s test time
 **When:** after changes to prompts, the LLM client, or retrieval logic — validates LLM behavior (refusal guardrail + grounded answers) without the two slowest HTTP tests.
 ```bash
-python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py -k "not parallel and not pipeline and not chat_endpoint"
+python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py -k "not parallel and not pipeline and not chat_endpoint"
 ```
-**Tests (11):** all 9 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
+**Tests (37):** all 35 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
 
 ### 🏁 FULL RUN — everything, ~2:00 warm / ~3:30 cold
 **When:** before committing / pushing, or after structural changes (imports, client init, Docker). The only run exercising the complete HTTP + thread-pool + LLM pipeline, including the 53s history test.
 ```bash
 python -m pytest
 ```
-**Tests (15):** the full suite (see `testpaths = tests` in `pytest.ini`).
+**Tests (41):** the full suite (see `testpaths = tests` in `pytest.ini`).
 
 > **Tip:** use `python -m pytest -v` for per-test visibility, and `python -m pytest --durations=12 -q` to refresh this baseline table.
+
+### 🧨 STRESS CHECK — huge payloads, ~50s
+**When:** after changes to the token-budget strategy (`token_manager.py`) or the chat history handling. Sends ~36k-token pasted messages through `/api/chat` and asserts the endpoint still returns 200 (no context-window overflow).
+```bash
+python -m pytest tests/stress_checks.py -v
+```
+**Tests (2):** `test_huge_message_in_middle_of_history` · `test_huge_newest_message_is_dropped` (excluded from the default suite — filename does not match `test_*.py`).

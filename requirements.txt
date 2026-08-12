@@ -17,6 +17,11 @@ uvicorn
 streamlit
 requests
 
+# Database (src/database) - async SQLAlchemy layer
+sqlalchemy
+asyncpg
+aiosqlite
+
 # Utilities
 python-dotenv
 pydantic

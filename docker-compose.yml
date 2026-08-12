@@ -1,16 +1,70 @@
-version: '3.8'
-
 services:
+  # ===================== PostgreSQL (async SQLAlchemy layer) =====================
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: energie_tunisie
+    # Host port 5433 to avoid clashing with a locally installed Postgres on 5432.
+    # The app itself always connects internally via the service name "postgres".
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d energie_tunisie"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ===================== One-shot database seeder =====================
+  # Runs src/database/seed.py once after Postgres is healthy, then exits.
+  # Reseed anytime with:
+  #   docker compose run --rm db-seed python -m src.database.seed --reset
+  db-seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: python -m src.database.seed
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ===================== FastAPI backend =====================
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie
     volumes:
       - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Wide start_period: importing the API loads the sentence-transformers
+    # embedding model, which can take 30-60s+ on a cold first start.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
+  # ===================== Streamlit frontend =====================
   frontend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     command: streamlit run src/ui/ui.py --server.port=8501 --server.address=0.0.0.0
     ports:
       - "8501:8501"
@@ -18,9 +72,19 @@ services:
       - API_URL=http://backend:8000/api/chat
     volumes:
       - .:/app
+    # Streamlit exposes /_stcore/health; needed so ngrok's service_healthy
+    # dependency is meaningful.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
+  # ===================== Ngrok public tunnel =====================
   ngrok:
     image: ngrok/ngrok:latest
     restart: unless-stopped
@@ -33,4 +97,8 @@ services:
     environment:
       NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN:?Set NGROK_AUTHTOKEN in .env (see .env.example)}"
     depends_on:
-      - frontend
+      frontend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
