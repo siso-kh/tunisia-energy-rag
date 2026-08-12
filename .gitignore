@@ -42,3 +42,6 @@ test_results.json
 
 .claude
 .agents
+# AI Agent Configurations and Logs
+.ai_instructions/
+ai_activity.log

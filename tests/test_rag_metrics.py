@@ -1,3 +1,4 @@
+import asyncio
 import time
 import json
 from src.rag.retrieve import run_pipeline # Assuming run_pipeline is available
@@ -29,7 +30,7 @@ def run_evaluation_sprint():
         try:
             # You can also use the requests library here to test the API endpoint directly
             # instead of the underlying function, depending on your preference.
-            answer = run_pipeline(query) 
+            answer, _sources = asyncio.run(run_pipeline(query)) 
             status = "Success"
         except Exception as e:
             answer = str(e)

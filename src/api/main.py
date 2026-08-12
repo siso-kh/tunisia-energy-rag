@@ -1,15 +1,12 @@
-from src.rag.retrieve import retrieve_context, generate_answer
-from typing import List, Optional, Any, Dict
+import logging
+from typing import List, Optional, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.rag.retrieve import (
-    retrieve_context_structured, 
-    format_sources_for_prompt, 
-    generate_answer,
-    rewrite_query_with_history
-)
+from src.rag.retrieve import run_pipeline
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Tunisia Energy RAG API")
 
@@ -40,24 +37,16 @@ class QueryResponse(BaseModel):
     answer: str
 
 @app.post("/api/chat", response_model=QueryResponse)
-def chat_endpoint(request: QueryRequest):
+async def chat_endpoint(request: QueryRequest):
     try:
         user_query = request.query.strip()
         if not user_query:
             raise HTTPException(status_code=400, detail="Query cannot be empty.")
         
-        # 1. Rewrite query if history exists
         history_dicts = [{"role": m.role, "content": m.content} for m in request.chat_history]
-        standalone_query = rewrite_query_with_history(user_query, history_dicts)
         
-        # 2. Retrieve structured sources
-        structured_sources = retrieve_context_structured(standalone_query, n_results=5)
-        
-        # 3. Format context string for LLM prompt
-        context_str = format_sources_for_prompt(structured_sources)
-        
-        # 4. Generate answer with LLM
-        answer = generate_answer(user_query, context_str, history_dicts)
+        # Await the fully asynchronous pipeline (ChromaDB retrieval runs in a thread pool)
+        answer, structured_sources = await run_pipeline(user_query, history_dicts)
         
         return QueryResponse(
             query=user_query,
@@ -67,7 +56,9 @@ def chat_endpoint(request: QueryRequest):
     except HTTPException:
         raise 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the real error server-side, but keep the client response sanitized
+        logger.exception("Chat endpoint failed: %s", e)
+        raise HTTPException(status_code=500, detail="An internal error occurred during processing.")
 @app.get("/health")
 def health_check():
     """Simple endpoint to verify the server is running."""

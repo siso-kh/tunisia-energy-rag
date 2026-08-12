@@ -4,6 +4,7 @@ langchain-community
 sentence-transformers
 chromadb
 openai
+tiktoken
 langchain-text-splitters
 
 # Document Parsing
@@ -25,7 +26,7 @@ python-bidi
 pdf2image 
 pytesseract 
 easyocr
-
+tiktoken
 #web scrapping
 bs4
 ddgs

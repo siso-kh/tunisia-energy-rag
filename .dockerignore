@@ -33,3 +33,6 @@ data/chroma_db/
 .vscode/
 .idea/
 .DS_Store
+# AI Agent Configurations and Logs
+.ai_instructions/
+ai_activity.log

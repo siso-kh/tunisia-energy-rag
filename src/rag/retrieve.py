@@ -1,9 +1,18 @@
+import asyncio
 import os
 import chromadb
 from chromadb.utils import embedding_functions
-from openai import OpenAI
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from typing import List, Dict, Optional
+from fastapi.concurrency import run_in_threadpool
+from typing import Any, Dict, List, Optional, Tuple
+
+from src.utils.token_manager import get_optimized_history
+
+# Token budget reserved for chat history when building LLM prompts.
+# Keeps the conversation bounded so the system prompt + retrieved RAG
+# context always fit in the model's context window.
+HISTORY_TOKEN_BUDGET = 1500
 
 # ==========================================
 # 1. Configuration & Initialization
@@ -13,8 +22,19 @@ load_dotenv()
 API_KEY = os.getenv("CUSTOM_API_KEY")
 BASE_URL = os.getenv("OPENAI_BASE_URL")
 
-client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 CHROMA_PATH = "data/chroma_db"
+
+_client: Optional[AsyncOpenAI] = None
+
+
+def get_client() -> AsyncOpenAI:
+    """Returns the shared AsyncOpenAI client, transparently recreating it if it
+    was closed by an event-loop shutdown (prevents "client has been closed"
+    errors when the app runs across multiple event loops, e.g. in tests)."""
+    global _client
+    if _client is None or _client.is_closed:
+        _client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
+    return _client
 
 emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="paraphrase-multilingual-MiniLM-L12-v2"
@@ -26,15 +46,20 @@ collection = chroma_client.get_collection(name="tunisia_energy_rag")
 # 2. Modular Pipeline Functions
 # ==========================================
 
-def rewrite_query_with_history(user_query: str, chat_history: List[Dict[str, str]]) -> str:
+async def rewrite_query_with_history(user_query: str, chat_history: List[Dict[str, str]]) -> str:
     """
     Reformulates a follow-up user query into a standalone search query using chat context.
     """
     if not chat_history:
         return user_query
 
-    # Format recent history into a compact string
-    formatted_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history[-4:]])
+    # Format recent history into a compact string (bounded by token budget).
+    # run_pipeline already budgets the history; re-checking here is an idempotent
+    # safety net for direct callers of this function.
+    formatted_history = "\n".join(
+        f"{msg['role']}: {msg['content']}"
+        for msg in get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
+    )
     
     prompt = f"""Given the following conversation history and a follow-up question, rephrase the follow-up question to be a self-contained search query.
 Do NOT answer the question, only rephrase it to include necessary entities from context.
@@ -46,7 +71,7 @@ Follow-up Question: {user_query}
 Standalone Query:"""
 
     # Direct LLM call to contextualize the prompt
-    response = client.chat.completions.create(
+    response = await get_client().chat.completions.create(
         model="mistral-large",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1
@@ -72,8 +97,6 @@ def retrieve_context(user_query: str, n_results: int = 5) -> str:
     retrieved_chunks = results["documents"][0]
     return "\n\n---\n\n".join(retrieved_chunks)
 
-
-from typing import List, Dict, Any
 
 def retrieve_context_structured(user_query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     """Fetches chunks from ChromaDB along with metadata (source, page, etc.)."""
@@ -112,7 +135,7 @@ def format_sources_for_prompt(sources: List[Dict[str, Any]]) -> str:
         )
     return "\n\n---\n\n".join(formatted_chunks)
 
-def generate_answer(user_query: str, context: str, chat_history: Optional[List[Dict[str, str]]] = None) -> str:
+async def generate_answer(user_query: str, context: str, chat_history: Optional[List[Dict[str, str]]] = None) -> str:
     """Takes pre-fetched context and optional chat history to query the LLM."""
     system_prompt = (
         "You are an expert AI assistant specializing in the Tunisian energy sector. "
@@ -125,13 +148,14 @@ def generate_answer(user_query: str, context: str, chat_history: Optional[List[D
     # Build full message chain including past conversation
     messages = [{"role": "system", "content": system_prompt}]
     
-    if chat_history:
-        for msg in chat_history[-4:]:
-            messages.append({"role": msg["role"], "content": msg["content"]})
+    # Append the token-budgeted history (recent context prioritized).
+    # Idempotent re-check: protects direct callers if history was not pre-budgeted.
+    for msg in get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET):
+        messages.append({"role": msg["role"], "content": msg["content"]})
             
     messages.append({"role": "user", "content": user_query})
 
-    response = client.chat.completions.create(
+    response = await get_client().chat.completions.create(
         model="mistral-large",
         messages=messages,
         temperature=0.1
@@ -140,24 +164,37 @@ def generate_answer(user_query: str, context: str, chat_history: Optional[List[D
     return response.choices[0].message.content
 
 
-def run_pipeline(user_query: str, chat_history: Optional[List[Dict[str, str]]] = None) -> str:
-    """Executes the full Retrieval-Augmented Generation flow with conversational memory."""
+async def run_pipeline(
+    user_query: str,
+    chat_history: Optional[List[Dict[str, str]]] = None,
+) -> Tuple[str, List[Dict[str, Any]]]:
+    """Executes the full Retrieval-Augmented Generation flow with conversational memory.
+
+    Returns a tuple of (answer, structured_sources).
+    ChromaDB's synchronous file I/O is offloaded to a thread pool so it
+    does not block the async event loop.
+    """
     if chat_history is None:
         chat_history = []
 
-    # Step 1: Contextualize query if history exists
+    # Step 1: Contextualize query using the token-optimized history
+    optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
     print("\n[1] Contextualizing query...")
-    standalone_query = rewrite_query_with_history(user_query, chat_history)
+    standalone_query = await rewrite_query_with_history(user_query, optimized_history)
     print(f"    Standalone query: '{standalone_query}'")
     
-    # Step 2: Vector search with standalone query
+    # Step 2: Vector search with standalone query (thread pool: ChromaDB is sync I/O)
     print("[2] Searching database...")
-    structured_sources = retrieve_context_structured(standalone_query, n_results=5)
+    structured_sources = await run_in_threadpool(
+        retrieve_context_structured, standalone_query, n_results=5
+    )
     context_str = format_sources_for_prompt(structured_sources)
     
-    # Step 3: Synthesize answer with full chat history
+    # Step 3: Synthesize answer using the token-optimized history
     print("[3] Synthesizing answer with Mistral Large...\n")
-    return generate_answer(user_query, context_str, chat_history)
+    answer = await generate_answer(user_query, context_str, optimized_history)
+    
+    return answer, structured_sources
 # ==========================================
 # 3. Execution Example
 # ==========================================
@@ -172,6 +209,6 @@ if __name__ == "__main__":
     # Follow-up question relying on prior context ("leur" -> ANME)
     follow_up_query = "Qui gère leur budget ?"
     
-    answer = run_pipeline(follow_up_query, chat_history=sample_history)
+    answer, _sources = asyncio.run(run_pipeline(follow_up_query, chat_history=sample_history))
     print("========== FINAL ANSWER ==========\n")
     print(answer)

@@ -1,4 +1,4 @@
-import pytest
+import asyncio
 from src.rag.retrieve import generate_answer
 
 def test_llm_refusal_on_out_of_context_query():
@@ -11,7 +11,7 @@ def test_llm_refusal_on_out_of_context_query():
     dummy_context = "La STEG gère l'infrastructure et le raccordement au réseau électrique national en Tunisie."
     
     # We pass the unrelated context directly to the LLM
-    response = generate_answer(query, dummy_context)
+    response = asyncio.run(generate_answer(query, dummy_context))
     
     # The exact phrase you specified in your system prompt in retrieve.py
     expected_refusal = "I do not have enough information to answer that based on the provided documents"
@@ -26,7 +26,7 @@ def test_llm_answers_with_valid_context():
     query = "Qui gère l'infrastructure électrique ?"
     valid_context = "L'ANME assure la promotion. La STEG gère l'infrastructure et le raccordement au réseau électrique national."
     
-    response = generate_answer(query, valid_context)
+    response = asyncio.run(generate_answer(query, valid_context))
     
     # Check if it successfully extracted the target entity
     assert "STEG" in response, f"LLM missed the key entity from the context. Output: {response}"
