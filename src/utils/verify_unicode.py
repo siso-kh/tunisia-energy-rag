@@ -2,9 +2,9 @@ import json
 import re
 from pathlib import Path
 
-# Paths
-BASE_DIR = Path(__file__).resolve().parent.parent
-PROCESSED_JSON_PATH = BASE_DIR / "data" / "processed" / "processed_chunks.json"
+# Paths (resolve repo root from src/utils -> two parents up)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PROCESSED_JSON_PATH = REPO_ROOT / "data" / "processed" / "processed_chunks.json"
 
 # Unicode Regex Boundaries
 # Standard Arabic block (Expected for LLMs)

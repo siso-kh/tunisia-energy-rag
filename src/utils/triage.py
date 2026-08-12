@@ -9,22 +9,23 @@ from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_PATH = PROJECT_ROOT / "config.json"
+# Resolve repository root: file is in src/utils, repo root is two parents up
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = REPO_ROOT / "config.json"
 
 # Load Configuration
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
-# Paths
-RAW_DIR = PROJECT_ROOT / CONFIG["paths"]["raw_dir"]
-FILTERED_DIR = PROJECT_ROOT / CONFIG["paths"]["filtered_dir"]
-BLACKLISTED_DIR = PROJECT_ROOT / CONFIG["paths"]["blacklisted_dir"]
-SCORES_FILE = PROJECT_ROOT / CONFIG["paths"]["scores_file"]
-REPORT_FILE = PROJECT_ROOT / CONFIG["paths"]["report_file"]
+# Paths (use repository root)
+RAW_DIR = REPO_ROOT / CONFIG["paths"]["raw_dir"]
+FILTERED_DIR = REPO_ROOT / CONFIG["paths"]["filtered_dir"]
+BLACKLISTED_DIR = REPO_ROOT / CONFIG["paths"]["blacklisted_dir"]
+SCORES_FILE = REPO_ROOT / CONFIG["paths"]["scores_file"]
+REPORT_FILE = REPO_ROOT / CONFIG["paths"]["report_file"]
 
 # Ensure a .env exists at project root and load it
-ENV_PATH = PROJECT_ROOT / ".env"
+ENV_PATH = REPO_ROOT / ".env"
 if not ENV_PATH.exists():
     with open(ENV_PATH, "w", encoding="utf-8") as _f:
         _f.write("# Add your API key for the OpenAI-compatible client\n# Example:\n# CUSTOM_API_KEY=sk-...\n# Optionally set your provider base URL:\n# OPENAI_BASE_URL=https://api.example.com\n")

@@ -14,6 +14,7 @@ pypdf
 fastapi
 uvicorn
 streamlit
+requests
 
 # Utilities
 python-dotenv
@@ -28,3 +29,6 @@ easyocr
 #web scrapping
 bs4
 ddgs
+
+#test
+pytest

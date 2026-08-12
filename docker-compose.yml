@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  frontend:
+    build: .
+    command: streamlit run src/ui/ui.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://backend:8000/api/chat
+    volumes:
+      - .:/app
+    depends_on:
+      - backend
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command:
+      - "http"
+      - "frontend:8501"
+    ports:
+      - "4040:4040"
+    # Token read from the project .env file (gitignored). Copy .env.example to .env first.
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN:?Set NGROK_AUTHTOKEN in .env (see .env.example)}"
+    depends_on:
+      - frontend

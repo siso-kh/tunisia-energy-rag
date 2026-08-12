@@ -39,3 +39,6 @@ kaggle/
 test_results.json
 *.log
 .pytest_cache/
+
+.claude
+.agents

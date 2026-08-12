@@ -1,0 +1,35 @@
+# Local Database & Large Data Files
+data/
+*.sqlite3
+*.db
+
+# Git
+.git/
+.gitignore
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environments
+env/
+venv/
+.venv/
+env-*
+
+# Environment Variables / Secrets
+.env
+
+# Local Database & Large Data Files
+# Exclude ChromaDB files from the image; they will be loaded via the volume mount instead
+data/chroma_db/
+*.sqlite3
+*.db
+
+# IDEs and OS Files
+.vscode/
+.idea/
+.DS_Store
