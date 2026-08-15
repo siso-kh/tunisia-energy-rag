@@ -60,26 +60,22 @@ services:
       retries: 10
       start_period: 60s
 
-  # ===================== Streamlit frontend =====================
+  # ===================== React frontend (Vite build -> Nginx) =====================
+  # Nginx serves the static build and reverse-proxies /api to the backend
+  # (same-origin, no CORS).
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    command: streamlit run src/ui/ui.py --server.port=8501 --server.address=0.0.0.0
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "8501:8501"
-    environment:
-      - API_URL=http://backend:8000/api/chat
-    volumes:
-      - .:/app
-    # Streamlit exposes /_stcore/health; needed so ngrok's service_healthy
-    # dependency is meaningful.
+      - "80:80"
+    # Proxied through Nginx -> backend /health (verifies the full chain)
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=5)"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
     depends_on:
       backend:
         condition: service_healthy
@@ -90,7 +86,7 @@ services:
     restart: unless-stopped
     command:
       - "http"
-      - "frontend:8501"
+      - "frontend:80"
     ports:
       - "4040:4040"
     # Token read from the project .env file (gitignored). Copy .env.example to .env first.

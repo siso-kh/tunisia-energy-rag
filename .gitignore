@@ -42,6 +42,13 @@ test_results.json
 
 .claude
 .agents
+
+# Local dev SQLite databases
+*.db
 # AI Agent Configurations and Logs
 .ai_instructions/
 ai_activity.log
+
+# Reference design material (not part of the app)
+ater-dashboard/
+ater-dashboard.zip

@@ -1,9 +1,9 @@
 # Tunisia Energy RAG
 
 RAG pipeline for the Tunisian energy sector: PDF collection, Arabic/OCR ingestion,
-LLM-based triage, ChromaDB vector retrieval, an async FastAPI backend, a Streamlit
-frontend, and an async SQLAlchemy/PostgreSQL layer for conversations and the
-crowdsourced outage map.
+LLM-based triage, ChromaDB vector retrieval, an async FastAPI backend, a React
+frontend (Vite build served by Nginx), and an async SQLAlchemy/PostgreSQL layer for
+conversations and the crowdsourced outage map.
 
 ## Quick start (Docker Compose)
 
@@ -14,7 +14,7 @@ crowdsourced outage map.
 | `postgres` | PostgreSQL 16 (port `127.0.0.1:5433`, internal `postgres:5432`) | — |
 | `db-seed` | One-shot seeder — runs `src/database/seed.py` once Postgres is healthy, then exits | — |
 | `backend` | FastAPI (healthcheck on `/health`) | http://localhost:8000 |
-| `frontend` | Streamlit UI | http://localhost:8501 |
+| `frontend` | React SPA (Vite build → Nginx, proxies `/api` to backend) | http://localhost |
 | `ngrok` | Public tunnel to the frontend (requires `NGROK_AUTHTOKEN`) | http://localhost:4040 |
 
 ### Environment
@@ -22,6 +22,16 @@ crowdsourced outage map.
 ```bash
 cp .env.example .env      # then fill in NGROK_AUTHTOKEN (and CUSTOM_API_KEY / OPENAI_BASE_URL)
 docker compose up --build
+```
+
+The React frontend lives in [`frontend/`](frontend/): chat (SSE streaming from
+`/api/chat/stream`), the outage map (`/api/outages`), and a solar ROI calculator.
+Local dev:
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173, proxies /api to localhost:8000
 ```
 
 ### Database
@@ -41,6 +51,7 @@ docker compose run --rm db-seed python -m src.database.seed --reset
 
 - `postgres` → `pg_isready -U postgres -d energie_tunisie`
 - `backend` → GET `http://localhost:8000/health`
+- `frontend` → GET `/health` through Nginx (proxied to the backend)
 - `frontend` and `ngrok` only start once `backend` is healthy (`depends_on: condition: service_healthy`).
 
 ## Local development (no Docker)
@@ -50,7 +61,7 @@ python -m venv .venv && source .venv/Scripts/activate   # Windows: .venv\Scripts
 pip install -r requirements.txt
 python -m src.database.seed --url sqlite+aiosqlite:///./dev.db   # SQLite instead of Postgres
 uvicorn src.api.main:app --reload
-streamlit run src/ui/ui.py
+cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
 ## Tests
@@ -64,4 +75,4 @@ per-test timing baseline.
 2. **Triage** — `src/utils/triage.py` multi-gate LLM filtering (`data/raw` → `data/filtered` / `data/blacklisted`).
 3. **Ingest** — `src/ingestion/ingest_chunks.py` extracts text (pdfplumber + EasyOCR for Arabic), chunks, and writes `data/processed/processed_chunks.json`.
 4. **Embed & index** — sentence-transformers embeddings into ChromaDB (`data/chroma_db`).
-5. **Serve** — `src/api/main.py` `/api/chat` runs retrieval + LLM generation with a token-budgeted chat history.
+5. **Serve** — `src/api/main.py` exposes `/api/chat`, `/api/chat/stream` (SSE), `/api/outages` and `/api/conversations`; the React SPA consumes them.

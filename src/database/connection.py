@@ -52,11 +52,18 @@ engine = build_engine(
 AsyncSessionLocal = build_session_factory(engine)
 
 
-# FastAPI Dependency for Session Injection
+# Session dependency for direct use (async with / tests)
 # asynccontextmanager guarantees the session (and its pooled connection) is
-# released even if the request handler raises - a plain async generator would
-# abandon the session mid-yield on an unhandled exception.
+# released even if the surrounding code raises.
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
+        yield session
+
+
+# FastAPI Dependency for Session Injection
+# FastAPI's Depends() expects a plain async generator (an asynccontextmanager
+# is not auto-detected), so wrap get_db in a thin async generator.
+async def get_db_dependency() -> AsyncGenerator[AsyncSession, None]:
+    async with get_db() as session:
         yield session

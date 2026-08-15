@@ -1,0 +1,108 @@
+{
+  "app": {
+    "name": "ذكاء الطاقة التونسي",
+    "tagline": "اسأل عن الانتقال الطاقي في تونس"
+  },
+  "nav": {
+    "chat": "الدردشة",
+    "map": "الخريطة",
+    "calculator": "الحاسبة"
+  },
+  "header": {
+    "statusOk": "شبكة STEG تعمل",
+    "statusDown": "الخدمة غير متصلة",
+    "reportCta": "الإبلاغ عن عطل",
+    "reportCtaShort": "إبلاغ"
+  },
+  "sidebar": {
+    "carte": "الخريطة",
+    "telemetrie": "القياسات",
+    "calculator": "الحاسبة"
+  },
+  "telemetry": {
+    "gridTitle": "طلب الشبكة",
+    "gridTag": "STEG مباشر",
+    "peak": "ميغاواط ذروة",
+    "waterTitle": "احتياطيات المياه",
+    "waterTag": "الصوناد",
+    "capacity": "السعة المتوسطة",
+    "note": "بيانات توضيحية — تدفقات القياس الفعلية مرتبطة بقاعدة بيانات PostgreSQL في الإنتاج."
+  },
+  "chat": {
+    "title": "مستشار RAG الذكي",
+    "docs": "240+ وثيقة من ANME وSTEG",
+    "model": "Mistral Large",
+    "empty": "اطرح سؤالاً عن الطاقة الشمسية أو التعريفات أو المياه… واحصل على إجابة موثّقة.",
+    "placeholder": "اطرح سؤالك هنا…",
+    "send": "إرسال",
+    "thinking": "جارٍ التفكير…",
+    "searching": "جارٍ البحث في الوثائق…",
+    "generating": "جارٍ توليد الإجابة…",
+    "sources": "المصادر المستخدمة",
+    "error": "حدث خطأ. حاول مرة أخرى.",
+    "newConversation": "محادثة جديدة",
+    "citation": "عرض المصدر",
+    "copySources": "نسخ المصادر",
+    "copied": "تم النسخ !",
+    "viewMore": "عرض المزيد",
+    "viewLess": "إخفاء",
+    "quickTarifs": "تعرفة STEG B2",
+    "quickSubventions": "دعم ANME",
+    "quickCoupures": "انقطاعات سوسة",
+    "quickNetmetering": "صافي القياس"
+  },
+  "map": {
+    "title": "خريطة الأعطال",
+    "subtitle": "بلاغات الكهرباء والماء في تونس",
+    "all": "الكل",
+    "pending": "قيد الانتظار",
+    "verified": "مُتحقَّق منها",
+    "resolved": "تم حلّها",
+    "sectorSolar": "الطاقة الشمسية / ANME",
+    "sectorElectric": "الكهرباء / STEG",
+    "sectorWater": "الماء / الصوناد",
+    "sectorPetrol": "النفط / ETAP",
+    "filterRegion": "تصفية الخريطة حسب {{region}}",
+    "filteringBy": "تصفية:",
+    "clearFilter": "مسح التصفية",
+    "outageCount_zero": "لا بلاغات",
+    "outageCount_one": "{{count}} بلاغ",
+    "outageCount_two": "{{count}} بلاغان",
+    "outageCount_few": "{{count}} بلاغات",
+    "outageCount_many": "{{count}} بلاغًا",
+    "outageCount_other": "{{count}} بلاغ",
+    "reportTitle": "الإبلاغ عن عطل",
+    "utility": "الشبكة",
+    "region": "الولاية",
+    "description": "الوصف (اختياري)",
+    "latitude": "خط العرض",
+    "longitude": "خط الطول",
+    "submit": "إرسال البلاغ",
+    "submitted": "تم إرسال البلاغ!",
+    "steg": "الكهرباء (الشركة التونسية للكهرباء والغاز)",
+    "sonede": "الماء (الصوناد)",
+    "other": "أخرى",
+    "clickMap": "انقر على الخريطة لوضع العلامة"
+  },
+  "calculator": {
+    "title": "حاسبة العائد الشمسي",
+    "tag": "صحراء PV",
+    "subtitle": "قدّر وفورات تركيب نظام كهروضوئي",
+    "consumption": "الاستهلاك الشهري (كيلوواط/ساعة)",
+    "panelCost": "تكلفة التركيب (دينار)",
+    "tariff": "تعرفة الكهرباء (دينار/كيلوواط)",
+    "investment": "الاستثمار الأولي",
+    "monthlySavings": "الوفورات الشهرية",
+    "payback": "مدة استرداد الاستثمار",
+    "years": "سنوات",
+    "savingsChart": "الوفورات التراكمية على 20 سنة",
+    "month": "السنة",
+    "savings": "الوفورات التراكمية (دينار)"
+  },
+  "common": {
+    "loading": "جارٍ التحميل…",
+    "dark": "داكن",
+    "light": "فاتح",
+    "language": "اللغة"
+  }
+}

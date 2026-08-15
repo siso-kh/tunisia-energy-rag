@@ -63,10 +63,10 @@ def test_api_chat_endpoint_full_flow():
     assert data["query"] == payload["query"]
     assert isinstance(data["answer"], str) and len(data["answer"]) > 10
 
-    # Structured sources must be non-empty and well-formed
+    # Structured sources must be non-empty and well-formed (unified key: source_file)
     assert isinstance(data["sources"], list) and len(data["sources"]) > 0
     for source in data["sources"]:
-        assert "source_name" in source and source["source_name"]
+        assert "source_file" in source and source["source_file"]
         assert "content" in source and len(source["content"]) > 0
         assert "page" in source
 

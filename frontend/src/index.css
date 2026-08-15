@@ -1,0 +1,113 @@
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * ATER-inspired design tokens.
+ * Light: ice-gray cleantech canvas + Tunisia Horizon Blue #2563EB primary.
+ * Sector accents: solar gold, electric amber, water cyan, deep graphite.
+ * Stored as "r g b" triplets so Tailwind's <alpha-value> modifier works.
+ * ------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --background: 248 250 252; /* ice-gray canvas (#F8FAFC) */
+  --foreground: 15 23 42; /* deep slate (#0F172A) */
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --primary: 37 99 235; /* Tunisia Horizon Blue (#2563EB) */
+  --primary-foreground: 255 255 255;
+  --secondary: 241 245 249;
+  --secondary-foreground: 30 41 59;
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+  --accent: 239 246 255;
+  --accent-foreground: 37 99 235;
+  --destructive: 239 68 68;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 37 99 235;
+  /* Energy sector accents (stable across themes) */
+  --solar: #f59e0b;
+  --electric: #f97316;
+  --water: #06b6d4;
+  --graphite: #334155;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: 15 23 42;
+  --foreground: 248 250 252;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --primary: 96 165 250;
+  --primary-foreground: 15 23 42;
+  --secondary: 30 41 59;
+  --secondary-foreground: 248 250 252;
+  --muted: 30 41 59;
+  --muted-foreground: 148 163 184;
+  --accent: 30 41 59;
+  --accent-foreground: 147 197 253;
+  --destructive: 248 113 113;
+  --border: 51 65 85;
+  --input: 51 65 85;
+  --ring: 96 165 250;
+}
+
+@layer base {
+  html {
+    font-family: "Tajawal", system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  * {
+    border-color: rgb(var(--border));
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border bg-card shadow-sm;
+  }
+}
+
+/* Pulsing telemetry node (ATER "node-pulse", used by TunisiaMap) */
+@keyframes node-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.9);
+  }
+}
+
+/* Message entrance (ATER "rise-in") */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Custom scrollbar for chat */
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-muted-foreground/30;
+}

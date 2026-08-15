@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "ذكاء الطاقة التونسي",
+    "tagline": "اسأل على الانتقال الطاقي في تونس"
+  },
+  "nav": {
+    "chat": "الدردشة",
+    "map": "الخريطة",
+    "calculator": "الحاسبة"
+  },
+  "header": {
+    "statusOk": "شبكة STEG خدامة",
+    "statusDown": "الخدمة ما خداماش",
+    "reportCta": "بلّغ على عطل",
+    "reportCtaShort": "بلّغ"
+  },
+  "sidebar": {
+    "carte": "الخريطة",
+    "telemetrie": "القياسات",
+    "calculator": "الحاسبة"
+  },
+  "telemetry": {
+    "gridTitle": "طلب الشبكة",
+    "gridTag": "STEG مباشر",
+    "peak": "ميغاواط ذروة",
+    "waterTitle": "احتياطي الماء",
+    "waterTag": "الصوناد",
+    "capacity": "المعدل",
+    "note": "بيانات تجريبية — قياسات حقيقية من قاعدة PostgreSQL في الإنتاج."
+  },
+  "chat": {
+    "title": "مستشار RAG",
+    "docs": "240+ وثيقة ANME و STEG",
+    "model": "Mistral Large",
+    "empty": "اسأل على الشمسية ولا التعريفات ولا الماء…",
+    "placeholder": "اسأل سؤالك هنا…",
+    "send": "صيفط",
+    "thinking": "عم يفكّر…",
+    "searching": "عم يقلّب في الوثائق…",
+    "generating": "عم يولّد الجواب…",
+    "sources": "المصادر",
+    "error": "صارت مشكلة. عاود المحاولة.",
+    "newConversation": "محادثة جديدة",
+    "citation": "شوف المصدر",
+    "copySources": "انسخ المصادر",
+    "copied": "تنسخو !",
+    "viewMore": "ورّيني أكثر",
+    "viewLess": "خبّي",
+    "quickTarifs": "تعرفة STEG B2",
+    "quickSubventions": "دعم ANME",
+    "quickCoupures": "انقطاعات سوسة",
+    "quickNetmetering": "صافي القياس"
+  },
+  "map": {
+    "title": "خريطة الأعطال",
+    "subtitle": "بلاغات الكهرباء والماء في تونس",
+    "all": "الكل",
+    "pending": "في الانتظار",
+    "verified": "متحقق منها",
+    "resolved": "تحلّت",
+    "sectorSolar": "شمسية / ANME",
+    "sectorElectric": "كهرباء / STEG",
+    "sectorWater": "ماء / الصوناد",
+    "sectorPetrol": "بترول / ETAP",
+    "filterRegion": "صفّي الخريطة على {{region}}",
+    "filteringBy": "تصفية:",
+    "clearFilter": "امسح التصفية",
+    "outageCount_one": "{{count}} بلاغ",
+    "outageCount_other": "{{count}} بلاغات",
+    "reportTitle": "بَلّغ على عطل",
+    "utility": "الشبكة",
+    "region": "الولاية",
+    "description": "الوصف (اختياري)",
+    "latitude": "خط العرض",
+    "longitude": "خط الطول",
+    "submit": "صيفط البلاغ",
+    "submitted": "تصلّى البلاغ!",
+    "steg": "الكهرباء (STEG)",
+    "sonede": "الماء (الصوناد)",
+    "other": "آخر",
+    "clickMap": "إضغط على الخريطة باش تحط العلامة"
+  },
+  "calculator": {
+    "title": "حاسبة العائد الشمسي",
+    "tag": "صحراء PV",
+    "subtitle": "قدّر الوفورات من تركيب فوتوفولتائي",
+    "consumption": "الاستهلاك الشهري (كيلوواط/ساعة)",
+    "panelCost": "ثمن التركيب (دينار)",
+    "tariff": "تعرفة الكهرباء (دينار/كيلوواط)",
+    "investment": "الاستثمار الأولي",
+    "monthlySavings": "الوفورات الشهرية",
+    "payback": "مدة استرداد الاستثمار",
+    "years": "سنوات",
+    "savingsChart": "الوفورات التراكمية على 20 سنة",
+    "month": "السنة",
+    "savings": "الوفورات التراكمية (دينار)"
+  },
+  "common": {
+    "loading": "عم يتحمّل…",
+    "dark": "داكن",
+    "light": "فاتح",
+    "language": "اللغة"
+  }
+}

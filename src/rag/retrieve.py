@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import AsyncOpenAI
@@ -98,6 +99,47 @@ def retrieve_context(user_query: str, n_results: int = 5) -> str:
     return "\n\n---\n\n".join(retrieved_chunks)
 
 
+# Month names (EN/FR) used to parse a best-effort publication date from
+# filenames like "IRENA_Pan-Arab_Strategy_June-2014.pdf" or
+# "DGE_Guide_deccarbonation_2026.pdf".
+_MONTH_PATTERNS = {
+    "january|janvier": "Jan",
+    "february|fevrier|février": "Fév",
+    "march|mars": "Mar",
+    "april|avril": "Avr",
+    "may|mai": "Mai",
+    "june|juin": "Juin",
+    "july|juillet": "Juil",
+    "august|aout|août": "Août",
+    "september|septembre": "Sep",
+    "october|octobre": "Oct",
+    "november|novembre": "Nov",
+    "december|decembre|décembre": "Déc",
+}
+
+
+def extract_document_date(source_file: str) -> Optional[str]:
+    """Best-effort publication date parsed from a document filename.
+
+    Looks for a 4-digit year (19xx/20xx) and, when a month name appears near
+    it, returns "Mon YYYY" (e.g. "Juin 2014"). Falls back to just the year,
+    or ``None`` when no year is found.
+    """
+    if not source_file:
+        return None
+    year_match = re.search(r"(19|20)\d{2}", source_file)
+    if not year_match:
+        return None
+    year = year_match.group(0)
+    year_pos = year_match.start()
+    # Prefer a month name within ~20 chars of the year (same token group).
+    for pattern, label in _MONTH_PATTERNS.items():
+        month_match = re.search(pattern, source_file, flags=re.IGNORECASE)
+        if month_match and abs(month_match.start() - year_pos) <= 20:
+            return f"{label} {year}"
+    return year
+
+
 def retrieve_context_structured(user_query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     """Fetches chunks from ChromaDB along with metadata (source, page, etc.)."""
     raw_query_vectors = emb_fn([user_query])
@@ -118,10 +160,14 @@ def retrieve_context_structured(user_query: str, n_results: int = 5) -> List[Dic
     
     structured_sources = []
     for doc, meta in zip(documents, metadatas):
+        source_file = meta.get("source", meta.get("file_name", "Unknown Document"))
         structured_sources.append({
             "content": doc,
-            "source_name": meta.get("source", meta.get("file_name", "Unknown Document")),
-            "page": meta.get("page", meta.get("page_number", "N/A"))
+            # Unified key: source_file (matches Message.sources in the DB layer)
+            "source_file": source_file,
+            "page": meta.get("page", meta.get("page_number", "N/A")),
+            # Best-effort publication date parsed from the filename (nullable).
+            "date": extract_document_date(source_file),
         })
         
     return structured_sources
@@ -131,9 +177,46 @@ def format_sources_for_prompt(sources: List[Dict[str, Any]]) -> str:
     formatted_chunks = []
     for idx, src in enumerate(sources, 1):
         formatted_chunks.append(
-            f"[Doc {idx} - Source: {src['source_name']} (Page {src['page']})]\n{src['content']}"
+            f"[Doc {idx} - Source: {src['source_file']} (Page {src['page']})]\n{src['content']}"
         )
     return "\n\n---\n\n".join(formatted_chunks)
+
+async def generate_answer_stream(
+    user_query: str,
+    context: str,
+    chat_history: Optional[List[Dict[str, str]]] = None,
+):
+    """Async generator yielding answer text chunks as they stream from the LLM.
+
+    Same prompt construction as ``generate_answer`` but with ``stream=True``,
+    so tokens arrive incrementally (used by the /api/chat/stream SSE endpoint).
+    """
+    system_prompt = (
+        "You are an expert AI assistant specializing in the Tunisian energy sector. "
+        "Use ONLY the following context to answer the user's question. "
+        "If the answer is not contained in the context, say 'I do not have enough information to answer that based on the provided documents.' "
+        "Do not hallucinate or use outside knowledge. Answer in the same language as the user's query.\n\n"
+        f"Context:\n{context}"
+    )
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET):
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_query})
+
+    stream = await get_client().chat.completions.create(
+        model="mistral-large",
+        messages=messages,
+        temperature=0.1,
+        stream=True,
+    )
+    async for chunk in stream:
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta
+        if delta and delta.content:
+            yield delta.content
+
 
 async def generate_answer(user_query: str, context: str, chat_history: Optional[List[Dict[str, str]]] = None) -> str:
     """Takes pre-fetched context and optional chat history to query the LLM."""
@@ -195,6 +278,51 @@ async def run_pipeline(
     answer = await generate_answer(user_query, context_str, optimized_history)
     
     return answer, structured_sources
+
+
+async def stream_pipeline(
+    user_query: str,
+    chat_history: Optional[List[Dict[str, str]]] = None,
+):
+    """Async generator yielding SSE event dicts for the full RAG flow.
+
+    Events:
+      {"type": "status", "message": "contextualizing|searching|generating"}
+      {"type": "sources", "sources": [...]}   (retrieved before generation)
+      {"type": "token", "content": "..."}     (streamed answer fragments)
+      {"type": "done", "answer": "...", "sources": [...]}
+
+    Chat history is token-budgeted server-side (HISTORY_TOKEN_BUDGET), so the
+    client can safely send the full session.
+    """
+    if chat_history is None:
+        chat_history = []
+
+    optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
+
+    yield {"type": "status", "message": "contextualizing"}
+    standalone_query = await rewrite_query_with_history(user_query, optimized_history)
+
+    yield {"type": "status", "message": "searching"}
+    structured_sources = await run_in_threadpool(
+        retrieve_context_structured, standalone_query, n_results=5
+    )
+    context_str = format_sources_for_prompt(structured_sources)
+
+    # Sources are ready before generation starts -> send them early so the
+    # frontend can render citations while the answer streams.
+    yield {"type": "sources", "sources": structured_sources}
+
+    yield {"type": "status", "message": "generating"}
+    answer_parts: List[str] = []
+    async for part in generate_answer_stream(user_query, context_str, optimized_history):
+        answer_parts.append(part)
+        yield {"type": "token", "content": part}
+
+    answer = "".join(answer_parts)
+    yield {"type": "done", "answer": answer, "sources": structured_sources}
+
+
 # ==========================================
 # 3. Execution Example
 # ==========================================

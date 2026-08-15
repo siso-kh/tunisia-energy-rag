@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "Tunisia Energy Intelligence",
+    "tagline": "Interrogez la transition énergétique tunisienne"
+  },
+  "nav": {
+    "chat": "Chat RAG",
+    "map": "Carte",
+    "calculator": "Calculateur"
+  },
+  "header": {
+    "statusOk": "Réseau STEG OK",
+    "statusDown": "API hors ligne",
+    "reportCta": "Signaler Incident",
+    "reportCtaShort": "Incident"
+  },
+  "sidebar": {
+    "carte": "Carte",
+    "telemetrie": "Télémétrie",
+    "calculator": "Calculateur"
+  },
+  "telemetry": {
+    "gridTitle": "Demande réseau",
+    "gridTag": "STEG live",
+    "peak": "MW pointe",
+    "waterTitle": "Réserves d'eau",
+    "waterTag": "SONEDE",
+    "capacity": "capacité moy.",
+    "note": "Données de démonstration — les flux de télémétrie réels sont branchés sur la base PostgreSQL en production."
+  },
+  "chat": {
+    "title": "RAG AI Counselor",
+    "docs": "240+ documents ANME & STEG",
+    "model": "Mistral Large",
+    "empty": "Posez une question sur le solaire, les tarifs, l'eau… et recevez une réponse sourcée.",
+    "placeholder": "Posez votre question ici…",
+    "send": "Envoyer",
+    "thinking": "Réflexion…",
+    "searching": "Recherche dans les documents…",
+    "generating": "Génération de la réponse…",
+    "sources": "Sources consultées",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "newConversation": "Nouvelle conversation",
+    "citation": "Voir la source",
+    "copySources": "Copier les sources",
+    "copied": "Copié !",
+    "viewMore": "Voir plus",
+    "viewLess": "Réduire",
+    "quickTarifs": "Tarifs STEG B2",
+    "quickSubventions": "Subventions ANME",
+    "quickCoupures": "Coupures Sousse",
+    "quickNetmetering": "Net-metering"
+  },
+  "map": {
+    "title": "Carte des pannes",
+    "subtitle": "Signalements d'électricité et d'eau en Tunisie",
+    "all": "Toutes",
+    "pending": "En attente",
+    "verified": "Vérifiées",
+    "resolved": "Résolues",
+    "sectorSolar": "Solaire / ANME",
+    "sectorElectric": "Électricité / STEG",
+    "sectorWater": "Eau / SONEDE",
+    "sectorPetrol": "Pétrole / ETAP",
+    "outageCount_one": "{{count}} signalement",
+    "outageCount_other": "{{count}} signalements",
+    "filterRegion": "Filtrer la carte par {{region}}",
+    "filteringBy": "Filtre :",
+    "clearFilter": "Effacer le filtre",
+    "reportTitle": "Signaler une panne",
+    "utility": "Réseau",
+    "region": "Gouvernorat",
+    "description": "Description (optionnel)",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "submit": "Envoyer le signalement",
+    "submitted": "Signalement envoyé !",
+    "steg": "Électricité (STEG)",
+    "sonede": "Eau (SONEDE)",
+    "other": "Autre",
+    "clickMap": "Cliquez sur la carte pour placer le marqueur"
+  },
+  "calculator": {
+    "title": "Calculateur ROI solaire",
+    "tag": "Sahara PV",
+    "subtitle": "Estimez les économies d'une installation photovoltaïque",
+    "consumption": "Consommation mensuelle (kWh)",
+    "panelCost": "Coût d'installation (TND)",
+    "tariff": "Tarif électrique (TND/kWh)",
+    "investment": "Investissement initial",
+    "monthlySavings": "Économies mensuelles",
+    "payback": "Retour sur investissement",
+    "years": "ans",
+    "savingsChart": "Économies cumulées sur 20 ans",
+    "month": "Année",
+    "savings": "Économies cumulées (TND)"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "dark": "Sombre",
+    "light": "Clair",
+    "language": "Langue"
+  }
+}
