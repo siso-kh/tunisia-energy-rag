@@ -12,12 +12,16 @@
     "statusOk": "شبكة STEG تعمل",
     "statusDown": "الخدمة غير متصلة",
     "reportCta": "الإبلاغ عن عطل",
-    "reportCtaShort": "إبلاغ"
+    "reportCtaShort": "إبلاغ",
+    "adminLink": "الإدارة",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج"
   },
   "sidebar": {
     "carte": "الخريطة",
     "telemetrie": "القياسات",
-    "calculator": "الحاسبة"
+    "calculator": "الحاسبة",
+    "admin": "الإدارة"
   },
   "telemetry": {
     "gridTitle": "طلب الشبكة",
@@ -74,6 +78,7 @@
     "reportTitle": "الإبلاغ عن عطل",
     "utility": "الشبكة",
     "region": "الولاية",
+    "selectRegion": "— اختر الولاية —",
     "description": "الوصف (اختياري)",
     "latitude": "خط العرض",
     "longitude": "خط الطول",
@@ -104,5 +109,65 @@
     "dark": "داكن",
     "light": "فاتح",
     "language": "اللغة"
+  },
+  "admin": {
+    "title": "الإدارة",
+    "subtitle": "تنظيف بلاغات الأعطال",
+    "ttl": "مدة الصلاحية (TTL)",
+    "interval": "الفاصل الزمني",
+    "hours": "ساعات",
+    "minutes": "دقيقة",
+    "totalRuns": "عمليات التنفيذ",
+    "totalDeleted": "بلاغات تمت إزالتها",
+    "lastRun": "آخر تنفيذ",
+    "nextRun": "التنفيذ القادم",
+    "purgeNow": "تنظيف الآن",
+    "purging": "جارٍ التنظيف…",
+    "purged_zero": "✓ تمت إزالة {{count}} بلاغ",
+    "purged_one": "✓ تمت إزالة بلاغ واحد",
+    "purged_two": "✓ تمت إزالة بلاغين",
+    "purged_few": "✓ تمت إزالة {{count}} بلاغات",
+    "purged_many": "✓ تمت إزالة {{count}} بلاغًا",
+    "purged_other": "✓ تمت إزالة {{count}} بلاغ",
+    "recentRuns": "السجل الأخير",
+    "noRuns": "لا توجد عمليات مسجلة.",
+    "failed": "فشل",
+    "deletedShort": "تمت إزالتها",
+    "apiKeyLabel": "مفتاح API للمشرف",
+    "unlock": "فتح",
+    "invalidKey": "مفتاح API غير صالح أو غير مضبوط.",
+    "tryAgain": "حاول مرة أخرى",
+    "pageTitle": "الإدارة",
+    "pageSubtitle": "الإعدادات والصيانة",
+    "backToDashboard": "العودة إلى لوحة القيادة",
+    "config": {
+      "title": "إعدادات لوحة القيادة",
+      "subtitle": "هذه القيم تحل محل متغيرات البيئة أثناء التشغيل.",
+      "ttl": "مدة صلاحية البلاغات (ساعات)",
+      "ttlHint": "يتم حذف البلاغات الأقدم تلقائيًا.",
+      "interval": "فاصل التنظيف (دقائق)",
+      "intervalHint": "تكرار مهمة التنظيف التلقائي.",
+      "mapRefresh": "تحديث الخريطة (ثوانٍ)",
+      "mapRefreshHint": "معدل تحديث البلاغات على الخريطة.",
+      "save": "حفظ",
+      "saved": "تم حفظ الإعدادات !"
+    }
+  },
+  "auth": {
+    "title": "تسجيل الدخول / إنشاء حساب",
+    "loginTab": "تسجيل الدخول",
+    "registerTab": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "displayName": "الاسم المعروض",
+    "optional": "اختياري",
+    "passwordHint": "8 أحرف على الأقل",
+    "loginSubmit": "تسجيل الدخول",
+    "registerSubmit": "إنشاء الحساب",
+    "close": "إغلاق",
+    "anonymousNote": "يمكنك أيضاً استخدام المحادثة دون حساب — لن يتم حفظ محادثاتك.",
+    "loginButton": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "greeting": "مرحباً"
   }
 }

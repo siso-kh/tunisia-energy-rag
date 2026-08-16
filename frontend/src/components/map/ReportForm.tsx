@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Megaphone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { TUNISIA_GOVERNORATES } from "../../lib/governorates";
 import { createOutage } from "../../services/outages";
 import type { Utility } from "../../types";
 import Button from "../ui/Button";
@@ -69,13 +70,25 @@ export default function ReportForm({ picked }: Props) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">{t("map.region")}</label>
-          <input
+          <label htmlFor="report-region" className="mb-1 block text-xs text-muted-foreground">
+            {t("map.region")}
+          </label>
+          <select
+            id="report-region"
             value={region}
             onChange={(e) => setRegion(e.target.value)}
             required
             className={fieldClass}
-          />
+          >
+            <option value="" disabled>
+              {t("map.selectRegion")}
+            </option>
+            {TUNISIA_GOVERNORATES.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

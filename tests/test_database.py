@@ -10,6 +10,7 @@ Uses the project's existing ``asyncio.run`` pattern (no pytest-asyncio).
 
 import asyncio
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import event, select
@@ -24,8 +25,17 @@ from src.database.models import (
     Message,
     OutageReport,
     ReportStatus,
+    Setting,
     User,
     UtilityType,
+)
+from src.database.service import (
+    create_user,
+    delete_expired_outages,
+    get_all_settings,
+    get_setting,
+    get_user_by_email,
+    set_setting,
 )
 
 
@@ -120,6 +130,46 @@ def test_all_models_registered():
     assert {"users", "conversations", "messages", "outage_reports"} <= tables
 
 
+def test_ensure_user_columns_upgrades_pre_auth_db(tmp_path):
+    """A DB created before auth landed must gain the user auth columns.
+
+    Regression test for the run_sync coroutine bug: ensure_user_columns must
+    actually execute the ALTERs (not silently skip them).
+    """
+    async def scenario(_factory):
+        # 1. Build a DB with the OLD users schema (no auth columns).
+        from sqlalchemy import text as sa_text
+
+        engine = build_engine(f"sqlite+aiosqlite:///{tmp_path}/old.db")
+        async with engine.begin() as conn:
+            await conn.run_sync(
+                lambda c: c.execute(
+                    sa_text(
+                        "CREATE TABLE users (id CHAR(32) PRIMARY KEY, created_at DATETIME)"
+                    )
+                )
+            )
+
+        # 2. Upgrade it in place.
+        await connection.ensure_user_columns(engine)
+
+        # 3. The new columns must exist and be usable.
+        async with engine.begin() as conn:
+            def _probe(sync_conn):
+                from sqlalchemy import inspect
+
+                cols = {c["name"] for c in inspect(sync_conn).get_columns("users")}
+                assert {"email", "password_hash", "display_name"} <= cols
+
+            await conn.run_sync(_probe)
+
+        # 4. A second run must be a no-op (idempotent).
+        await connection.ensure_user_columns(engine)
+        await engine.dispose()
+
+    run_scenario(scenario)
+
+
 # ---------------------------------------------------------------------------
 # Users / Conversations / Messages
 # ---------------------------------------------------------------------------
@@ -201,6 +251,64 @@ def test_cascade_delete_user_removes_conversations_and_messages():
         async with factory() as session:
             assert await session.get(Conversation, cid) is None
             assert await session.get(Message, mid) is None
+
+    run_scenario(scenario)
+
+
+def test_create_user_and_get_by_email_roundtrip():
+    async def scenario(factory):
+        async with factory() as session:
+            user = await create_user(
+                session,
+                email="Amine@Example.com",
+                password_hash="$2b$12$hashed-not-plaintext",
+                display_name="Amine",
+            )
+            uid = user.id
+            assert user.email == "amine@example.com"  # normalized on create
+
+        async with factory() as session:
+            found = await get_user_by_email(session, "AMINE@example.com")
+            assert found is not None
+            assert found.id == uid
+            assert found.display_name == "Amine"
+            assert found.password_hash == "$2b$12$hashed-not-plaintext"
+
+    run_scenario(scenario)
+
+
+def test_get_user_by_email_returns_none_when_missing():
+    async def scenario(factory):
+        async with factory() as session:
+            assert await get_user_by_email(session, "nobody@example.com") is None
+
+    run_scenario(scenario)
+
+
+def test_user_email_uniqueness_enforced():
+    async def scenario(factory):
+        async with factory() as session:
+            await create_user(session, email="dup@example.com", password_hash="h1")
+            with pytest.raises(IntegrityError):
+                await create_user(session, email="DUP@example.com", password_hash="h2")
+
+    run_scenario(scenario)
+
+
+def test_anonymous_user_has_no_credentials():
+    """Demo/anonymous users (created via User()) keep nullable auth fields."""
+    async def scenario(factory):
+        async with factory() as session:
+            user = User()
+            session.add(user)
+            await session.commit()
+            uid = user.id
+
+        async with factory() as session:
+            loaded = await session.get(User, uid)
+            assert loaded.email is None
+            assert loaded.password_hash is None
+            assert loaded.display_name is None
 
     run_scenario(scenario)
 
@@ -309,6 +417,98 @@ def test_delete_user_sets_null_on_outage_report():
             assert loaded.user_id is None
 
     run_scenario(scenario)
+
+
+def test_delete_expired_outages_removes_only_old_reports():
+    async def scenario(factory):
+        now = datetime.now(timezone.utc)
+        old = OutageReport(
+            region="Sfax",
+            latitude=34.7406,
+            longitude=10.7603,
+            created_at=now - timedelta(hours=6),
+        )
+        fresh = OutageReport(
+            region="Tunis",
+            latitude=36.8065,
+            longitude=10.1815,
+            created_at=now - timedelta(hours=1),
+        )
+        async with factory() as session:
+            session.add_all([old, fresh])
+            await session.commit()
+            old_id, fresh_id = old.id, fresh.id
+
+        async with factory() as session:
+            deleted = await delete_expired_outages(session, timedelta(hours=5))
+            assert deleted == 1
+
+        async with factory() as session:
+            assert await session.get(OutageReport, old_id) is None
+            assert await session.get(OutageReport, fresh_id) is not None
+
+    run_scenario(scenario)
+
+
+def test_delete_expired_outages_boundary_keeps_reports_younger_than_ttl():
+    async def scenario(factory):
+        now = datetime.now(timezone.utc)
+        exactly_at_ttl = OutageReport(
+            region="Gabès",
+            latitude=33.8815,
+            longitude=10.0982,
+            # 4h59m59s < 5h -> kept
+            created_at=now - timedelta(hours=4, minutes=59, seconds=59),
+        )
+        async with factory() as session:
+            session.add(exactly_at_ttl)
+            await session.commit()
+            rid = exactly_at_ttl.id
+
+        async with factory() as session:
+            deleted = await delete_expired_outages(session, timedelta(hours=5))
+            assert deleted == 0
+
+        async with factory() as session:
+            assert await session.get(OutageReport, rid) is not None
+
+    run_scenario(scenario)
+
+
+def test_delete_expired_outages_noop_when_empty():
+    async def scenario(factory):
+        async with factory() as session:
+            deleted = await delete_expired_outages(session, timedelta(hours=5))
+            assert deleted == 0
+
+    run_scenario(scenario)
+
+
+def test_settings_upsert_roundtrip():
+    async def scenario(factory):
+        async with factory() as session:
+            # Set, then re-set the same key (upsert, not duplicate).
+            await set_setting(session, "outage_ttl_hours", "7")
+            await set_setting(session, "outage_ttl_hours", "9")
+            await set_setting(session, "map_refresh_seconds", "30")
+
+        async with factory() as session:
+            assert await get_setting(session, "outage_ttl_hours") == "9"
+            assert await get_setting(session, "map_refresh_seconds") == "30"
+            # Unknown key falls back to env default / None.
+            assert await get_setting(session, "does_not_exist") is not None or \
+                await get_setting(session, "does_not_exist") is None
+            all_settings = await get_all_settings(session)
+            assert all_settings["outage_ttl_hours"] == "9"
+            assert all_settings["map_refresh_seconds"] == "30"
+            # Known-but-unset keys keep their defaults.
+            assert "outage_purge_interval_minutes" in all_settings
+
+    run_scenario(scenario)
+
+
+def test_setting_model_registered():
+    assert "settings" in Base.metadata.tables
 
 
 def test_outage_report_requires_region_and_coordinates():

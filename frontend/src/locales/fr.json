@@ -12,12 +12,55 @@
     "statusOk": "Réseau STEG OK",
     "statusDown": "API hors ligne",
     "reportCta": "Signaler Incident",
-    "reportCtaShort": "Incident"
+    "reportCtaShort": "Incident",
+    "adminLink": "Administration",
+    "login": "Se connecter",
+    "logout": "Déconnexion"
   },
   "sidebar": {
     "carte": "Carte",
     "telemetrie": "Télémétrie",
-    "calculator": "Calculateur"
+    "calculator": "Calculateur",
+    "admin": "Admin"
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Nettoyage des signalements de pannes",
+    "ttl": "Durée de vie (TTL)",
+    "interval": "Intervalle",
+    "hours": "heures",
+    "minutes": "min",
+    "totalRuns": "Exécutions",
+    "totalDeleted": "Signalements purgés",
+    "lastRun": "Dernière exécution",
+    "nextRun": "Prochaine exécution",
+    "purgeNow": "Purger maintenant",
+    "purging": "Purge en cours…",
+    "purged_one": "✓ {{count}} signalement purgé",
+    "purged_other": "✓ {{count}} signalements purgés",
+    "recentRuns": "Historique récent",
+    "noRuns": "Aucune exécution enregistrée.",
+    "failed": "Échec",
+    "deletedShort": "purgé(s)",
+    "apiKeyLabel": "Clé API administrateur",
+    "unlock": "Déverrouiller",
+    "invalidKey": "Clé API invalide ou non configurée.",
+    "tryAgain": "Réessayer",
+    "pageTitle": "Administration",
+    "pageSubtitle": "Configuration & maintenance",
+    "backToDashboard": "Retour au tableau de bord",
+    "config": {
+      "title": "Configuration du tableau de bord",
+      "subtitle": "Ces valeurs remplacent les variables d'environnement au runtime.",
+      "ttl": "Durée de vie des signalements (heures)",
+      "ttlHint": "Les signalements plus anciens sont purgés automatiquement.",
+      "interval": "Intervalle de purge (minutes)",
+      "intervalHint": "Fréquence de la tâche de nettoyage automatique.",
+      "mapRefresh": "Actualisation de la carte (secondes)",
+      "mapRefreshHint": "Fréquence de rafraîchissement des signalements sur la carte.",
+      "save": "Enregistrer",
+      "saved": "Configuration enregistrée !"
+    }
   },
   "telemetry": {
     "gridTitle": "Demande réseau",
@@ -70,6 +113,7 @@
     "reportTitle": "Signaler une panne",
     "utility": "Réseau",
     "region": "Gouvernorat",
+    "selectRegion": "— Choisir un gouvernorat —",
     "description": "Description (optionnel)",
     "latitude": "Latitude",
     "longitude": "Longitude",
@@ -100,5 +144,22 @@
     "dark": "Sombre",
     "light": "Clair",
     "language": "Langue"
+  },
+  "auth": {
+    "title": "Connexion / Inscription",
+    "loginTab": "Connexion",
+    "registerTab": "S'inscrire",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "displayName": "Nom affiché",
+    "optional": "facultatif",
+    "passwordHint": "8 caractères minimum",
+    "loginSubmit": "Se connecter",
+    "registerSubmit": "Créer le compte",
+    "close": "Fermer",
+    "anonymousNote": "Vous pouvez aussi utiliser le chat sans compte — vos conversations ne seront pas sauvegardées.",
+    "loginButton": "Se connecter",
+    "logout": "Déconnexion",
+    "greeting": "Bonjour"
   }
 }

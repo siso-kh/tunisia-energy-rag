@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight, LogOut, Shield, User, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useUIStore } from "../../store/uiStore";
+import { useAuthStore } from "../../store/authStore";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import ThemeToggle from "../ui/ThemeToggle";
 import Button from "../ui/Button";
+import AuthModal from "../auth/AuthModal";
 
 type NavKey = "chat" | "carte" | "calculator";
 
@@ -37,7 +39,9 @@ function useBackendHealth() {
 export default function SiteHeader() {
   const { t } = useTranslation();
   const { setSidebarTab } = useUIStore();
+  const { user, status, logout } = useAuthStore();
   const [active, setActive] = useState<NavKey>("chat");
+  const [authOpen, setAuthOpen] = useState(false);
   const healthy = useBackendHealth();
 
   const NAV: { key: NavKey; label: string; onClick: () => void }[] = [
@@ -103,8 +107,43 @@ export default function SiteHeader() {
 
       {/* Right: language + status + CTA */}
       <div className="flex items-center gap-2.5">
+        {/* Discreet admin entry point -> separate /admin route (key-protected) */}
+        <a
+          href="/admin"
+          aria-label={t("header.adminLink")}
+          title={t("header.adminLink")}
+          className="flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Shield className="size-4" aria-hidden="true" />
+        </a>
+
         <LanguageSwitcher />
         <ThemeToggle />
+
+        {/* User auth: login button when anonymous, user chip + logout when authed */}
+        {status === "authenticated" && user ? (
+          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1">
+            <span className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <User className="size-3" aria-hidden="true" />
+            </span>
+            <span className="max-w-28 truncate text-xs font-medium text-foreground" title={user.email ?? undefined}>
+              {user.display_name || user.email}
+            </span>
+            <button
+              type="button"
+              onClick={logout}
+              aria-label={t("header.logout")}
+              title={t("header.logout")}
+              className="flex size-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="size-3" aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => setAuthOpen(true)}>
+            {t("header.login")}
+          </Button>
+        )}
 
         <span
           className={`hidden items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium xl:flex ${
@@ -140,6 +179,8 @@ export default function SiteHeader() {
           <ArrowRight className="size-4" aria-hidden="true" />
         </Button>
       </div>
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </header>
   );
 }

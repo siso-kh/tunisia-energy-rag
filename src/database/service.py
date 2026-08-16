@@ -3,14 +3,17 @@
 Keeps SQLAlchemy session logic out of the API layer so endpoints stay thin
 and the queries are unit-testable against SQLite (see tests/test_database.py).
 
-There is no auth in the app yet, so a stable "demo user" (fixed UUID) owns
-conversations until real user management lands.
+Registered users own their conversations and outage reports. Anonymous
+sessions fall back to a stable "demo user" (fixed UUID) so the app remains
+usable without an account.
 """
 
+import os
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import (
@@ -18,6 +21,7 @@ from src.database.models import (
     Message,
     OutageReport,
     ReportStatus,
+    Setting,
     User,
     UtilityType,
 )
@@ -33,6 +37,39 @@ async def get_or_create_demo_user(session: AsyncSession) -> User:
         session.add(user)
         await session.flush()
     return user
+
+
+async def create_user(
+    session: AsyncSession,
+    email: str,
+    password_hash: str,
+    display_name: Optional[str] = None,
+) -> User:
+    """Create a registered user. Caller passes the *already-hashed* password.
+
+    Emails are normalized (lowercased + trimmed) here at the data layer so
+    uniqueness checks behave the same regardless of caller.
+    """
+    user = User(
+        email=email.lower().strip(),
+        password_hash=password_hash,
+        display_name=display_name,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]:
+    result = await session.execute(
+        select(User).where(User.email == email.lower().strip())
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> Optional[User]:
+    return await session.get(User, user_id)
 
 
 async def get_conversation(session: AsyncSession, conversation_id: uuid.UUID) -> Optional[Conversation]:
@@ -119,3 +156,66 @@ async def update_outage_status(
     report.status = status
     await session.commit()
     return report
+
+
+async def delete_expired_outages(
+    session: AsyncSession, max_age: timedelta
+) -> int:
+    """Delete outage reports older than ``max_age``; returns the number removed.
+
+    Used by the app's background cleanup task so crowdsourced reports do not
+    accumulate forever (the outage map shows a rolling window of reports).
+    """
+    cutoff = datetime.now(timezone.utc) - max_age
+    result = await session.execute(
+        delete(OutageReport).where(OutageReport.created_at < cutoff)
+    )
+    await session.commit()
+    return result.rowcount or 0
+
+
+# ---------------------------------------------------------------------------
+# Runtime configuration (admin-editable, env- fallback)
+# ---------------------------------------------------------------------------
+
+# All editable settings, with their environment-variable default. Stored rows
+# in the `settings` table override these at runtime; unset keys fall back here.
+DEFAULT_SETTINGS: dict[str, str] = {
+    "outage_ttl_hours": os.getenv("OUTAGE_TTL_HOURS", "5"),
+    "outage_purge_interval_minutes": os.getenv(
+        "OUTAGE_PURGE_INTERVAL_MINUTES", "30"
+    ),
+    "map_refresh_seconds": os.getenv("MAP_REFRESH_SECONDS", "60"),
+}
+
+
+def setting_default(key: str) -> Optional[str]:
+    """Environment fallback for a setting key (None for unknown keys)."""
+    return DEFAULT_SETTINGS.get(key)
+
+
+async def get_all_settings(session: AsyncSession) -> dict[str, str]:
+    """Merge DB-stored settings over env defaults (DB wins)."""
+    result = await session.execute(select(Setting))
+    stored = {row.key: row.value for row in result.scalars().all()}
+    merged = dict(DEFAULT_SETTINGS)
+    merged.update(stored)
+    return merged
+
+
+async def get_setting(session: AsyncSession, key: str) -> Optional[str]:
+    """Return a single setting value (DB row, falling back to env default)."""
+    row = await session.get(Setting, key)
+    if row is not None:
+        return row.value
+    return DEFAULT_SETTINGS.get(key)
+
+
+async def set_setting(session: AsyncSession, key: str, value: str) -> None:
+    """Upsert a runtime setting. Only known keys are accepted by callers."""
+    row = await session.get(Setting, key)
+    if row is None:
+        session.add(Setting(key=key, value=value))
+    else:
+        row.value = value
+    await session.commit()

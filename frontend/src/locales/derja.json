@@ -12,12 +12,16 @@
     "statusOk": "شبكة STEG خدامة",
     "statusDown": "الخدمة ما خداماش",
     "reportCta": "بلّغ على عطل",
-    "reportCtaShort": "بلّغ"
+    "reportCtaShort": "بلّغ",
+    "adminLink": "الإدارة",
+    "login": "ادخل",
+    "logout": "اخرج"
   },
   "sidebar": {
     "carte": "الخريطة",
     "telemetrie": "القياسات",
-    "calculator": "الحاسبة"
+    "calculator": "الحاسبة",
+    "admin": "الإدارة"
   },
   "telemetry": {
     "gridTitle": "طلب الشبكة",
@@ -70,6 +74,7 @@
     "reportTitle": "بَلّغ على عطل",
     "utility": "الشبكة",
     "region": "الولاية",
+    "selectRegion": "— اختر الولاية —",
     "description": "الوصف (اختياري)",
     "latitude": "خط العرض",
     "longitude": "خط الطول",
@@ -100,5 +105,61 @@
     "dark": "داكن",
     "light": "فاتح",
     "language": "اللغة"
+  },
+  "admin": {
+    "title": "الإدارة",
+    "subtitle": "تنظيف بلاغات الأعطال",
+    "ttl": "مدة الصلاحية (TTL)",
+    "interval": "الفاصل",
+    "hours": "سوايع",
+    "minutes": "دقايق",
+    "totalRuns": "مرات التنفيذ",
+    "totalDeleted": "بلاغات اتزالت",
+    "lastRun": "آخر مرة",
+    "nextRun": "المرة الجاية",
+    "purgeNow": "نضّف توا",
+    "purging": "عم ننضّف…",
+    "purged_one": "✓ {{count}} بلاغ اتزال",
+    "purged_other": "✓ {{count}} بلاغات تزالت",
+    "recentRuns": "السجل الأخير",
+    "noRuns": "ما كانش تنفيذ.",
+    "failed": "فشل",
+    "deletedShort": "اتزالت",
+    "apiKeyLabel": "مفتاح API",
+    "unlock": "حل",
+    "invalidKey": "المفتاح غالط ولا كانش مضبوط.",
+    "tryAgain": "عاود",
+    "pageTitle": "الإدارة",
+    "pageSubtitle": "الإعدادات والصيانة",
+    "backToDashboard": "ارجع للوحة",
+    "config": {
+      "title": "إعدادات اللوحة",
+      "subtitle": "هذه القيم يبدلو متغيرات البيئة وقت التشغيل.",
+      "ttl": "مدة صلاحية البلاغات (سوايع)",
+      "ttlHint": "البلاغات القديمة تتحدف أوتوماتيك.",
+      "interval": "فاصل التنظيف (دقايق)",
+      "intervalHint": "كل قداش يتم التنظيف الأوتوماتيكي.",
+      "mapRefresh": "تحديث الخريطة (ثواني)",
+      "mapRefreshHint": "معدل تحديث البلاغات على الخريطة.",
+      "save": "حفظ",
+      "saved": "تسجلت الإعدادات !"
+    }
+  },
+  "auth": {
+    "title": "دخول / تسجيل",
+    "loginTab": "دخول",
+    "registerTab": "سجّل حساب",
+    "email": "الإيميل",
+    "password": "كلمة السر",
+    "displayName": "الاسم",
+    "optional": "اختياري",
+    "passwordHint": "8 حروف على الأقل",
+    "loginSubmit": "ادخل",
+    "registerSubmit": "سجّل",
+    "close": "سكّر",
+    "anonymousNote": "تقدر تحكي بلا حساب — محادثاتك ما تتسجّلش.",
+    "loginButton": "ادخل",
+    "logout": "اخرج",
+    "greeting": "أهلاً"
   }
 }

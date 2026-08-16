@@ -25,6 +25,11 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # Nullable so anonymous/demo users (no credentials) can coexist with
+    # registered accounts. Registration enforces email+password presence.
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -79,6 +84,22 @@ class Message(Base):
     conversation: Mapped["Conversation"] = relationship(
         back_populates="messages", lazy="selectin"
     )
+
+class Setting(Base):
+    """Runtime configuration (key/value) editable by admins.
+
+    Settings override environment defaults at runtime (e.g. purge TTL,
+    purge interval, map refresh cadence). Values are stored as strings and
+    parsed where needed. Only admin-authorized endpoints can read/write them.
+    """
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
 
 class OutageReport(Base):
     __tablename__ = "outage_reports"

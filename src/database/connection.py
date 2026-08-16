@@ -67,3 +67,41 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def get_db_dependency() -> AsyncGenerator[AsyncSession, None]:
     async with get_db() as session:
         yield session
+
+
+async def ensure_user_columns(engine: AsyncEngine) -> None:
+    """Add the auth columns to an existing ``users`` table (idempotent, best-effort).
+
+    Fresh databases get these columns from ``Base.metadata.create_all``; this
+    covers databases created before auth landed (the dev SQLite DB and any
+    pre-auth Postgres). Reflection-based so it works on both backends.
+    Alembic migrations (Sprint 2) will replace this with versioned DDL.
+    """
+    from sqlalchemy import inspect, text
+
+    # NOTE: must be a plain sync function -- run_sync on some SQLAlchemy
+    # versions does not await coroutine functions (silently skipping the DDL).
+    def _run(sync_conn) -> None:
+        inspector = inspect(sync_conn)
+        if "users" not in inspector.get_table_names():
+            return
+        existing = {col["name"] for col in inspector.get_columns("users")}
+        types = {
+            "email": "VARCHAR(255)",
+            "password_hash": "VARCHAR(255)",
+            "display_name": "VARCHAR(100)",
+        }
+        for name, ddl_type in types.items():
+            if name not in existing:
+                sync_conn.execute(
+                    text(f"ALTER TABLE users ADD COLUMN {name} {ddl_type}")
+                )
+        # App-level uniqueness check; a partial index would need backfilling
+        # for NULLs, so use a plain unique index (NULLs are distinct in both
+        # SQLite and Postgres).
+        sync_conn.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email)")
+        )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(_run)

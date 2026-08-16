@@ -64,6 +64,76 @@ uvicorn src.api.main:app --reload
 cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
+## User accounts (email/password + JWT)
+
+Users can create an account and log in; the React header shows a login button
+(and a user chip + logout once authenticated). Chat and outage reporting work
+anonymously too — anonymous sessions fall back to a shared demo user, while
+logged-in users own their conversations and reports.
+
+```bash
+# .env
+JWT_SECRET=generate-a-long-random-string   # e.g. `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+JWT_EXPIRE_MINUTES=10080                   # token lifetime in minutes (default 7 days)
+```
+
+- **Endpoints**: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`.
+- **Auth transport**: `Authorization: Bearer <jwt>` header, attached automatically by the
+  frontend axios interceptor. The token is kept in `localStorage` (dev trade-off — XSS can
+  read it; switch to an httpOnly cookie before public exposure).
+- **Passwords** are bcrypt-hashed (72-byte limit enforced at validation).
+- **No `JWT_SECRET` configured** → auth endpoints refuse with `503` (no weak default).
+- **No oracle**: wrong password and unknown email return identical `401`s; invalid/expired
+  tokens all return the same `401` body.
+- Emails are normalized (lowercased) and unique; duplicates return `409`.
+
+On databases created before auth landed, the backend adds the `users` columns
+(`email`, `password_hash`, `display_name`) automatically at startup.
+
+## Admin & Security
+
+### Admin API key
+
+The admin endpoints (`GET /api/admin/purge-stats`, `POST /api/admin/purge`) are
+protected by an API key sent in the `X-Admin-Key` header:
+
+```bash
+# .env
+ADMIN_API_KEY=generate-a-long-random-string  # e.g. `openssl rand -hex 32`
+```
+
+- **No key configured** → admin endpoints refuse with `503` (safer than a weak default).
+- **Missing / wrong key** → `401`, identical response whether the header is absent or
+  incorrect (no oracle for attackers).
+- Comparison is **constant-time** (`hmac.compare_digest`) to prevent timing attacks.
+- Header names are case-insensitive (`x-admin-key` works too); empty/whitespace keys are rejected.
+
+The key is **never committed**: it lives only in `.env` (gitignored) or the runtime
+environment. The React **Admin tab** (right sidebar) asks for this key before showing
+purge stats or the "Purger maintenant" button; the key is kept **in memory only** and
+never written to `localStorage`.
+
+### Outage report retention
+
+Crowdsourced outage reports are deleted once they are older than `OUTAGE_TTL_HOURS`
+(default **5 hours**). A background task purges expired reports at startup and then
+every `OUTAGE_PURGE_INTERVAL_MINUTES` (default **30 min**):
+
+```bash
+OUTAGE_TTL_HOURS=5
+OUTAGE_PURGE_INTERVAL_MINUTES=30
+```
+
+Purge activity is viewable (with the admin key) at `GET /api/admin/purge-stats`
+(last runs, timestamps, counts) and a purge can be triggered manually via
+`POST /api/admin/purge`. Recent run history is kept in memory (last 50 runs).
+
+### Security notes
+
+- `.env` is gitignored; keep real keys (API keys, DB passwords, `NGROK_AUTHTOKEN`) out of version control.
+- Before exposing the app publicly, review: CORS origins (`allow_origins=["*"]` in
+  `src/api/main.py` is a dev default), and consider HTTPS + rate limiting on the admin login.
+
 ## Tests
 
 See `tests/auto_test_config.md` for the fast / medium / full run commands and the

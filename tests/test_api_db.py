@@ -5,6 +5,7 @@ SQLite database instead of Postgres, keeping the tests fast and hermetic.
 """
 
 import asyncio
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -158,6 +159,227 @@ def test_outages_validation(client):
         "/api/outages",
         json={"utility": "STEG", "region": "Tunis", "latitude": 99.0, "longitude": 10.0},
     ).status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Admin: outage purge stats (API-key protected)
+# ---------------------------------------------------------------------------
+
+ADMIN_KEY = "test-admin-key-123"
+
+
+def _admin_headers():
+    return {"X-Admin-Key": ADMIN_KEY}
+
+
+@pytest.fixture(autouse=True)
+def _admin_key(monkeypatch):
+    """Set the admin API key for the duration of the admin tests."""
+    import src.api.main as api_main
+
+    monkeypatch.setattr(api_main, "ADMIN_API_KEY", ADMIN_KEY)
+
+
+def test_admin_requires_key(client):
+    """Without a valid X-Admin-Key header, admin endpoints are refused."""
+    # No header at all
+    assert client.get("/api/admin/purge-stats").status_code == 401
+    assert client.post("/api/admin/purge").status_code == 401
+    # Wrong key
+    assert (
+        client.get(
+            "/api/admin/purge-stats", headers={"X-Admin-Key": "wrong"}
+        ).status_code
+        == 401
+    )
+
+
+def test_admin_401_is_identical_for_missing_and_wrong_key(client):
+    """No oracle: the 401 response must look the same whether the header is
+    absent or wrong, so attackers cannot tell the two cases apart."""
+    missing = client.get("/api/admin/purge-stats")
+    wrong = client.get("/api/admin/purge-stats", headers={"X-Admin-Key": "wrong-key"})
+    assert missing.status_code == wrong.status_code == 401
+    assert missing.text == wrong.text
+    # The error must never echo the attempted key.
+    assert "wrong-key" not in wrong.text
+    assert "test-admin-key-123" not in wrong.text
+
+
+def test_admin_accepts_header_with_different_case(client):
+    """HTTP header names are case-insensitive; lowercase must work too."""
+    response = client.get(
+        "/api/admin/purge-stats", headers={"x-admin-key": ADMIN_KEY}
+    )
+    assert response.status_code == 200
+
+
+def test_admin_rejects_whitespace_and_empty_key(client):
+    """Empty or whitespace-only keys are invalid, never a match."""
+    assert (
+        client.get("/api/admin/purge-stats", headers={"X-Admin-Key": ""}).status_code
+        == 401
+    )
+    assert (
+        client.get(
+            "/api/admin/purge-stats", headers={"X-Admin-Key": "   "}
+        ).status_code
+        == 401
+    )
+
+
+def test_admin_rejects_prefix_matching_key(client):
+    """A key that merely starts with the real key must be rejected (guards
+    against a naive startswith()-style comparison and proves the check is
+    full-string and constant-time)."""
+    response = client.get(
+        "/api/admin/purge-stats",
+        headers={"X-Admin-Key": f"{ADMIN_KEY}-suffix"},
+    )
+    assert response.status_code == 401
+
+
+def test_admin_uses_constant_time_comparison(client, monkeypatch):
+    """The guard must compare keys via hmac.compare_digest, not plain ==."""
+    import hmac
+
+    import src.api.main as api_main
+
+    calls = []
+    original = hmac.compare_digest
+
+    def spy(a, b):
+        calls.append((a, b))
+        return original(a, b)
+
+    monkeypatch.setattr(api_main.hmac, "compare_digest", spy)
+    assert client.get("/api/admin/purge-stats", headers=_admin_headers()).status_code == 200
+    assert len(calls) == 1
+    a, b = calls[0]
+    assert isinstance(a, bytes) and isinstance(b, bytes)
+    assert b == ADMIN_KEY.encode()
+
+
+def test_admin_key_not_leaked_in_openapi(client):
+    """The real admin key must never appear in the public OpenAPI schema."""
+    schema = client.get("/openapi.json").json()
+    assert ADMIN_KEY not in json.dumps(schema)
+
+
+def test_admin_refused_when_key_not_configured(client, monkeypatch):
+    """If ADMIN_API_KEY is unset, admin endpoints return 503."""
+    import src.api.main as api_main
+
+    monkeypatch.setattr(api_main, "ADMIN_API_KEY", "")
+    response = client.get("/api/admin/purge-stats", headers=_admin_headers())
+    assert response.status_code == 503
+
+
+def test_admin_purge_stats_shape(client):
+    """The stats endpoint reports TTL config + recent purge runs."""
+    response = client.get("/api/admin/purge-stats", headers=_admin_headers())
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ttl_hours"] == 5.0
+    assert data["purge_interval_minutes"] == 30.0
+    assert data["total_runs"] >= 0
+    assert data["total_deleted"] >= 0
+    assert isinstance(data["recent_runs"], list)
+    # every entry has the expected fields
+    for run in data["recent_runs"]:
+        assert set(run) >= {"run", "at", "deleted", "error"}
+
+
+def test_admin_config_defaults(client):
+    """GET /api/admin/config returns env defaults for every known key."""
+    response = client.get("/api/admin/config", headers=_admin_headers())
+    assert response.status_code == 200
+    data = response.json()
+    assert data["outage_ttl_hours"] == "5"
+    assert data["outage_purge_interval_minutes"] == "30"
+    assert data["map_refresh_seconds"] == "60"
+
+
+def test_admin_config_requires_key(client):
+    """Config endpoints are admin-only."""
+    assert client.get("/api/admin/config").status_code == 401
+    assert client.put("/api/admin/config", json={"settings": {}}).status_code == 401
+
+
+def test_admin_config_update_persists_and_reads_back(client):
+    """PUT updates a setting; GET afterwards returns the stored value."""
+    response = client.put(
+        "/api/admin/config",
+        headers=_admin_headers(),
+        json={"settings": {"outage_ttl_hours": "12"}},
+    )
+    assert response.status_code == 200
+    assert response.json()["outage_ttl_hours"] == "12"
+
+    again = client.get("/api/admin/config", headers=_admin_headers()).json()
+    assert again["outage_ttl_hours"] == "12"
+    # untouched keys keep their defaults
+    assert again["map_refresh_seconds"] == "60"
+
+
+def test_admin_config_rejects_unknown_keys(client):
+    response = client.put(
+        "/api/admin/config",
+        headers=_admin_headers(),
+        json={"settings": {"not_a_real_key": "1"}},
+    )
+    assert response.status_code == 400
+    assert "not_a_real_key" in response.json()["detail"]
+
+
+def test_admin_config_affects_purge_stats(client):
+    """Changing the TTL is reflected in purge stats without a restart."""
+    client.put(
+        "/api/admin/config",
+        headers=_admin_headers(),
+        json={"settings": {"outage_ttl_hours": "8", "outage_purge_interval_minutes": "45"}},
+    )
+    stats = client.get("/api/admin/purge-stats", headers=_admin_headers()).json()
+    assert stats["ttl_hours"] == 8.0
+    assert stats["purge_interval_minutes"] == 45.0
+
+
+def test_admin_purge_now_deletes_expired(api_env):
+    """POST /api/admin/purge deletes reports older than the TTL."""
+    import src.api.main as api_main
+
+    client, factory = api_env
+    old_factory = api_main.AsyncSessionLocal
+    api_main.AsyncSessionLocal = factory
+    try:
+        # Insert one old report directly through the factory.
+        async def _seed_old_report():
+            from datetime import datetime, timedelta, timezone
+
+            from src.database.models import OutageReport
+
+            async with factory() as session:
+                session.add(
+                    OutageReport(
+                        region="Tunis",
+                        latitude=36.8,
+                        longitude=10.18,
+                        created_at=datetime.now(timezone.utc) - timedelta(hours=6),
+                    )
+                )
+                await session.commit()
+
+        asyncio.run(_seed_old_report())
+
+        response = client.post("/api/admin/purge", headers=_admin_headers())
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "deleted": 1}
+
+        # The list endpoint no longer returns it.
+        listed = client.get("/api/outages").json()
+        assert listed == []
+    finally:
+        api_main.AsyncSessionLocal = old_factory
 
 
 # ---------------------------------------------------------------------------

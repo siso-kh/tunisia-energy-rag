@@ -24,11 +24,12 @@
 | `test_api_health_endpoint` | `tests/test_integration.py` | **0.01s** | 0 | HTTP health contract. |
 | `test_api_chat_rejects_empty_query` | `tests/test_integration.py` | **<0.01s** | 0 | 400 validation guard. |
 | `get_optimized_history` unit tests (×6) | `tests/test_token_manager.py` | **<0.01s each** | 0 | Token-budget truncation logic (pure function). |
-| Database tests (×17) | `tests/test_database.py` | **~0.06s each** | 0 | SQLAlchemy async layer: models, CRUD, cascades, enums, to-one loading, `get_db` (in-memory SQLite). |
+| Database tests (×23) | `tests/test_database.py` | **~0.06s each** | 0 | SQLAlchemy async layer: models, CRUD, cascades, enums, to-one loading, `get_db`, outage TTL purge, runtime settings upsert (`set/get/get_all`). |
 | Seed tests (×8) | `tests/test_seed.py` | **~0.9s each** | 0 | DB seeding: populate, idempotency, reset, data quality (SQLite file). |
-| API+DB tests (×10) | `tests/test_api_db.py` | **~5s each** | 0 | Outage CRUD, conversations, SSE stream contract (SQLite overrides, stubbed LLM). |
+| API+DB tests (×25) | `tests/test_api_db.py` | **~5s each** | 0 | Outage CRUD, conversations, SSE stream contract, admin purge stats + manual purge, admin auth security (no-oracle 401, case-insensitive header, key edge cases, `hmac.compare_digest`), admin config GET/PUT (defaults, persistence, unknown-key rejection, affects purge stats) (SQLite overrides, stubbed LLM). |
+| Auth tests (×20) | `tests/test_auth.py` | **~0.5s each** | 0 | User accounts: register (token, normalization, duplicate 409, invalid/overlong password, 503 when `JWT_SECRET` unset), login (wrong password / unknown email identical 401, case-insensitive), `/me` (valid/invalid/expired/deleted-user token, no-oracle 401), password stored as bcrypt hash, per-user conversation + outage ownership vs anonymous demo user. |
 
-**Suite totals (2026-08-15 re-run):** **~1:04 warm** (full run, 51 tests) · ~3:00 first cold run (embedding model load) · ~20s model-load overhead on top of every run.
+**Suite totals (2026-08-16 re-run):** **~1:45 warm** (full run, 96 tests) · ~3:00 first cold run (embedding model load) · ~20s model-load overhead on top of every run.
 
 ---
 
@@ -55,23 +56,23 @@
 > **Note:** `-k` filters the *whole* pytest session, so the integration file is filtered
 > in its own invocation while the remaining files run unfiltered.
 ```bash
-python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py -q
+python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py -q
 ```
-**Tests (45):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×6) · `test_database.py` (×17) · `test_seed.py` (×8) · `test_api_db.py` (×10)
+**Tests (85):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×6) · `test_database.py` (×27) · `test_seed.py` (×8) · `test_api_db.py` (×25) · `test_auth.py` (×20)
 
 ### 🚀 MEDIUM RUN — adds LLM unit tests, ~15s test time
 **When:** after changes to prompts, the LLM client, or retrieval logic — validates LLM behavior (refusal guardrail + grounded answers) without the two slowest HTTP tests.
 ```bash
-python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py -k "not parallel and not pipeline and not chat_endpoint"
+python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py -k "not parallel and not pipeline and not chat_endpoint"
 ```
-**Tests (47):** all 45 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
+**Tests (67):** all 65 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
 
 ### 🏁 FULL RUN — everything, ~1:00 warm / ~3:00 cold
 **When:** before committing / pushing, or after structural changes (imports, client init, Docker). The only run exercising the complete HTTP + thread-pool + LLM pipeline, including the 53s history test.
 ```bash
 python -m pytest
 ```
-**Tests (51):** the full suite (see `testpaths = tests` in `pytest.ini`).
+**Tests (96):** the full suite (see `testpaths = tests` in `pytest.ini`).
 
 > **Tip:** use `python -m pytest -v` for per-test visibility, and `python -m pytest --durations=12 -q` to refresh this baseline table.
 
@@ -90,12 +91,17 @@ python -m pytest
 | `src/lib/outage-stats.test.ts` | ×18 | **~2ms each** | Pure helpers for the TunisiaMap wiring: `normalizeRegion` (accents/whitespace), `countOutagesByRegion`, `countOutagesByStatus`, `totalStatusCount`, `statusSegments` (donut arcs: fractions, clockwise offsets, zero-skip), `STATUS_COLORS`, `badgeText` (99+ cap) |
 | `src/components/map/TunisiaMap.test.tsx` | ×11 | **~40ms each** | SVG renders; count badges + live "N signalements" labels; accent-insensitive matching (`gabès` → Gabès); 99+ cap; zero-count nodes keep static labels; **click-to-filter** (`onNodeClick`, selection ring, `aria-pressed`, keyboard Enter) |
 | `src/components/sidebar/CarteTab.test.tsx` | ×6 | **~100ms each** | Filter interaction: status filter re-queries + narrows TunisiaMap counts and Leaflet markers (ALL/PENDING/RESOLVED); **governorate filter**: click node → narrowed markers, toggle off, ✕ chip clears |
+| `src/store/authStore.test.ts` | ×9 | **~5ms each** | Auth store: login stores token + user, login failure stays anonymous with error, register, logout clears, init (no token / valid / stale token), clearError, token helpers roundtrip |
+| `src/services/auth.test.ts` | ×5 | **~5ms each** | Axios Bearer interceptor (token attached / absent when anonymous), register/login/fetchMe payloads & endpoints |
+| `src/components/auth/AuthModal.test.tsx` | ×7 | **~120ms each** | Login/register modal: renders when open, tab switch shows display-name + password hint, submit login/register closes, backend error surfaced (no close), X closes |
+
+**Suite totals (2026-08-16):** **108 tests** (was 87, +21 auth) · warm ~10s · cold adds ~30-50s transform/env setup.
 
 **Commands** (run from `frontend/`):
 
 | Scenario | Command | Notes |
 |---|---|---|
-| ⚡ Fast | `npm test` | **62 tests**, ~8s warm — run after any frontend change |
+| ⚡ Fast | `npm test` | **108 tests**, ~10s warm — run after any frontend change |
 | 🔍 With coverage | `npm run test:coverage` | Adds v8 coverage report (chatStore + MessageBubble + outage-stats at ~100% lines) |
 | 👀 Watch mode | `npm run test:watch` | Iterative dev loop |
 

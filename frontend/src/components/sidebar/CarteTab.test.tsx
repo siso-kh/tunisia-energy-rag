@@ -75,31 +75,37 @@ vi.mock("../map/OutageMap", () => ({
   ),
 }));
 
-// TunisiaMap mock: renders one clickable button per governorate so the
-// click-to-filter flow can be exercised end-to-end within CarteTab.
+// TunisiaMap mock: renders one clickable button per governorate (derived from
+// the live reports prop) so the click-to-filter flow can be exercised
+// end-to-end within CarteTab.
 vi.mock("../map/TunisiaMap", () => ({
   default: ({
-    outageStatus,
+    reports,
     onNodeClick,
     selectedRegion,
   }: {
-    outageStatus: Record<string, unknown>;
+    reports?: OutageReport[];
     onNodeClick?: (region: string) => void;
     selectedRegion?: string | null;
-  }) => (
-    <div data-testid="tunisia-map">
-      <span data-testid="tunisia-selected">{selectedRegion ?? ""}</span>
-      {Object.keys(outageStatus ?? {}).map((region) => (
-        <button
-          key={region}
-          type="button"
-          onClick={() => onNodeClick?.(region)}
-        >
-          node:{region}
-        </button>
-      ))}
-    </div>
-  ),
+  }) => {
+    const regions = Array.from(
+      new Set((reports ?? []).map((r) => r.region.toLowerCase()))
+    );
+    return (
+      <div data-testid="tunisia-map">
+        <span data-testid="tunisia-selected">{selectedRegion ?? ""}</span>
+        {regions.map((region) => (
+          <button
+            key={region}
+            type="button"
+            onClick={() => onNodeClick?.(region)}
+          >
+            node:{region}
+          </button>
+        ))}
+      </div>
+    );
+  },
 }));
 
 vi.mock("../map/ReportForm", () => ({

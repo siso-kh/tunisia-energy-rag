@@ -91,3 +91,19 @@ export const cityNodes = CITIES.map((c) => {
     y: point ? point[1] : 0,
   };
 });
+
+/**
+ * Project a real-world lat/lng onto the SVG canvas, so regions that are not
+ * part of the curated `cityNodes` list (e.g. Nabeul, Kairouan) can still be
+ * rendered as dynamic nodes from live outage data.
+ */
+export function projectPoint(
+  lat: number,
+  lng: number
+): { x: number; y: number } | null {
+  const point = projection([lng, lat]);
+  if (!point) return null;
+  const [x, y] = point;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return { x, y };
+}

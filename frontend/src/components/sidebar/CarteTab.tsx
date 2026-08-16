@@ -6,7 +6,7 @@ import OutageMap from "../map/OutageMap";
 import TunisiaMap from "../map/TunisiaMap";
 import ReportForm from "../map/ReportForm";
 import { fetchOutages } from "../../services/outages";
-import { countOutagesByStatus, normalizeRegion, STATUS_COLORS } from "../../lib/outage-stats";
+import { normalizeRegion, STATUS_COLORS } from "../../lib/outage-stats";
 import type { OutageStatus } from "../../types";
 
 const FILTERS: Array<{ key: OutageStatus | "ALL"; label: string }> = [
@@ -57,11 +57,6 @@ export default function CarteTab() {
     return reports.filter((r) => normalizeRegion(r.region) === wanted);
   }, [reports, selectedRegion]);
 
-  // Per-governorate per-status breakdowns for the animated overview map
-  // (reflects the active status filter, since it derives from the same
-  // fetched reports). The badge ring colors mirror the status mix.
-  const statusByRegion = useMemo(() => countOutagesByStatus(reports), [reports]);
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -75,9 +70,11 @@ export default function CarteTab() {
       </div>
 
       {/* Animated overview map (ATER TunisiaMap) with live outage counts.
-          Clicking a node filters the interactive map below. */}
+          Regions come straight from the DB: curated cities get badges, any
+          region outside the curated list gets a dynamic node. Clicking a
+          node filters the interactive map below. */}
       <TunisiaMap
-        outageStatus={statusByRegion}
+        reports={reports}
         onNodeClick={toggleRegion}
         selectedRegion={selectedRegion}
       />

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import TunisiaMap from "./TunisiaMap";
-import type { StatusCounts } from "../../lib/outage-stats";
+import type { OutageReport } from "../../types";
 
 // Stub react-i18next (i18n is exercised end-to-end elsewhere). Reproduce the
 // plural resolution that i18next performs on t("map.outageCount", { count }).
@@ -20,10 +20,16 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-const counts = (p: number, v: number, r: number): StatusCounts => ({
-  PENDING: p,
-  VERIFIED: v,
-  RESOLVED: r,
+const report = (over: Partial<OutageReport>): OutageReport => ({
+  id: "x",
+  utility: "STEG",
+  region: "Tunis",
+  latitude: 36.8065,
+  longitude: 10.1815,
+  description: null,
+  status: "PENDING",
+  created_at: "2026-01-01T00:00:00Z",
+  ...over,
 });
 
 const clickNode = (name: string) => {
@@ -48,7 +54,13 @@ describe("TunisiaMap", () => {
 
   it("renders a single-status donut + live label per region with outages", () => {
     const { container } = render(
-      <TunisiaMap outageStatus={{ tunis: counts(1, 0, 0), sousse: counts(2, 0, 0) }} />
+      <TunisiaMap
+        reports={[
+          report({ region: "Tunis", status: "PENDING" }),
+          report({ region: "Sousse", status: "PENDING" }),
+          report({ region: "Sousse", status: "PENDING" }),
+        ]}
+      />
     );
 
     // Live labels replace the static ones
@@ -64,7 +76,14 @@ describe("TunisiaMap", () => {
 
   it("renders a multi-status donut reflecting the status mix", () => {
     const { container } = render(
-      <TunisiaMap outageStatus={{ tunis: counts(2, 1, 1) }} />
+      <TunisiaMap
+        reports={[
+          report({ region: "Tunis", status: "PENDING" }),
+          report({ region: "Tunis", status: "PENDING" }),
+          report({ region: "Tunis", status: "VERIFIED" }),
+          report({ region: "Tunis", status: "RESOLVED" }),
+        ]}
+      />
     );
 
     // All three status colors present on the single Tunis badge
@@ -76,23 +95,86 @@ describe("TunisiaMap", () => {
 
   it("matches regions accent-insensitively (Gabès)", () => {
     const { container } = render(
-      <TunisiaMap outageStatus={{ "gabès": counts(3, 0, 0) }} />
+      <TunisiaMap reports={[report({ region: "Gabès", status: "PENDING" })]} />
     );
-    expect(screen.getByText("3 signalements")).toBeInTheDocument();
+    expect(screen.getByText("1 signalement")).toBeInTheDocument();
     expect(container.querySelectorAll('circle[stroke="#f59e0b"]').length).toBe(1);
   });
 
   it("caps huge counts at 99+", () => {
-    render(<TunisiaMap outageStatus={{ tunis: counts(150, 0, 0) }} />);
+    render(
+      <TunisiaMap reports={Array.from({ length: 150 }, () => report({ region: "Tunis" }))} />
+    );
     expect(screen.getByText("99+")).toBeInTheDocument();
   });
 
   it("leaves nodes with zero outages at their static label", () => {
-    render(<TunisiaMap outageStatus={{ tunis: counts(1, 0, 0) }} />);
+    render(<TunisiaMap reports={[report({ region: "Tunis" })]} />);
     // Sousse has no outage -> keeps its static solar label
     expect(screen.getByText("PV · 320 MW")).toBeInTheDocument();
     // Tunis -> live label instead
     expect(screen.queryByText("STEG · 1.8 GW")).not.toBeInTheDocument();
+  });
+
+  describe("dynamic nodes from the database", () => {
+    it("renders a node for a region outside the curated city list", () => {
+      const { container } = render(
+        <TunisiaMap
+          reports={[report({ region: "Nabeul", latitude: 36.45, longitude: 10.73 })]}
+        />
+      );
+
+      // The region name + live count appear (no curated label for it)
+      expect(screen.getByText("Nabeul")).toBeInTheDocument();
+      expect(screen.getByText("1 signalement")).toBeInTheDocument();
+      expect(container.querySelectorAll('circle[stroke="#f59e0b"]').length).toBe(1);
+    });
+
+    it("aggregates multiple reports for the same dynamic region into one node", () => {
+      const { container } = render(
+        <TunisiaMap
+          reports={[
+            report({ region: "Nabeul", latitude: 36.45, longitude: 10.73 }),
+            report({ region: "Nabeul", latitude: 36.45, longitude: 10.73 }),
+          ]}
+        />
+      );
+
+      expect(screen.getByText("Nabeul")).toBeInTheDocument();
+      expect(screen.getByText("2 signalements")).toBeInTheDocument();
+      // One badge, not two
+      expect(container.querySelectorAll('circle[stroke="#f59e0b"]').length).toBe(1);
+    });
+
+    it("inferes the sector color from the utility (SONEDE -> water)", () => {
+      const { container } = render(
+        <TunisiaMap
+          reports={[
+            report({
+              region: "Monastir",
+              utility: "SONEDE",
+              latitude: 35.78,
+              longitude: 10.83,
+            }),
+          ]}
+        />
+      );
+      // Water-sector nodes use var(--water) for the pulsing dot fill
+      const dot = container.querySelector('circle[fill="var(--water)"]');
+      expect(dot).toBeInTheDocument();
+    });
+
+    it("is clickable and filters by the region name", () => {
+      const onNodeClick = vi.fn();
+      render(
+        <TunisiaMap
+          reports={[report({ region: "Kairouan", latitude: 35.67, longitude: 10.1 })]}
+          onNodeClick={onNodeClick}
+        />
+      );
+      clickNode("Kairouan");
+      expect(onNodeClick).toHaveBeenCalledWith("Kairouan");
+    });
   });
 
   describe("click-to-filter", () => {
@@ -100,7 +182,7 @@ describe("TunisiaMap", () => {
       const onNodeClick = vi.fn();
       render(
         <TunisiaMap
-          outageStatus={{ tunis: counts(1, 0, 0) }}
+          reports={[report({ region: "Tunis" })]}
           onNodeClick={onNodeClick}
         />
       );
@@ -111,7 +193,10 @@ describe("TunisiaMap", () => {
     it("marks the selected node as pressed and renders a selection ring", () => {
       const { container } = render(
         <TunisiaMap
-          outageStatus={{ tunis: counts(1, 0, 0), sousse: counts(1, 0, 0) }}
+          reports={[
+            report({ region: "Tunis" }),
+            report({ region: "Sousse" }),
+          ]}
           selectedRegion="Tunis"
         />
       );
@@ -125,7 +210,7 @@ describe("TunisiaMap", () => {
     it("does not mark unselected nodes as pressed", () => {
       render(
         <TunisiaMap
-          outageStatus={{ tunis: counts(1, 0, 0), sousse: counts(1, 0, 0) }}
+          reports={[report({ region: "Tunis" }), report({ region: "Sousse" })]}
           selectedRegion="Tunis"
         />
       );
@@ -137,7 +222,7 @@ describe("TunisiaMap", () => {
       const onNodeClick = vi.fn();
       render(
         <TunisiaMap
-          outageStatus={{ tunis: counts(1, 0, 0) }}
+          reports={[report({ region: "Tunis" })]}
           onNodeClick={onNodeClick}
         />
       );

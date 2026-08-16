@@ -1,14 +1,22 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { MAP_HEIGHT, MAP_WIDTH, cityNodes, tunisiaPath, type Sector } from "../../lib/tunisia-geo";
+import {
+  MAP_HEIGHT,
+  MAP_WIDTH,
+  cityNodes,
+  projectPoint,
+  tunisiaPath,
+  type Sector,
+} from "../../lib/tunisia-geo";
 import {
   badgeText,
+  countOutagesByStatus,
   normalizeRegion,
   statusSegments,
   STATUS_COLORS,
   totalStatusCount,
-  type StatusCounts,
 } from "../../lib/outage-stats";
+import type { OutageReport, Utility } from "../../types";
 
 const SECTOR_COLOR: Record<Sector, string> = {
   solar: "var(--solar)",
@@ -17,17 +25,36 @@ const SECTOR_COLOR: Record<Sector, string> = {
   graphite: "var(--graphite)",
 };
 
+/** Sector inferred from the utility for regions outside the curated list. */
+const UTILITY_SECTOR: Record<Utility, Sector> = {
+  STEG: "electric",
+  SONEDE: "water",
+  OTHER: "graphite",
+};
+
 const BADGE_RADIUS = 7;
 const BADGE_CIRCUMFERENCE = 2 * Math.PI * BADGE_RADIUS;
 
+interface NodeSpec {
+  key: string;
+  /** Display name (canonical region for dynamic nodes, curated name for static). */
+  name: string;
+  x: number;
+  y: number;
+  sector: Sector;
+  /** Static decorative label (only shown when the node has zero outages). */
+  label: string;
+}
+
 interface Props {
   /**
-   * Per-governorate outage breakdowns (normalized keys), e.g.
-   * { "tunis": { PENDING: 2, VERIFIED: 1, RESOLVED: 0 } }. The badge ring is
-   * colored by the status mix; nodes with zero outages keep their static label.
+   * Live outage reports. Counts + per-governorate status breakdowns are
+   * derived from this list. Regions present in the data but missing from the
+   * curated `cityNodes` list are rendered as dynamic nodes positioned by
+   * their real coordinates.
    */
-  outageStatus?: Record<string, StatusCounts>;
-  /** Called with the canonical city name when a node is clicked. */
+  reports?: OutageReport[];
+  /** Called with the canonical region name when a node is clicked. */
   onNodeClick?: (region: string) => void;
   /** Governorate currently selected (highlights its node with a ring). */
   selectedRegion?: string | null;
@@ -35,22 +62,54 @@ interface Props {
 
 /**
  * Stylized animated SVG map of Tunisia with live utility telemetry nodes
- * (ported from the ATER dashboard). When `outageStatus` is provided, each node
- * shows a status-mix donut badge + "N signalements" label reflecting real data.
- * Nodes are clickable to filter the outage map by governorate.
+ * (ported from the ATER dashboard). `reports` drive everything: per-region
+ * status-mix donut badges, live counts, and dynamic nodes for any region in
+ * the database that is not part of the curated city list. Nodes are
+ * clickable to filter the outage map by governorate.
  */
-export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }: Props) {
+export default function TunisiaMap({ reports, onNodeClick, selectedRegion }: Props) {
   const { t } = useTranslation();
 
-  // Normalize the incoming region keys once for O(1) lookups per node.
-  const statusByRegion = useMemo(() => {
-    const map = new Map<string, StatusCounts>();
-    if (!outageStatus) return map;
-    for (const [region, counts] of Object.entries(outageStatus)) {
-      map.set(normalizeRegion(region), counts);
+  const statusByRegion = useMemo(
+    () => countOutagesByStatus(reports ?? []),
+    [reports]
+  );
+
+  // Merge the curated static cities with dynamic nodes for every region in
+  // the data that is not already covered by a static node.
+  const nodes = useMemo<NodeSpec[]>(() => {
+    const staticNormalized = new Set(cityNodes.map((c) => normalizeRegion(c.name)));
+
+    const dynamic: NodeSpec[] = [];
+    const seen = new Set<string>();
+    for (const report of reports ?? []) {
+      const norm = normalizeRegion(report.region);
+      if (staticNormalized.has(norm) || seen.has(norm)) continue;
+      seen.add(norm);
+      const point = projectPoint(report.latitude, report.longitude);
+      if (!point) continue;
+      dynamic.push({
+        key: `dyn-${norm}`,
+        name: report.region,
+        x: point.x,
+        y: point.y,
+        sector: UTILITY_SECTOR[report.utility],
+        label: report.region,
+      });
     }
-    return map;
-  }, [outageStatus]);
+
+    return [
+      ...cityNodes.map((c) => ({
+        key: c.name,
+        name: c.name,
+        x: c.x,
+        y: c.y,
+        sector: c.sector,
+        label: c.label,
+      })),
+      ...dynamic,
+    ];
+  }, [reports]);
 
   const selectedNormalized = selectedRegion ? normalizeRegion(selectedRegion) : null;
 
@@ -86,23 +145,23 @@ export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }
           strokeLinejoin="round"
         />
 
-        {cityNodes.map((c) => {
-          const counts = statusByRegion.get(normalizeRegion(c.name));
+        {nodes.map((node) => {
+          const counts = statusByRegion[normalizeRegion(node.name)];
           const total = counts ? totalStatusCount(counts) : 0;
           const segments = counts ? statusSegments(counts) : [];
-          const isSelected = selectedNormalized === normalizeRegion(c.name);
+          const isSelected = selectedNormalized === normalizeRegion(node.name);
           const clickable = total > 0;
 
           return (
             <g
-              key={c.name}
-              onClick={clickable ? () => onNodeClick?.(c.name) : undefined}
+              key={node.key}
+              onClick={clickable ? () => onNodeClick?.(node.name) : undefined}
               onKeyDown={
                 clickable
                   ? (e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        onNodeClick?.(c.name);
+                        onNodeClick?.(node.name);
                       }
                     }
                   : undefined
@@ -110,9 +169,7 @@ export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }
               role={clickable ? "button" : undefined}
               tabIndex={clickable ? 0 : undefined}
               aria-label={
-                clickable
-                  ? t("map.filterRegion", { region: c.name })
-                  : undefined
+                clickable ? t("map.filterRegion", { region: node.name }) : undefined
               }
               aria-pressed={clickable ? isSelected : undefined}
               className={clickable ? "cursor-pointer outline-none focus-visible:opacity-80" : undefined}
@@ -120,8 +177,8 @@ export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }
               {/* selection ring */}
               {isSelected && (
                 <circle
-                  cx={c.x}
-                  cy={c.y}
+                  cx={node.x}
+                  cy={node.y}
                   r={11}
                   fill="none"
                   stroke="#2563eb"
@@ -131,22 +188,22 @@ export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }
               )}
 
               {/* pulsing node */}
-              <g transform={`translate(${c.x} ${c.y})`}>
+              <g transform={`translate(${node.x} ${node.y})`}>
                 <circle
                   r={7}
-                  fill={SECTOR_COLOR[c.sector]}
+                  fill={SECTOR_COLOR[node.sector]}
                   style={{
                     transformOrigin: "center",
-                    animation: `node-pulse 3s ease-in-out ${(c.x % 5) * 0.35}s infinite`,
+                    animation: `node-pulse 3s ease-in-out ${(node.x % 5) * 0.35}s infinite`,
                   }}
                 />
                 <circle r={3.4} fill="white" />
-                <circle r={2} fill={SECTOR_COLOR[c.sector]} />
+                <circle r={2} fill={SECTOR_COLOR[node.sector]} />
               </g>
 
               {/* status-mix donut badge (top-left, clear of the label card) */}
               {total > 0 && (
-                <g transform={`translate(${c.x - 12} ${c.y - 12})`}>
+                <g transform={`translate(${node.x - 12} ${node.y - 12})`}>
                   {/* white base ring so arcs read cleanly over the map */}
                   <circle r={BADGE_RADIUS} fill="none" stroke="white" strokeWidth={4} />
                   {/* status arcs, clockwise from 3 o'clock */}
@@ -175,17 +232,17 @@ export default function TunisiaMap({ outageStatus, onNodeClick, selectedRegion }
               )}
 
               {/* city label */}
-              <g transform={`translate(${c.x} ${c.y})`}>
+              <g transform={`translate(${node.x} ${node.y})`}>
                 <foreignObject x={10} y={-14} width={128} height={30} className="overflow-visible">
                   <div className="inline-flex flex-col rounded-md bg-card/90 px-2 py-0.5 shadow-sm ring-1 ring-border backdrop-blur">
                     <span className="text-[10px] font-semibold leading-tight text-foreground">
-                      {c.name}
+                      {node.name}
                     </span>
                     <span
                       className="text-[8px] font-medium leading-tight"
-                      style={{ color: SECTOR_COLOR[c.sector] }}
+                      style={{ color: SECTOR_COLOR[node.sector] }}
                     >
-                      {total > 0 ? t("map.outageCount", { count: total }) : c.label}
+                      {total > 0 ? t("map.outageCount", { count: total }) : node.label}
                     </span>
                   </div>
                 </foreignObject>

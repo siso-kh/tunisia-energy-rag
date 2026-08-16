@@ -16,6 +16,11 @@ fastapi
 uvicorn
 requests
 
+# Auth (user accounts: bcrypt hashing + JWT tokens)
+pyjwt
+bcrypt
+email-validator
+
 # Database (src/database) - async SQLAlchemy layer
 sqlalchemy
 asyncpg
