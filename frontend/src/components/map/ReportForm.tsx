@@ -125,7 +125,11 @@ export default function ReportForm({ picked }: Props) {
           </p>
         )}
         {mutation.isError && (
-          <p className="text-center text-xs text-destructive">{t("chat.error")}</p>
+          <p className="text-center text-xs text-destructive">
+            {(mutation.error as { response?: { status?: number } })?.response?.status === 429
+              ? t("map.rateLimited")
+              : t("chat.error")}
+          </p>
         )}
       </div>
     </form>

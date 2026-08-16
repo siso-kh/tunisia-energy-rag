@@ -15,6 +15,7 @@ pypdf
 fastapi
 uvicorn
 requests
+slowapi
 
 # Auth (user accounts: bcrypt hashing + JWT tokens)
 pyjwt
@@ -25,6 +26,9 @@ email-validator
 sqlalchemy
 asyncpg
 aiosqlite
+
+# Schema migrations (alembic/versions)
+alembic
 
 # Utilities
 python-dotenv

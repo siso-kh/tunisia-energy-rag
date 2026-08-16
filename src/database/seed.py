@@ -23,7 +23,7 @@ import argparse
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from src.database.connection import build_engine, build_session_factory
 from src.database.models import (
@@ -35,6 +35,7 @@ from src.database.models import (
     User,
     UtilityType,
 )
+from src.database.schema import ensure_schema
 
 # ---------------------------------------------------------------------------
 # Demo data
@@ -306,13 +307,26 @@ async def seed(
         "outage_reports": 0,
     }
 
-    try:
+    if reset:
         async with engine.begin() as conn:
-            if reset:
-                if verbose:
-                    print("Dropping existing tables...")
-                await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
+            if verbose:
+                print("Dropping existing tables...")
+            await conn.run_sync(Base.metadata.drop_all)
+            # alembic_version belongs to Alembic, not the app metadata — drop it
+            # too so a reset starts from a truly empty database and the next
+            # ensure_schema re-runs all migrations.
+            await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+
+    # The schema is owned by Alembic migrations (alembic/versions) — never by
+    # create_all. ensure_schema upgrades fresh DBs and stamps create_all-era
+    # DBs that predate migrations.
+    try:
+        await asyncio.to_thread(ensure_schema, database_url)
+    except Exception as e:
+        if verbose:
+            print(f"Warning: schema setup failed ({e}) — continuing anyway.")
+
+    try:
 
         async with factory() as session:
             existing_users = await session.scalar(select(func.count()).select_from(User))

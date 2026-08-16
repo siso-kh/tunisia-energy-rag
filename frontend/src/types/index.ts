@@ -68,4 +68,4 @@ export type StreamEvent =
   | { type: "sources"; sources: Source[] }
   | { type: "token"; content: string }
   | { type: "done"; answer: string; sources: Source[]; conversation_id?: string | null }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; rateLimited?: boolean };

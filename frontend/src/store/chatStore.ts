@@ -8,11 +8,14 @@ interface ChatState {
   conversationId: string | null;
   phase: StreamPhase;
   latestSources: Source[];
+  /** True when the last error was a 429 (rate limited) — shown with a specific message. */
+  errorRateLimited: boolean;
   addUserMessage: (content: string) => void;
   setSources: (sources: Source[]) => void;
   appendToken: (content: string) => void;
   finalizeAnswer: (answer: string, sources: Source[], conversationId?: string | null) => void;
   setPhase: (phase: StreamPhase) => void;
+  setErrorRateLimited: (value: boolean) => void;
   reset: () => void;
 }
 
@@ -21,12 +24,14 @@ export const useChatStore = create<ChatState>((set) => ({
   conversationId: null,
   phase: "idle",
   latestSources: [],
+  errorRateLimited: false,
 
   addUserMessage: (content) =>
     set((state) => ({
       messages: [...state.messages, { role: "user", content }],
       phase: "contextualizing",
       latestSources: [],
+      errorRateLimited: false,
     })),
 
   setSources: (sources) => set({ latestSources: sources }),
@@ -62,6 +67,14 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setPhase: (phase) => set({ phase }),
 
+  setErrorRateLimited: (value) => set({ errorRateLimited: value }),
+
   reset: () =>
-    set({ messages: [], conversationId: null, phase: "idle", latestSources: [] }),
+    set({
+      messages: [],
+      conversationId: null,
+      phase: "idle",
+      latestSources: [],
+      errorRateLimited: false,
+    }),
 }));

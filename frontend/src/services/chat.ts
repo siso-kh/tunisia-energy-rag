@@ -44,7 +44,7 @@ export async function streamChat(
     } catch {
       /* keep default */
     }
-    onEvent({ type: "error", message: detail });
+    onEvent({ type: "error", message: detail, rateLimited: response.status === 429 });
     return;
   }
 

@@ -21,8 +21,9 @@ services:
       start_period: 10s
 
   # ===================== One-shot database seeder =====================
-  # Runs src/database/seed.py once after Postgres is healthy, then exits.
-  # Reseed anytime with:
+  # Applies the Alembic schema migrations (seed() -> ensure_schema) then
+  # populates demo data once Postgres is healthy, and exits. Reseed anytime
+  # with:
   #   docker compose run --rm db-seed python -m src.database.seed --reset
   db-seed:
     build:
@@ -46,11 +47,22 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie
+      # Behind the nginx proxy every request arrives from the proxy socket, so
+      # key rate limits on the real client IP via X-Forwarded-For.
+      TRUST_PROXY_HEADERS: "true"
+      # Frontend is served same-origin through nginx, but allow cross-origin
+      # access for the ngrok tunnel / direct backend calls.
+      CORS_ORIGINS: "*"
+      RATE_LIMIT_STORAGE_URI: "memory://"
     volumes:
       - .:/app
     depends_on:
       postgres:
         condition: service_healthy
+      # Schema migrations + seed run before the backend accepts traffic, so
+      # the app never starts against a missing/empty schema.
+      db-seed:
+        condition: service_completed_successfully
     # Wide start_period: importing the API loads the sentence-transformers
     # embedding model, which can take 30-60s+ on a cold first start.
     healthcheck:

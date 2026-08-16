@@ -9,14 +9,21 @@ from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.api.auth import get_current_user_optional, router as auth_router
+from src.api.ratelimit import (
+    ADMIN_LIMIT,
+    CHAT_LIMIT,
+    OUTAGE_CREATE_LIMIT,
+    configure_limiter,
+    limiter,
+)
+from src.api.security import add_security_middlewares
 from src.database import service
-from src.database.connection import AsyncSessionLocal, engine, ensure_user_columns, get_db_dependency
+from src.database.connection import AsyncSessionLocal, get_db_dependency
 from src.database.models import ReportStatus, User, UtilityType
 from src.rag.retrieve import run_pipeline, stream_pipeline
 
@@ -111,12 +118,8 @@ async def _outage_cleanup_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Best-effort schema compatibility: add auth columns to pre-auth DBs.
-    try:
-        await ensure_user_columns(engine)
-    except Exception:
-        logger.exception("Schema compatibility check failed (continuing)")
-
+    # The schema is owned by Alembic migrations (see src/database/schema.py);
+    # the app no longer creates or alters tables at startup.
     task = asyncio.create_task(_outage_cleanup_loop())
     try:
         yield
@@ -129,13 +132,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Tunisia Energy RAG API", lifespan=lifespan)
 app.include_router(auth_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS (env-driven origins) + security headers + rate limiting.
+add_security_middlewares(app)
+configure_limiter(app, limiter)
 
 
 # ---------------------------------------------------------------------------
@@ -302,17 +301,19 @@ async def _resolve_conversation(session, conversation_id: Optional[uuid.UUID], u
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=QueryResponse)
+@limiter.limit(CHAT_LIMIT)
 async def chat_endpoint(
-    request: QueryRequest,
+    request: Request,
+    payload: QueryRequest,
     session=Depends(get_db_dependency),
     user: Optional[User] = Depends(get_current_user_optional),
 ):
     try:
-        user_query = request.query.strip()
+        user_query = payload.query.strip()
         if not user_query:
             raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-        history_dicts = [{"role": m.role, "content": m.content} for m in request.chat_history]
+        history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
 
         # Await the fully asynchronous pipeline (ChromaDB retrieval runs in a thread pool)
         answer, structured_sources = await run_pipeline(user_query, history_dicts)
@@ -320,7 +321,7 @@ async def chat_endpoint(
         # Persist the turn (best-effort: never let DB issues break the answer)
         conversation_id = None
         try:
-            parsed_cid = _parse_conversation_id(request.conversation_id)
+            parsed_cid = _parse_conversation_id(payload.conversation_id)
             resolved = await _resolve_conversation(session, parsed_cid, user)
             if resolved is not None:
                 await service.persist_chat_turn(
@@ -351,16 +352,18 @@ async def chat_endpoint(
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat/stream")
+@limiter.limit(CHAT_LIMIT)
 async def chat_stream_endpoint(
-    request: QueryRequest,
+    request: Request,
+    payload: QueryRequest,
     user: Optional[User] = Depends(get_current_user_optional),
 ):
-    user_query = request.query.strip()
+    user_query = payload.query.strip()
     if not user_query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-    history_dicts = [{"role": m.role, "content": m.content} for m in request.chat_history]
-    parsed_cid = _parse_conversation_id(request.conversation_id)
+    history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
+    parsed_cid = _parse_conversation_id(payload.conversation_id)
 
     async def event_generator():
         async with AsyncSessionLocal() as session:
@@ -450,7 +453,9 @@ async def list_outages(status: Optional[ReportStatus] = None, session=Depends(ge
 
 
 @app.post("/api/outages", response_model=OutageReportOut, status_code=201)
+@limiter.limit(OUTAGE_CREATE_LIMIT)
 async def create_outage(
+    request: Request,
     payload: OutageCreate,
     session=Depends(get_db_dependency),
     user: Optional[User] = Depends(get_current_user_optional),
@@ -481,8 +486,11 @@ async def update_outage_status(
 # ---------------------------------------------------------------------------
 
 @app.get("/api/admin/purge-stats", response_model=PurgeStatsOut)
+@limiter.limit(ADMIN_LIMIT)
 async def purge_stats(
-    _: None = Depends(require_admin_key), session=Depends(get_db_dependency)
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
 ):
     """Recent outage purge activity: how many reports were deleted and when."""
     ttl_hours = await _effective_ttl_hours(session)
@@ -505,15 +513,21 @@ async def purge_stats(
 
 
 @app.post("/api/admin/purge")
-async def run_purge_now(_: None = Depends(require_admin_key)):
+@limiter.limit(ADMIN_LIMIT)
+async def run_purge_now(
+    request: Request, _: None = Depends(require_admin_key)
+):
     """Trigger an immediate purge (useful for ops/testing)."""
     deleted = await _purge_expired_outages()
     return {"status": "ok", "deleted": deleted}
 
 
 @app.get("/api/admin/config")
+@limiter.limit(ADMIN_LIMIT)
 async def get_admin_config(
-    _: None = Depends(require_admin_key), session=Depends(get_db_dependency)
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
 ):
     """All runtime settings (DB overrides + env defaults)."""
     return await service.get_all_settings(session)
@@ -531,7 +545,9 @@ async def get_public_config(session=Depends(get_db_dependency)):
 
 
 @app.put("/api/admin/config")
+@limiter.limit(ADMIN_LIMIT)
 async def update_admin_config(
+    request: Request,
     payload: ConfigUpdate,
     _: None = Depends(require_admin_key),
     session=Depends(get_db_dependency),
@@ -549,6 +565,7 @@ async def update_admin_config(
 
 
 @app.get("/health")
-def health_check():
+@limiter.exempt
+def health_check(request: Request):
     """Simple endpoint to verify the server is running."""
     return {"status": "healthy", "api": "online"}

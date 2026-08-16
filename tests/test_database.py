@@ -130,44 +130,7 @@ def test_all_models_registered():
     assert {"users", "conversations", "messages", "outage_reports"} <= tables
 
 
-def test_ensure_user_columns_upgrades_pre_auth_db(tmp_path):
-    """A DB created before auth landed must gain the user auth columns.
 
-    Regression test for the run_sync coroutine bug: ensure_user_columns must
-    actually execute the ALTERs (not silently skip them).
-    """
-    async def scenario(_factory):
-        # 1. Build a DB with the OLD users schema (no auth columns).
-        from sqlalchemy import text as sa_text
-
-        engine = build_engine(f"sqlite+aiosqlite:///{tmp_path}/old.db")
-        async with engine.begin() as conn:
-            await conn.run_sync(
-                lambda c: c.execute(
-                    sa_text(
-                        "CREATE TABLE users (id CHAR(32) PRIMARY KEY, created_at DATETIME)"
-                    )
-                )
-            )
-
-        # 2. Upgrade it in place.
-        await connection.ensure_user_columns(engine)
-
-        # 3. The new columns must exist and be usable.
-        async with engine.begin() as conn:
-            def _probe(sync_conn):
-                from sqlalchemy import inspect
-
-                cols = {c["name"] for c in inspect(sync_conn).get_columns("users")}
-                assert {"email", "password_hash", "display_name"} <= cols
-
-            await conn.run_sync(_probe)
-
-        # 4. A second run must be a no-op (idempotent).
-        await connection.ensure_user_columns(engine)
-        await engine.dispose()
-
-    run_scenario(scenario)
 
 
 # ---------------------------------------------------------------------------

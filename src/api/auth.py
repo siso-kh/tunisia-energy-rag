@@ -18,10 +18,11 @@ import re
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.ratelimit import AUTH_LIMIT, limiter
 from src.database import service
 from src.database.connection import get_db_dependency
 from src.database.models import User
@@ -151,7 +152,9 @@ async def get_current_user_optional(
 # ---------------------------------------------------------------------------
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
+@limiter.limit(AUTH_LIMIT)
 async def register(
+    request: Request,
     payload: RegisterRequest,
     session: AsyncSession = Depends(get_db_dependency),
 ):
@@ -177,7 +180,9 @@ async def register(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit(AUTH_LIMIT)
 async def login(
+    request: Request,
     payload: LoginRequest,
     session: AsyncSession = Depends(get_db_dependency),
 ):

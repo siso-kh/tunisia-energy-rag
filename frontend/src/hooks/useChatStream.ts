@@ -28,6 +28,7 @@ const handleEvent = (event: StreamEvent) => {
       break;
     case "error":
       s.setPhase("error");
+      s.setErrorRateLimited(event.rateLimited === true);
       break;
   }
 };

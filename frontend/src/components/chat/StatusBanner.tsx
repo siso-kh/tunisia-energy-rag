@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Spinner from "../ui/Spinner";
-import type { StreamPhase } from "../../store/chatStore";
+import { useChatStore, type StreamPhase } from "../../store/chatStore";
 
 interface Props {
   phase: StreamPhase;
@@ -15,9 +15,12 @@ const PHASE_KEYS: Record<string, string> = {
 
 export default function StatusBanner({ phase }: Props) {
   const { t } = useTranslation();
+  const rateLimited = useChatStore((s) => s.errorRateLimited);
   if (phase === "idle") return null;
 
   const isError = phase === "error";
+  const messageKey =
+    isError && rateLimited ? "chat.rateLimited" : PHASE_KEYS[phase] ?? "chat.searching";
 
   return (
     <div
@@ -29,7 +32,7 @@ export default function StatusBanner({ phase }: Props) {
       role={isError ? "alert" : "status"}
     >
       {!isError && <Spinner className="size-3.5" />}
-      {t(PHASE_KEYS[phase] ?? "chat.searching")}
+      {t(messageKey)}
     </div>
   );
 }
