@@ -57,8 +57,8 @@ export interface OutageReport {
 export interface OutageCreatePayload {
   utility: Utility;
   region: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number | null;
+  longitude?: number | null;
   description?: string | null;
 }
 

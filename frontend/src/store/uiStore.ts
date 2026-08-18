@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import i18n from "../i18n";
 
 export type Theme = "dark" | "light";
-export type Language = "fr" | "ar" | "derja";
+export type Language = "fr" | "ar";
 export type SidebarTab = "carte" | "telemetrie" | "calculator";
 
 interface UIState {

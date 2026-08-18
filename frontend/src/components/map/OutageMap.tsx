@@ -1,5 +1,11 @@
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+
+/** Tunisia bounding box with a small buffer so the map can't be panned outside. */
+const TUNISIA_BOUNDS = L.latLngBounds(
+  [30.0, 7.3],   // south-west
+  [37.8, 11.8]   // north-east
+);
 import { useTranslation } from "react-i18next";
 import type { OutageReport, OutageStatus } from "../../types";
 import "./leafletFix";
@@ -40,7 +46,10 @@ export default function OutageMap({ reports, onPick }: Props) {
   return (
     <MapContainer
       center={[34.0, 9.5]}
-      zoom={6}
+      zoom={7}
+      minZoom={6}
+      maxBounds={TUNISIA_BOUNDS}
+      maxBoundsViscosity={0.8}
       className="w-full h-full rounded-2xl"
       scrollWheelZoom
     >

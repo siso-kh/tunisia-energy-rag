@@ -4,7 +4,6 @@ import { useUIStore } from "../../store/uiStore";
 const LANGUAGES = [
   { code: "fr", label: "FR" },
   { code: "ar", label: "عربي" },
-  { code: "derja", label: "دارجة" },
 ] as const;
 
 export default function LanguageSwitcher() {

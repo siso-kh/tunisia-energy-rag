@@ -49,6 +49,25 @@
     "pageTitle": "Administration",
     "pageSubtitle": "Configuration & maintenance",
     "backToDashboard": "Retour au tableau de bord",
+    "tabs": {
+      "sources": "Sources",
+      "dashboard": "Journal"
+    },
+    "dashboard": {
+      "title": "Journal d'ingestion",
+      "subtitle": "Historique de tous les fichiers traités (indexés, rejetés, erreurs).",
+      "indexed": "Indexés",
+      "rejected": "Rejetés",
+      "errors": "Erreurs",
+      "all": "Tous",
+      "totalChunks": "Total chunks indexés",
+      "gate1": "Gate 1",
+      "date": "Date",
+      "clearAll": "Supprimer tout",
+      "confirmClear": "Supprimer tous les fichiers de ce filtre ?",
+      "noLogs": "Aucun fichier traité pour le moment.",
+      "errorDetails": "Détails des erreurs"
+    },
     "config": {
       "title": "Configuration du tableau de bord",
       "subtitle": "Ces valeurs remplacent les variables d'environnement au runtime.",
@@ -60,6 +79,65 @@
       "mapRefreshHint": "Fréquence de rafraîchissement des signalements sur la carte.",
       "save": "Enregistrer",
       "saved": "Configuration enregistrée !"
+    },
+    "docs": {
+      "title": "Ajouter un document",
+      "subtitle": "Téléversez un PDF ou fournissez un lien : il sera analysé, trié puis indexé automatiquement s'il est accepté.",
+      "uploadFile": "Fichier",
+      "ingestUrl": "Lien",
+      "uploadAction": "Analyser le fichier",
+      "ingestAction": "Analyser le lien",
+      "processing": "Analyse en cours… (triage + indexation)",
+      "accepted": "✓ Accepté : {{file}}",
+      "rejected": "✗ Rejeté : {{file}}",
+      "destination": "Destination",
+      "filtered": "data/filtered/ (indexé)",
+      "blacklisted": "data/blacklisted/",
+      "gate1": "Gate 1",
+      "gate2": "Gate 2",
+      "master": "Score final",
+      "pages": "Pages",
+      "chunks": "Chunks indexés",
+      "indexError": "Erreur d'indexation"
+    },
+    "sources": {
+      "title": "Gestion des sources",
+      "subtitle": "Ajoutez des URLs PDF pour recherche approfondie puis indexation dans ChromaDB.",
+      "addPlaceholder": "https://example.org/rapport.pdf",
+      "crawlPlaceholder": "https://www.steg.com.tn/",
+      "addButton": "Ajouter",
+      "crawlButton": "Explorer",
+      "singleUrl": "URL directe",
+      "crawlWebsite": "Explorer le site",
+      "processing": "Traitement…",
+      "crawlDone": "Exploration terminée : {{found}} PDF(s) trouvé(s), {{added}} ajouté(s), {{skipped}} ignoré(s) (doublons).",
+      "researchButton": "Recherche approfondie",
+      "ingestButton": "Indexer dans ChromaDB",
+      "researching": "Recherche en cours…",
+      "ingesting": "Indexation en cours…",
+      "url": "URL",
+      "file": "Fichier",
+      "status": "Statut",
+      "size": "Taille",
+      "score": "Score",
+      "chunks": "Chunks",
+      "totalSources": "source(s)",
+      "pending": "en attente",
+      "readyToIngest": "prêt(s)",
+      "indexed": "indexé(s)",
+      "delete": "Supprimer",
+      "noSources": "Aucune source ajoutée. Ajoutez une URL PDF ci-dessus.",
+      "researchDone": "Recherche terminée : {{downloaded}} téléchargé(s), {{failed}} échoué(s) sur {{total}}.",
+      "ingestDone": "Indexation terminée : {{indexed}} indexé(s), {{rejected}} rejeté(s), {{failed}} échoué(s) sur {{total}}.",
+      "status": {
+        "pending": "En attente",
+        "downloading": "Téléchargement…",
+        "downloaded": "Téléchargé",
+        "failed": "Échoué",
+        "ingesting": "Indexation…",
+        "indexed": "Indexé",
+        "triage_rejected": "Rejeté"
+      }
     }
   },
   "telemetry": {
@@ -124,7 +202,8 @@
     "steg": "Électricité (STEG)",
     "sonede": "Eau (SONEDE)",
     "other": "Autre",
-    "clickMap": "Cliquez sur la carte pour placer le marqueur"
+    "clickMap": "Cliquez sur la carte pour placer le marqueur",
+    "clickMapOptional": "Cliquez sur la carte pour préciser la position (optionnel)"
   },
   "calculator": {
     "title": "Calculateur ROI solaire",

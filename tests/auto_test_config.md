@@ -30,8 +30,12 @@
 | Auth tests (×20) | `tests/test_auth.py` | **~0.5s each** | 0 | User accounts: register (token, normalization, duplicate 409, invalid/overlong password, 503 when `JWT_SECRET` unset), login (wrong password / unknown email identical 401, case-insensitive), `/me` (valid/invalid/expired/deleted-user token, no-oracle 401), password stored as bcrypt hash, per-user conversation + outage ownership vs anonymous demo user. |
 | Rate-limit + security tests (×9) | `tests/test_ratelimit.py` | **~0.05s each** | 0 | slowapi wiring via the same factory as `main.py`: under-limit pass, 429 + `Retry-After`, exempt routes, trusted-proxy (`X-Forwarded-For`) keying, disabled toggle, security headers (`nosniff`/`DENY`/`Referrer-Policy`), CORS origin whitelist reflection + rejection, real-app smoke test under the limiter. |
 | Migration tests (×4) | `tests/test_migrations.py` | **~0.6s each** | 0 | Alembic workflow: fresh DB `upgrade head` creates the full schema (+auth columns), idempotent re-run, `create_all`-era DB adopted via `stamp head` (data survives), `downgrade base` drops everything. |
+| Readiness tests (×4) | `tests/test_readiness.py` | **~0.1s each** | 0 | `/ready` probe: 200 when DB + Chroma respond, 503 with per-dependency `checks` when either is down, `/health` stays 200 (liveness only) when degraded (in-memory SQLite + Chroma stub). |
+| Hybrid retrieval tests (×13) | `tests/test_hybrid.py` | **~0.05s each** | 0 | Tokenizer (fr/ar), BM25 keyword surfacing (fr + Arabic), RRF fusion (shared-item boost, k-truncation, top-by-sum), rerank with injected scorer (reorder, truncation, failure fallback, disabled toggle, single-source noop), real-corpus smoke test (skips w/o Chroma). |
+| Eval metrics tests (×9) | `tests/test_eval_metrics.py` | **<0.01s each** | 0 | recall@k (hit/miss/truncation/multi-source), MRR (rank + best-of-list), `evaluate_retrieval` aggregation + error survival, golden-set schema. |
+| Admin doc-ingestion tests (×10) | `tests/test_admin_docs.py` | **~0.1s each** | 0 | `POST /api/admin/documents/upload` + `from-url`: 401 without key, non-PDF 400, bad scheme 400, accepted → moved to filtered + indexed (stubbed), rejected → blacklisted without indexing, filename sanitization, URL download failure 400, OpenAPI shape. |
 
-**Suite totals (2026-08-16 re-run):** **108 tests** (was 96) · fast run 102 · full run ~3:00 cold (embedding model load) · ~20s model-load overhead on top of every run.
+**Suite totals (2026-08-17 re-run):** **144 tests** (was 134) · fast run 138 · full run ~3:00 cold (embedding model load) · ~20s model-load overhead on top of every run.
 
 ---
 
@@ -58,23 +62,23 @@
 > **Note:** `-k` filters the *whole* pytest session, so the integration file is filtered
 > in its own invocation while the remaining files run unfiltered.
 ```bash
-python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py tests/test_ratelimit.py tests/test_migrations.py -q
+python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py tests/test_ratelimit.py tests/test_migrations.py tests/test_readiness.py tests/test_hybrid.py tests/test_eval_metrics.py tests/test_admin_docs.py -q
 ```
-**Tests (102):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×6) · `test_database.py` (×26) · `test_seed.py` (×8) · `test_api_db.py` (×25) · `test_auth.py` (×20) · `test_ratelimit.py` (×9) · `test_migrations.py` (×4)
+**Tests (138):** `test_api_health_endpoint` · `test_api_chat_rejects_empty_query` · `test_retrieval_to_prompt_chain` · `test_retrieval_speed_and_content` · `test_token_manager.py` (×6) · `test_database.py` (×26) · `test_seed.py` (×8) · `test_api_db.py` (×25) · `test_auth.py` (×20) · `test_ratelimit.py` (×9) · `test_migrations.py` (×4) · `test_readiness.py` (×4) · `test_hybrid.py` (×13) · `test_eval_metrics.py` (×9) · `test_admin_docs.py` (×10)
 
 ### 🚀 MEDIUM RUN — adds LLM unit tests, ~15s test time
 **When:** after changes to prompts, the LLM client, or retrieval logic — validates LLM behavior (refusal guardrail + grounded answers) without the two slowest HTTP tests.
 ```bash
-python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py tests/test_ratelimit.py tests/test_migrations.py -k "not parallel and not pipeline and not chat_endpoint"
+python -m pytest tests/test_generation.py tests/test_retrieval.py tests/test_integration.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py tests/test_ratelimit.py tests/test_migrations.py tests/test_readiness.py tests/test_hybrid.py tests/test_eval_metrics.py tests/test_admin_docs.py -k "not parallel and not pipeline and not chat_endpoint"
 ```
-**Tests (104):** all 102 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
+**Tests (140):** all 138 fast tests + `test_llm_refusal_on_out_of_context_query` · `test_llm_answers_with_valid_context`
 
 ### 🏁 FULL RUN — everything, ~1:00 warm / ~3:00 cold
 **When:** before committing / pushing, or after structural changes (imports, client init, Docker). The only run exercising the complete HTTP + thread-pool + LLM pipeline, including the 53s history test.
 ```bash
 python -m pytest
 ```
-**Tests (108):** the full suite (see `testpaths = tests` in `pytest.ini`).
+**Tests (144):** the full suite (see `testpaths = tests` in `pytest.ini`).
 
 > **Tip:** use `python -m pytest -v` for per-test visibility, and `python -m pytest --durations=12 -q` to refresh this baseline table.
 
@@ -97,7 +101,7 @@ python -m pytest
 | `src/services/auth.test.ts` | ×5 | **~5ms each** | Axios Bearer interceptor (token attached / absent when anonymous), register/login/fetchMe payloads & endpoints |
 | `src/components/auth/AuthModal.test.tsx` | ×7 | **~120ms each** | Login/register modal: renders when open, tab switch shows display-name + password hint, submit login/register closes, backend error surfaced (no close), X closes |
 
-**Suite totals (2026-08-16):** **108 tests** (was 87, +21 auth) · warm ~10s · cold adds ~30-50s transform/env setup.
+**Suite totals (2026-08-17):** **118 tests** (+5 DocumentUpload; includes AdminTab/AdminPage/ConfigEditor/admin-format/ReportForm files that were previously run but not listed in the table above) · warm ~10s · cold adds ~30-50s transform/env setup.
 
 **Commands** (run from `frontend/`):
 
@@ -108,6 +112,16 @@ python -m pytest
 | 👀 Watch mode | `npm run test:watch` | Iterative dev loop |
 
 **Why it matters:** the SSE parser (`services/chat.ts`) is the highest-risk frontend code — a frame-splitting bug silently freezes the chat with no error. The store tests lock down the streaming state machine (idle → searching → generating → done/error), and the RTL tests guard the RTL UI against regressions when i18n strings change.
+
+### 🎯 RAG QUALITY EVAL — retrieval metrics, ~1-2 min (real Chroma corpus)
+**When:** after any change to retrieval (`src/rag/hybrid.py`, embedding model, corpus refresh).
+Runs the golden Q/A set through the chosen retriever and reports recall@k / MRR.
+```bash
+RERANK_ENABLED=false python -m src.eval.evaluate --retriever vector --k 5   # baseline
+RERANK_ENABLED=false python -m src.eval.evaluate --retriever hybrid --k 5   # hybrid (vector + BM25)
+python -m src.eval.evaluate --retriever hybrid --k 5                         # hybrid + cross-encoder rerank (downloads model on first use)
+```
+**Baseline (2026-08-16, 6 golden queries, k=5):** vector recall@5 **0.83** / MRR **0.700** → hybrid recall@5 **1.00** / MRR **1.000**.
 
 ### 🧨 STRESS CHECK — huge payloads, ~50s
 **When:** after changes to the token-budget strategy (`token_manager.py`) or the chat history handling. Sends ~36k-token pasted messages through `/api/chat` and asserts the endpoint still returns 200 (no context-window overflow).

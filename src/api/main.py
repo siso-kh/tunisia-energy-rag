@@ -4,14 +4,17 @@ import json
 import logging
 import os
 import uuid
+import requests
 from collections import deque
 from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import text
 
 from src.api.auth import get_current_user_optional, router as auth_router
 from src.api.ratelimit import (
@@ -24,8 +27,16 @@ from src.api.ratelimit import (
 from src.api.security import add_security_middlewares
 from src.database import service
 from src.database.connection import AsyncSessionLocal, get_db_dependency
-from src.database.models import ReportStatus, User, UtilityType
-from src.rag.retrieve import run_pipeline, stream_pipeline
+from src.database.models import ReportStatus, Source, SourceStatus, User, UtilityType
+from src.ingestion.admin_ingest import (
+    MAX_UPLOAD_BYTES,
+    download_pdf_from_url,
+    ingest_pdf,
+    is_valid_pdf,
+    save_uploaded_pdf,
+)
+from src.ingestion.research import crawl_website_for_pdfs, download_pdf_from_source, ingest_downloaded_pdf
+from src.rag.retrieve import collection, run_pipeline, stream_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +220,8 @@ class OutageReportOut(BaseModel):
 class OutageCreate(BaseModel):
     utility: UtilityType = UtilityType.STEG
     region: str = Field(min_length=1, max_length=100)
-    latitude: float = Field(ge=-90.0, le=90.0)
-    longitude: float = Field(ge=-180.0, le=180.0)
+    latitude: Optional[float] = Field(default=None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
     description: Optional[str] = None
 
 
@@ -460,12 +471,24 @@ async def create_outage(
     session=Depends(get_db_dependency),
     user: Optional[User] = Depends(get_current_user_optional),
 ):
+    # Default coordinates to the selected governorate's center if not provided
+    lat = payload.latitude
+    lng = payload.longitude
+    if lat is None or lng is None:
+        from src.database.seed import _TUNISIA_COORDS
+        coords = _TUNISIA_COORDS.get(payload.region.strip())
+        if coords:
+            lat, lng = coords
+        else:
+            # Fallback: center of Tunisia
+            lat, lng = 34.0, 9.5
+
     return await service.create_outage(
         session,
         utility=payload.utility,
         region=payload.region.strip(),
-        latitude=payload.latitude,
-        longitude=payload.longitude,
+        latitude=lat,
+        longitude=lng,
         description=payload.description,
         user_id=user.id if user else None,
     )
@@ -564,8 +587,387 @@ async def update_admin_config(
     return await service.get_all_settings(session)
 
 
+# ---------------------------------------------------------------------------
+# Admin: PDF document ingestion (upload a file or ingest a URL)
+# ---------------------------------------------------------------------------
+# Full auto-ingestion flow for a single document:
+#   save/download -> data/raw -> LLM triage -> data/filtered or data/blacklisted
+#   -> (if accepted) chunk + embed into ChromaDB so the chat can retrieve it.
+# The triage + ChromaDB work is synchronous, so it runs in a thread pool to
+# keep the event loop responsive.
+
+class DocumentUrlIn(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+
+
+class DocumentIngestOut(BaseModel):
+    filename: str
+    status: str
+    dest: str
+    gate1_score: float
+    gate2_score: Optional[float] = None
+    master_score: float
+    total_pages: int
+    chunks_indexed: int = 0
+    index_error: Optional[str] = None
+
+
+@app.post("/api/admin/documents/upload", response_model=DocumentIngestOut)
+@limiter.limit(ADMIN_LIMIT)
+async def admin_upload_document(
+    request: Request,
+    file: UploadFile = File(...),
+    _: None = Depends(require_admin_key),
+):
+    """Admin-only: upload a PDF file, run triage, and index it if accepted."""
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large (max {MAX_UPLOAD_BYTES // (1024 * 1024)} MB).",
+        )
+    if not is_valid_pdf(content):
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF.")
+
+    try:
+        pdf_path = await run_in_threadpool(save_uploaded_pdf, content, file.filename or "document.pdf")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    decision = await run_in_threadpool(ingest_pdf, pdf_path)
+    return decision
+
+
+@app.post("/api/admin/documents/from-url", response_model=DocumentIngestOut)
+@limiter.limit(ADMIN_LIMIT)
+async def admin_ingest_from_url(
+    request: Request,
+    payload: DocumentUrlIn,
+    _: None = Depends(require_admin_key),
+):
+    """Admin-only: download a PDF from a URL, run triage, index if accepted."""
+    try:
+        pdf_path = await run_in_threadpool(download_pdf_from_url, payload.url.strip())
+    except requests.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Download failed: {e}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    decision = await run_in_threadpool(ingest_pdf, pdf_path)
+    return decision
+
+
+# ---------------------------------------------------------------------------
+# Admin: URL source management (research + ingest)
+# ---------------------------------------------------------------------------
+# Two-phase workflow for batch PDF collection:
+#   1. Admin adds URLs → sources table (dedup by URL)
+#   2. "Deep Research" → download + validate → data/raw/
+#   3. "Ingest" → triage (LLM) → ChromaDB (if accepted)
+
+class SourceCreateIn(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+
+
+class SourceOut(BaseModel):
+    id: uuid.UUID
+    url: str
+    filename: Optional[str] = None
+    status: str
+    file_size: Optional[int] = None
+    total_pages: Optional[int] = None
+    gate1_score: Optional[float] = None
+    master_score: Optional[float] = None
+    chunks_indexed: Optional[int] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResearchResult(BaseModel):
+    downloaded: int
+    failed: int
+    total: int
+
+
+class IngestResult(BaseModel):
+    indexed: int
+    rejected: int
+    failed: int
+    total: int
+
+
+@app.get("/api/admin/sources", response_model=List[SourceOut])
+@limiter.limit(ADMIN_LIMIT)
+async def list_sources(
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """List all tracked sources with their current status."""
+    from sqlalchemy import select
+
+    result = await session.execute(select(Source).order_by(Source.created_at.desc()))
+    return result.scalars().all()
+
+
+@app.post("/api/admin/sources", response_model=SourceOut, status_code=201)
+@limiter.limit(ADMIN_LIMIT)
+async def add_source(
+    request: Request,
+    payload: SourceCreateIn,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Add a PDF URL to the research queue. Rejects duplicates."""
+    from sqlalchemy import select
+
+    # Check for duplicate URL.
+    existing = await session.execute(
+        select(Source).where(Source.url == payload.url.strip())
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="This URL is already being tracked.")
+
+    source = Source(url=payload.url.strip())
+    session.add(source)
+    await session.commit()
+    await session.refresh(source)
+    return source
+
+
+@app.delete("/api/admin/sources/{source_id}")
+@limiter.limit(ADMIN_LIMIT)
+async def delete_source(
+    request: Request,
+    source_id: uuid.UUID,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Remove a source from the tracking table."""
+    from sqlalchemy import select
+
+    result = await session.execute(select(Source).where(Source.id == source_id))
+    source = result.scalar_one_or_none()
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source not found.")
+    await session.delete(source)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/admin/sources/research", response_model=ResearchResult)
+@limiter.limit(ADMIN_LIMIT)
+async def research_sources(
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Download + validate all pending sources. Skips already-downloaded or failed."""
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(Source).where(Source.status == SourceStatus.PENDING)
+    )
+    pending = result.scalars().all()
+
+    if not pending:
+        return ResearchResult(downloaded=0, failed=0, total=0)
+
+    downloaded = 0
+    failed = 0
+    for source in pending:
+        result = await run_in_threadpool(download_pdf_from_source, source.url)
+        if result["error"]:
+            source.status = SourceStatus.FAILED
+            source.error_message = result["error"]
+            failed += 1
+        else:
+            source.filename = result["filename"]
+            source.file_size = result["file_size"]
+            source.status = SourceStatus.DOWNLOADED
+            downloaded += 1
+
+    await session.commit()
+    return ResearchResult(
+        downloaded=downloaded,
+        failed=failed,
+        total=len(pending),
+    )
+
+
+@app.post("/api/admin/sources/ingest", response_model=IngestResult)
+@limiter.limit(ADMIN_LIMIT)
+async def ingest_sources(
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Triage + ChromaDB index all downloaded sources."""
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(Source).where(Source.status == SourceStatus.DOWNLOADED)
+    )
+    ready = result.scalars().all()
+
+    if not ready:
+        return IngestResult(indexed=0, rejected=0, failed=0, total=0)
+
+    indexed = 0
+    rejected = 0
+    failed = 0
+    for source in ready:
+        result = await run_in_threadpool(ingest_downloaded_pdf, source.filename)
+        source.total_pages = result["total_pages"]
+        source.gate1_score = result["gate1_score"]
+        source.master_score = result["master_score"]
+        source.chunks_indexed = result["chunks_indexed"]
+        if result["error"]:
+            source.status = SourceStatus.FAILED
+            source.error_message = result["error"]
+            failed += 1
+        elif result["status"] == "indexed":
+            source.status = SourceStatus.INDEXED
+            indexed += 1
+        else:
+            source.status = SourceStatus.TRIAGE_REJECTED
+            rejected += 1
+
+    await session.commit()
+    return IngestResult(
+        indexed=indexed,
+        rejected=rejected,
+        failed=failed,
+        total=len(ready),
+    )
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: Optional[List[uuid.UUID]] = None
+    status: Optional[str] = None  # delete all with this status
+
+
+class BulkDeleteResult(BaseModel):
+    deleted: int
+
+
+class CrawlRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+
+
+class CrawlResult(BaseModel):
+    found: int
+    added: int
+    skipped: int
+    pdf_urls: List[str]
+
+
+@app.post("/api/admin/sources/bulk-delete", response_model=BulkDeleteResult)
+@limiter.limit(ADMIN_LIMIT)
+async def bulk_delete_sources(
+    request: Request,
+    payload: BulkDeleteRequest,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Delete multiple sources by IDs or by status."""
+    from sqlalchemy import delete as sa_delete
+
+    if payload.ids:
+        result = await session.execute(
+            sa_delete(Source).where(Source.id.in_(payload.ids))
+        )
+    elif payload.status:
+        result = await session.execute(
+            sa_delete(Source).where(Source.status == payload.status)
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Provide ids or status to delete.")
+
+    await session.commit()
+    return BulkDeleteResult(deleted=result.rowcount)
+
+
+@app.post("/api/admin/sources/crawl", response_model=CrawlResult)
+@limiter.limit(ADMIN_LIMIT)
+async def crawl_for_sources(
+    request: Request,
+    payload: CrawlRequest,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """Crawl a website page for PDF links and add them as sources."""
+    from sqlalchemy import select
+
+    pdf_urls = await run_in_threadpool(crawl_website_for_pdfs, payload.url.strip())
+
+    added = 0
+    skipped = 0
+    for pdf_url in pdf_urls:
+        # Check for duplicate URL.
+        existing = await session.execute(
+            select(Source).where(Source.url == pdf_url)
+        )
+        if existing.scalar_one_or_none():
+            skipped += 1
+            continue
+
+        source = Source(url=pdf_url)
+        session.add(source)
+        added += 1
+
+    await session.commit()
+    return CrawlResult(
+        found=len(pdf_urls),
+        added=added,
+        skipped=skipped,
+        pdf_urls=pdf_urls,
+    )
+
+
 @app.get("/health")
 @limiter.exempt
 def health_check(request: Request):
-    """Simple endpoint to verify the server is running."""
+    """Liveness probe: verifies the server process is up.
+
+    Orchestrators and healthchecks use /ready (which also checks Postgres and
+    ChromaDB) before sending traffic; /health only proves the process runs.
+    """
     return {"status": "healthy", "api": "online"}
+
+
+@app.get("/ready")
+@limiter.exempt
+async def readiness_check(request: Request):
+    """Readiness probe: the app is ready when Postgres and ChromaDB respond.
+
+    Returns 200 with a per-dependency status map when both are reachable, or
+    503 listing what failed. Each check has a short timeout so a hung
+    dependency cannot block the probe (and thus the orchestrator's decision).
+    """
+    checks = {"db": False, "chroma": False}
+
+    async def _db_ping():
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+
+    try:
+        # ChromaDB's collection.count() is synchronous file I/O -> thread pool.
+        await asyncio.wait_for(asyncio.to_thread(collection.count), timeout=3)
+        checks["chroma"] = True
+    except Exception as e:
+        logger.warning("Readiness: ChromaDB check failed: %s", e)
+
+    try:
+        await asyncio.wait_for(_db_ping(), timeout=3)
+        checks["db"] = True
+    except Exception as e:
+        logger.warning("Readiness: database check failed: %s", e)
+
+    ready = all(checks.values())
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={"status": "ready" if ready else "not_ready", "checks": checks},
+    )

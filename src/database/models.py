@@ -101,6 +101,42 @@ class Setting(Base):
     )
 
 
+class SourceStatus(str, enum.Enum):
+    PENDING = "pending"
+    DOWNLOADING = "downloading"
+    DOWNLOADED = "downloaded"
+    FAILED = "failed"
+    INGESTING = "ingesting"
+    INDEXED = "indexed"
+    TRIAGE_REJECTED = "triage_rejected"
+
+
+class Source(Base):
+    """A PDF URL tracked through research → download → triage → indexing.
+
+    Admins add URLs; the deep-research button downloads + validates each;
+    the ingest button runs the two-gate LLM triage and ChromaDB embedding.
+    """
+    __tablename__ = "sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    url: Mapped[str] = mapped_column(String(2048), unique=True, nullable=False, index=True)
+    filename: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    status: Mapped[SourceStatus] = mapped_column(
+        Enum(SourceStatus), default=SourceStatus.PENDING, nullable=False
+    )
+    file_size: Mapped[Optional[int]] = mapped_column(nullable=True)
+    total_pages: Mapped[Optional[int]] = mapped_column(nullable=True)
+    gate1_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    master_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    chunks_indexed: Mapped[Optional[int]] = mapped_column(nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class OutageReport(Base):
     __tablename__ = "outage_reports"
 

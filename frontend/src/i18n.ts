@@ -4,11 +4,10 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 import fr from "./locales/fr.json";
 import ar from "./locales/ar.json";
-import derja from "./locales/derja.json";
 
 // RTL languages: when active, flip the <html dir> attribute so the whole
 // layout mirrors (logical CSS properties handle spacing automatically).
-const RTL_LANGS = ["ar", "derja"];
+const RTL_LANGS = ["ar"];
 
 function applyDirection(lang: string) {
   document.documentElement.dir = RTL_LANGS.includes(lang) ? "rtl" : "ltr";
@@ -22,14 +21,11 @@ i18n
     resources: {
       fr: { translation: fr },
       ar: { translation: ar },
-      // Derja falls back to Arabic for untranslated keys
-      derja: { translation: derja },
     },
     fallbackLng: {
-      derja: ["ar", "fr"],
       default: ["fr"],
     },
-    supportedLngs: ["fr", "ar", "derja"],
+    supportedLngs: ["fr", "ar"],
     interpolation: { escapeValue: false },
     detection: {
       order: ["localStorage", "navigator"],

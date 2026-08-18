@@ -65,8 +65,10 @@ services:
         condition: service_completed_successfully
     # Wide start_period: importing the API loads the sentence-transformers
     # embedding model, which can take 30-60s+ on a cold first start.
+    # Readiness (/ready) also verifies Postgres + ChromaDB are reachable, so
+    # the backend only turns healthy once its dependencies respond.
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=5)"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -81,15 +83,46 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
-    # Proxied through Nginx -> backend /health (verifies the full chain)
+    # Proxied through Nginx -> backend /ready (verifies the full chain incl. deps)
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ready >/dev/null 2>&1 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     depends_on:
       backend:
+        condition: service_healthy
+
+  # ===================== Nightly Postgres backups =====================
+  # Runs pg_dump on an interval (default 24h) into ./backups, keeping the
+  # last BACKUP_RETENTION_DAYS days (default 7). Restore drill:
+  #   docker compose exec -T postgres pg_restore -U postgres -d energie_tunisie \
+  #     --clean --if-exists < backups/energie_tunisie_<timestamp>.dump
+  pg-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      BACKUP_INTERVAL_HOURS: "${BACKUP_INTERVAL_HOURS:-24}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "[pg-backup] waiting for postgres to accept connections..."
+        until pg_isready -h postgres -U postgres -d energie_tunisie >/dev/null 2>&1; do sleep 5; done
+        echo "[pg-backup] connected. Backup loop: every $${BACKUP_INTERVAL_HOURS}h, keeping $${BACKUP_RETENTION_DAYS}d."
+        while true; do
+          ts=$$(date +%Y%m%d_%H%M%S)
+          PGPASSWORD=postgres pg_dump -h postgres -U postgres -d energie_tunisie -F c -f /backups/energie_tunisie_$${ts}.dump
+          echo "[pg-backup] wrote /backups/energie_tunisie_$${ts}.dump"
+          find /backups -name 'energie_tunisie_*.dump' -mtime +$${BACKUP_RETENTION_DAYS} -delete
+          sleep $${BACKUP_INTERVAL_HOURS}h
+        done
+    depends_on:
+      postgres:
         condition: service_healthy
 
   # ===================== Ngrok public tunnel =====================

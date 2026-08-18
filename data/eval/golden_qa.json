@@ -1,0 +1,48 @@
+[
+  {
+    "id": "fr-renewables-2030",
+    "query": "Quel est l'objectif de la Tunisie en matière d'énergies renouvelables à l'horizon 2030 ?",
+    "expected_sources": ["guide-detaille-des-energies-renouvelables-en-tunisie.pdf"],
+    "note": "PST objectives (PV + éolien MW targets) discussed in the detailed renewable guide."
+  },
+  {
+    "id": "fr-anme-subventions",
+    "query": "Quelles subventions l'ANME offre-t-elle pour l'installation de panneaux solaires ?",
+    "expected_sources": [
+      "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+      "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+    ],
+    "note": "ANME assistance technique / feasibility studies for PV self-production; the general guide also covers the subsidy/regulatory framework."
+  },
+  {
+    "id": "fr-autoconsommation",
+    "query": "Comment fonctionne le régime d'autoconsommation en Tunisie ?",
+    "expected_sources": [
+      "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+      "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+    ],
+    "note": "guide-detaille p.33 covers 'Régime de l'autoconsommation' under the 2015-12 legal framework; the autoproduction guide details the practical regime. Both are genuine answers — pure-vector top-3 surfaces neither."
+  },
+  {
+    "id": "fr-efficacite-batiments",
+    "query": "Quelles mesures d'efficacité énergétique recommande-t-on pour les bâtiments en Tunisie ?",
+    "expected_sources": [
+      "guide-eco-construction-pour-les-collectivites-locales.pdf",
+      "1TXH000671B0301-v3.pdf",
+      "EE-Guidelines-final-web_french.pdf"
+    ],
+    "note": "guide-eco-construction p.7 lists envelope optimization + active measures; 1TXH is the 'transition énergétique des bâtiments' practical guide; EE-Guidelines covers audits."
+  },
+  {
+    "id": "ar-tarshid-electricite",
+    "query": "ترشيد استهلاك الكهرباء في المباني",
+    "expected_sources": ["ng-conservation-curriculum-booklet-layout.pdf"],
+    "note": "Arabic conservation booklet — pure-vector already surfaces it (p.1)."
+  },
+  {
+    "id": "ar-objectifs-2030",
+    "query": "أهداف الطاقة المتجددة في تونس 2030",
+    "expected_sources": ["guide-detaille-des-energies-renouvelables-en-tunisie.pdf"],
+    "note": "PST objectives pages; pure-vector surfaces p.20."
+  }
+]

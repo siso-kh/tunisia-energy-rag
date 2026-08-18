@@ -33,12 +33,12 @@ export default function ReportForm({ picked }: Props) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!picked || !region.trim()) return;
+    if (!region.trim()) return;
     mutation.mutate({
       utility,
       region: region.trim(),
-      latitude: picked.lat,
-      longitude: picked.lng,
+      latitude: picked?.lat ?? null,
+      longitude: picked?.lng ?? null,
       description: description.trim() || null,
     });
   };
@@ -108,12 +108,12 @@ export default function ReportForm({ picked }: Props) {
             📍 {picked.lat.toFixed(4)}, {picked.lng.toFixed(4)}
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">{t("map.clickMap")}</p>
+          <p className="text-xs text-muted-foreground">{t("map.clickMapOptional")}</p>
         )}
 
         <Button
           type="submit"
-          disabled={!picked || !region.trim() || mutation.isPending}
+          disabled={!region.trim() || mutation.isPending}
           className="w-full"
         >
           {mutation.isPending ? "…" : t("map.submit")}

@@ -6,6 +6,7 @@ import shutil
 import pdfplumber
 from pathlib import Path
 from datetime import datetime
+from typing import Dict, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -24,22 +25,40 @@ BLACKLISTED_DIR = REPO_ROOT / CONFIG["paths"]["blacklisted_dir"]
 SCORES_FILE = REPO_ROOT / CONFIG["paths"]["scores_file"]
 REPORT_FILE = REPO_ROOT / CONFIG["paths"]["report_file"]
 
-# Ensure a .env exists at project root and load it
 ENV_PATH = REPO_ROOT / ".env"
-if not ENV_PATH.exists():
-    with open(ENV_PATH, "w", encoding="utf-8") as _f:
-        _f.write("# Add your API key for the OpenAI-compatible client\n# Example:\n# CUSTOM_API_KEY=sk-...\n# Optionally set your provider base URL:\n# OPENAI_BASE_URL=https://api.example.com\n")
 
-load_dotenv(dotenv_path=str(ENV_PATH))
+
+def _load_env() -> None:
+    """Create .env if missing and load it (side-effect free on plain import)."""
+    if not ENV_PATH.exists():
+        with open(ENV_PATH, "w", encoding="utf-8") as _f:
+            _f.write("# Add your API key for the OpenAI-compatible client\n# Example:\n# CUSTOM_API_KEY=sk-...\n# Optionally set your provider base URL:\n# OPENAI_BASE_URL=https://api.example.com\n")
+    load_dotenv(dotenv_path=str(ENV_PATH))
+
 
 # Read API key from environment (loaded from .env)
 API_KEY = os.environ.get("CUSTOM_API_KEY")
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "YOUR_THIRD_PARTY_API_ENDPOINT")
 
-if not API_KEY:
-    print(f"Warning: no CUSTOM_API_KEY found in {ENV_PATH}. Fill it before running the pipeline.")
+_client: Optional[OpenAI] = None
 
-client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+
+def get_client() -> OpenAI:
+    """Lazily build the sync OpenAI client (used by the CLI and the API alike).
+
+    The client is created on first use instead of at import time so the API
+    can import this module without requiring a CUSTOM_API_KEY to be present.
+    """
+    global _client, API_KEY, BASE_URL
+    if _client is None:
+        _load_env()
+        API_KEY = os.environ.get("CUSTOM_API_KEY")
+        BASE_URL = os.environ.get("OPENAI_BASE_URL", "YOUR_THIRD_PARTY_API_ENDPOINT")
+        if not API_KEY:
+            print(f"Warning: no CUSTOM_API_KEY found in {ENV_PATH}. Fill it before running the pipeline.")
+        _client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    return _client
+
 
 DOMAIN_KEYWORDS = ["énergie", "efficacité", "photovoltaïque", "steg", "anme", "consommation", "طاقة", "نجاعة", "استهلاك"]
 
@@ -85,7 +104,7 @@ def extract_metadata(pdf_path: Path) -> dict:
     try:
         with pdfplumber.open(pdf_path) as pdf:
             total_pages = len(pdf.pages)
-            
+
             # Safe text extraction for title/subtitles
             if total_pages > 0:
                 first_page_text = pdf.pages[0].extract_text() or ""
@@ -106,12 +125,12 @@ def extract_metadata(pdf_path: Path) -> dict:
     }
 
 
-def evaluate_gate1_metadata(meta: dict) -> float:
+def evaluate_gate1_metadata(meta: dict, client: Optional[OpenAI] = None) -> float:
     """Gate 1: Fast evaluation based purely on metadata."""
     combined_meta_text = f"Filename: {meta['filename']}\nTitle: {meta['title']}\nSubtitles: {' | '.join(meta['subtitles'])}"
     prompt = PROMPT_TEMPLATE.format(text_sample=combined_meta_text)
     try:
-        res = client.chat.completions.create(
+        res = (client or get_client()).chat.completions.create(
             model="agnes-2.0-flash",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
@@ -145,10 +164,10 @@ def sample_proportional_pages(pdf_path: Path, total_pages: int, gate1_score: flo
             num_pages = max(sampling_cfg["min_pages"], int(actual_pages * sampling_cfg["base_ratio"]))
             uncertainty = 1.0 - (abs(gate1_score - 50.0) / 50.0)
             final_sample_count = min(sampling_cfg["max_pages"], int(num_pages * (1.0 + uncertainty)))
-            
+
             mean_page = actual_pages * 0.3
             std_dev = actual_pages * 0.25
-            
+
             selected_indices = set()
             attempts = 0
             while len(selected_indices) < min(final_sample_count, actual_pages) and attempts < 100:
@@ -169,11 +188,11 @@ def sample_proportional_pages(pdf_path: Path, total_pages: int, gate1_score: flo
 
     return extracted_text
 
-def evaluate_gate2_deep(pdf_path: Path, sample_text: str) -> float:
+def evaluate_gate2_deep(pdf_path: Path, sample_text: str, client: Optional[OpenAI] = None) -> float:
     """Gate 2: Deep evaluation of extracted page text."""
     prompt = PROMPT_TEMPLATE.format(text_sample=sample_text[:3500])
     try:
-        res = client.chat.completions.create(
+        res = (client or get_client()).chat.completions.create(
             model="agnes-2.0-flash",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
@@ -182,6 +201,65 @@ def evaluate_gate2_deep(pdf_path: Path, sample_text: str) -> float:
         return float(data.get("score", 0))
     except Exception:
         return 0.0
+
+
+def triage_file(pdf_path: Path, client: Optional[OpenAI] = None) -> Dict:
+    """Judge a single PDF and return the decision (no file moves).
+
+    Runs the two-gate LLM evaluation on one file and returns the verdict +
+    scores so callers (CLI pipeline or the admin upload API) can route the
+    file to ``data/filtered/`` or ``data/blacklisted/`` themselves.
+
+    Returns a dict with: filename, status ("PASSED"/"BLACKLISTED"), the gate
+    scores, the master score, total pages, whether gate 1 short-circuited,
+    and the destination directory name ("filtered"/"blacklisted").
+    """
+    meta = extract_metadata(pdf_path)
+
+    # GATE 1
+    g1_score = evaluate_gate1_metadata(meta, client)
+    shortcircuited = False
+
+    if g1_score < CONFIG["gate1"]["instant_reject_threshold"]:
+        status = "BLACKLISTED"
+        master_score = g1_score
+        shortcircuited = True
+    elif g1_score > CONFIG["gate1"]["instant_pass_threshold"]:
+        status = "PASSED"
+        master_score = g1_score
+        shortcircuited = True
+    else:
+        # GATE 2 DEEP ANALYSIS
+        sample_text = sample_proportional_pages(pdf_path, meta["total_pages"], g1_score)
+        g2_score = evaluate_gate2_deep(pdf_path, sample_text, client)
+
+        master_score = (g1_score * CONFIG["gate2"]["weight_algo"]) + (g2_score * CONFIG["gate2"]["weight_ai"])
+        status = "PASSED" if master_score >= CONFIG["gate2"]["master_pass_threshold"] else "BLACKLISTED"
+
+    return {
+        "filename": pdf_path.name,
+        "status": status,
+        "gate1_score": g1_score,
+        "gate2_score": None if shortcircuited else g2_score,
+        "master_score": round(master_score, 2),
+        "total_pages": meta["total_pages"],
+        "shortcircuited": shortcircuited,
+        "dest": "filtered" if status == "PASSED" else "blacklisted",
+    }
+
+
+def _move_pdf(pdf_path: Path, dest_dir: Path) -> None:
+    """Move a PDF into dest_dir (copy + delete fallback for cross-volume)."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / pdf_path.name
+    try:
+        shutil.move(str(pdf_path), str(dest))
+    except Exception:
+        shutil.copy(str(pdf_path), str(dest))
+        try:
+            pdf_path.unlink()
+        except Exception:
+            pass
 
 
 def run_pipeline():
@@ -200,79 +278,28 @@ def run_pipeline():
     print(f"Starting Multi-Gate Filtering on {len(pdf_files)} files...\n")
 
     for pdf in pdf_files:
-        meta = extract_metadata(pdf)
-        
-        # GATE 1
-        g1_score = evaluate_gate1_metadata(meta)
-        print(f"[{pdf.name}] Gate 1 Score: {g1_score}%")
+        decision = triage_file(pdf)
+        print(f"[{pdf.name}] Gate 1 Score: {decision['gate1_score']}% -> {decision['status']}")
 
-        if g1_score < CONFIG["gate1"]["instant_reject_threshold"]:
-            status, master_score = "BLACKLISTED", g1_score
-            dest = BLACKLISTED_DIR / pdf.name
-            try:
-                shutil.move(str(pdf), str(dest))
-            except Exception:
-                shutil.copy(str(pdf), str(dest))
-                try:
-                    pdf.unlink()
-                except Exception:
-                    pass
-            stats["blacklisted"] += 1
-            stats["gate1_shortcircuited"] += 1
-
-        elif g1_score > CONFIG["gate1"]["instant_pass_threshold"]:
-            status, master_score = "PASSED", g1_score
-            dest = FILTERED_DIR / pdf.name
-            try:
-                shutil.move(str(pdf), str(dest))
-            except Exception:
-                shutil.copy(str(pdf), str(dest))
-                try:
-                    pdf.unlink()
-                except Exception:
-                    pass
+        if decision["status"] == "PASSED":
+            status = "PASSED"
+            _move_pdf(pdf, FILTERED_DIR)
             stats["passed"] += 1
-            stats["gate1_shortcircuited"] += 1
-
         else:
-            # GATE 2 DEEP ANALYSIS
-            sample_text = sample_proportional_pages(pdf, meta["total_pages"], g1_score)
-            g2_score = evaluate_gate2_deep(pdf, sample_text)
-            
-            master_score = (g1_score * CONFIG["gate2"]["weight_algo"]) + (g2_score * CONFIG["gate2"]["weight_ai"])
-            
-            if master_score >= CONFIG["gate2"]["master_pass_threshold"]:
-                status = "PASSED"
-                dest = FILTERED_DIR / pdf.name
-                try:
-                    shutil.move(str(pdf), str(dest))
-                except Exception:
-                    shutil.copy(str(pdf), str(dest))
-                    try:
-                        pdf.unlink()
-                    except Exception:
-                        pass
-                stats["passed"] += 1
-            else:
-                status = "BLACKLISTED"
-                dest = BLACKLISTED_DIR / pdf.name
-                try:
-                    shutil.move(str(pdf), str(dest))
-                except Exception:
-                    shutil.copy(str(pdf), str(dest))
-                    try:
-                        pdf.unlink()
-                    except Exception:
-                        pass
-                stats["blacklisted"] += 1
+            status = "BLACKLISTED"
+            _move_pdf(pdf, BLACKLISTED_DIR)
+            stats["blacklisted"] += 1
+
+        if decision["shortcircuited"]:
+            stats["gate1_shortcircuited"] += 1
 
         # Save score log
         scores_history[pdf.name] = {
             "timestamp": datetime.now().isoformat(),
             "status": status,
-            "gate1_score": g1_score,
-            "master_score": round(master_score, 2),
-            "total_pages": meta["total_pages"]
+            "gate1_score": decision["gate1_score"],
+            "master_score": decision["master_score"],
+            "total_pages": decision["total_pages"],
         }
 
     # Write persistent JSON log

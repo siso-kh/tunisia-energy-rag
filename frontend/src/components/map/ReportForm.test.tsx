@@ -66,14 +66,20 @@ describe("ReportForm", () => {
     }
   });
 
-  it("is disabled for submit until a location is picked", async () => {
+  it("submits without a map click (coordinates default to governorate center)", async () => {
     const user = userEvent.setup();
     render(<ReportForm picked={null} />);
 
     await user.selectOptions(screen.getByLabelText("Gouvernorat"), "Sfax");
     await user.click(screen.getByRole("button", { name: "Envoyer le signalement" }));
 
-    expect(createOutage).not.toHaveBeenCalled();
+    expect(createOutage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        region: "Sfax",
+        latitude: null,
+        longitude: null,
+      })
+    );
   });
 
   it("blocks submission until a governorate is selected", async () => {

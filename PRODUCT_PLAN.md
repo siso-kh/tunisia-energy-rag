@@ -10,37 +10,35 @@
 | Area | Status |
 |---|---|
 | **RAG pipeline** | Collector → LLM triage → OCR/chunk ingest → ChromaDB embeddings → Mistral generation (async, token-budgeted, SSE streaming) ✅ |
-| **Backend API** | FastAPI: chat (JSON + SSE), conversations, outage CRUD, admin purge stats/config, runtime settings, health. **71 tests** ✅ |
-| **Frontend** | React 18 + Vite + TS: chat w/ citations dropdown, Tunisia SVG map + Leaflet, solar ROI calculator, 3-locale i18n (fr/ar/derja), `/admin` page. **87 tests** ✅ |
-| **Data layer** | Async SQLAlchemy, Postgres (SQLite dev), seeder, outage TTL purge task, runtime-config settings table ✅ |
-| **Infra** | docker-compose (postgres, db-seed, backend, frontend/nginx, ngrok), healthchecks ✅ |
-| **Security** | Admin API-key (constant-time), no secrets committed, key in-memory only ✅ |
+| **Backend API** | FastAPI: chat (JSON + SSE), conversations, outage CRUD, admin purge stats/config, runtime settings, liveness (`/health`) + readiness (`/ready`). **112 tests** ✅ |
+| **Frontend** | React 18 + Vite + TS: chat w/ citations dropdown, Tunisia SVG map + Leaflet, solar ROI calculator, 2-locale i18n (fr/ar), `/admin` page. **108 tests** ✅ |
+| **Data layer** | Async SQLAlchemy, Postgres everywhere (dev = prod), Alembic migrations, seeder, outage TTL purge task, runtime-config settings table, nightly pg_dump backups ✅ |
+| **Infra** | docker-compose (postgres, db-seed, pg-backup, backend, frontend/nginx, ngrok), readiness-based healthchecks ✅ |
+| **Security** | Real auth (JWT), slowapi rate limiting, env-driven CORS + security headers, Admin API-key (constant-time), no secrets committed ✅ |
 | **CI/CD** | ❌ Empty — `.github/workflows/` has no workflows |
-| **Auth** | ❌ Single hardcoded "demo user" — no real accounts |
+| **Auth** | ✅ Email/password + JWT (register/login/me), per-user conversation + outage ownership |
+| **Sentry** | ❌ Not integrated — the last unchecked P0 item |
 
 ---
 
 ## 2. Phase 0 — Pre-launch blockers (P0, before any real user)
 
-### 2.1 Real user authentication — *biggest gap*
-Currently every conversation and outage report belongs to one `demo_user`.
+### 2.1 Real user authentication — ✅ DONE
+Email/password signup + login (bcrypt hashing, JWT), `/me`, per-user conversation +
+outage ownership; frontend auth store + login/register modal. Remaining: logout/refresh,
+password reset.
 
-- Email/password signup + login (Argon2 hashing, JWT or session cookies), or OAuth (Google/SSO).
-- Wire `user_id` through all endpoints (conversations, outages, admin audit).
-- Add `password_hash` to `User`, logout/refresh, password reset.
-- **Affects:** models, service, API, frontend store + login pages, ~20 tests.
+### 2.2 Rate limiting — ✅ DONE
+slowapi per-IP limits on chat/outages/auth/admin (env-tunable, Redis-backed storage
+optional), 429 + `Retry-After`, friendly frontend 429 messages.
 
-### 2.2 Rate limiting
-`/api/chat*` (LLM cost), `/api/outages` (spam), and admin login (brute force).
-`slowapi` / Redis-backed limiter per IP + per user.
+### 2.3 Production CORS + security headers — ✅ DONE
+Env-driven `CORS_ORIGINS` whitelist + security-headers middleware (nosniff, DENY,
+Referrer-Policy, opt-in HSTS/CSP). TLS still terminates at the reverse proxy.
 
-### 2.3 Production CORS + security headers
-`allow_origins=["*"]` in `src/api/main.py` is a dev default. Whitelist the real
-domain, add HSTS/CSP/iframe headers, terminate TLS at a reverse proxy.
-
-### 2.4 DB migrations (Alembic)
-Tables are created ad-hoc by the seeder. Product needs versioned, reversible
-migrations so schema changes deploy safely.
+### 2.4 DB migrations (Alembic) — ✅ DONE
+Versioned, reversible migrations (async env, initial revision, adopt-aware
+`ensure_schema`, generated `schema.sql` reference). Dev runs the same Postgres as prod.
 
 ### 2.5 Error tracking (Sentry)
 Errors are logged and sanitized today; Sentry gives real stack traces + prod alerting.
@@ -57,11 +55,14 @@ auto-deploy to staging on merge, prod on tag. **Biggest product-readiness lever.
 JSON logs, Prometheus `/metrics` (request latency, LLM tokens, purge counts),
 Grafana dashboard.
 
-### 3.3 Postgres backups
-Nightly `pg_dump` to object storage + retention, tested restore drill.
+### 3.3 Postgres backups — ✅ DONE (local)
+Nightly `pg_dump` via the `pg-backup` compose service into `./backups/` with
+retention, plus `scripts/backup_db.sh` / `scripts/restore_db.sh`. Remaining: ship
+backups off-host (object storage) once hosting is chosen.
 
-### 3.4 Health/readiness split
-`/health` (liveness) vs `/ready` (DB + Chroma reachable) for proper orchestration.
+### 3.4 Health/readiness split — ✅ DONE
+`/health` (liveness, always 200) vs `/ready` (DB + Chroma reachable, 503 with a
+per-dependency `checks` map when degraded); Docker healthchecks now gate on `/ready`.
 
 ---
 
@@ -80,12 +81,13 @@ resolves. Turns the map into a service.
 ### 4.3 User profiles & cross-device history
 Requires auth (2.1); then conversations list, rename, delete, resume from any device.
 
-### 4.4 RAG quality program
-The core product value is answer quality:
-- Hybrid retrieval (vector + BM25 keyword for Arabic/French queries)
-- Reranking (cross-encoder) on top-25 → top-5
-- Evaluation set: golden Q/A pairs + `ragas`-style metrics in CI
-- Scheduled corpus refresh (see Phase 3)
+### 4.4 RAG quality program — ✅ DONE (retrieval half)
+- Hybrid retrieval (vector + BM25, RRF fusion) — `src/rag/hybrid.py`, wired into the pipeline ✅
+- Cross-encoder reranking (multilingual, env-gated, lazy, graceful fallback) ✅
+- Golden Q/A set (`data/eval/golden_qa.json`) + offline eval harness (`src/eval/`):
+  recall@5 **0.83 → 1.00**, MRR **0.700 → 1.000** on 6 queries ✅
+- **Remaining:** scheduled corpus refresh (Phase 3 §5.1) and growing the golden
+  set / adding `ragas`-style groundedness metrics in CI once a deploy exists.
 
 ### 4.5 Usage quotas / cost guardrails
 Per-user daily chat caps, admin-configurable (fits the existing `settings`
@@ -147,13 +149,17 @@ On-call doc: how to restart, restore a backup, hotfix a broken embedding model.
 ## 8. Suggested order & effort
 
 ```
-Sprint 1  (P0)   Auth · Rate limiting · CORS/headers · Sentry
-Sprint 2  (P0/P1) Alembic migrations · CI/CD · backups · health split
+Sprint 1  (P0)   Auth ✅ · Rate limiting ✅ · CORS/headers ✅ · Sentry ⬜
+Sprint 2  (P0/P1) Alembic migrations ✅ · CI/CD ⬜ · backups ✅ · health split ✅
 Sprint 3  (P1)   Outage moderation · notifications
 Sprint 4  (P1)   RAG quality program (rerank + eval set) · scheduled ingestion
 Sprint 5  (P2)   Redis · CDN · load test · landing page + docs
 Sprint 6  (P2)   Legal · analytics · security audit · runbook
 ```
+
+**Next up:** finish Sprint 1 with **Sentry**, then **CI/CD** (the remaining
+unblocker — now that migrations exist, CI can verify `alembic upgrade head` on
+a fresh DB on every PR).
 
 **Rough total: 6 focused sprints (~4–6 weeks solo, ~2–3 with a second dev).**
 The two things that unblock everything else are **(1) real auth** and

@@ -89,7 +89,8 @@
     "steg": "الكهرباء (الشركة التونسية للكهرباء والغاز)",
     "sonede": "الماء (الصوناد)",
     "other": "أخرى",
-    "clickMap": "انقر على الخريطة لوضع العلامة"
+    "clickMap": "انقر على الخريطة لوضع العلامة",
+    "clickMapOptional": "انقر على الخريطة لتحديد الموقع (اختياري)"
   },
   "calculator": {
     "title": "حاسبة العائد الشمسي",
@@ -142,6 +143,25 @@
     "pageTitle": "الإدارة",
     "pageSubtitle": "الإعدادات والصيانة",
     "backToDashboard": "العودة إلى لوحة القيادة",
+    "tabs": {
+      "sources": "المصادر",
+      "dashboard": "السجل"
+    },
+    "dashboard": {
+      "title": "سجل الاستيعاب",
+      "subtitle": "سجل جميع الملفات المعالجة (مفهرسة، مرفوضة، أخطاء).",
+      "indexed": "مفهرسة",
+      "rejected": "مرفوضة",
+      "errors": "أخطاء",
+      "all": "الكل",
+      "totalChunks": "إجمالي القطع المفهرسة",
+      "gate1": "البوابة 1",
+      "date": "التاريخ",
+      "clearAll": "مسح الكل",
+      "confirmClear": "هل تريد حذف جميع الملفات في هذا الفلتر؟",
+      "noLogs": "لا توجد ملفات معالجة بعد.",
+      "errorDetails": "تفاصيل الأخطاء"
+    },
     "config": {
       "title": "إعدادات لوحة القيادة",
       "subtitle": "هذه القيم تحل محل متغيرات البيئة أثناء التشغيل.",
@@ -153,6 +173,65 @@
       "mapRefreshHint": "معدل تحديث البلاغات على الخريطة.",
       "save": "حفظ",
       "saved": "تم حفظ الإعدادات !"
+    },
+    "docs": {
+      "title": "إضافة مستند",
+      "subtitle": "ارفع ملف PDF أو أضف رابطًا: سيتم تحليله وفرزه وفهرسته تلقائيًا إذا تم قبوله.",
+      "uploadFile": "ملف",
+      "ingestUrl": "رابط",
+      "uploadAction": "تحليل الملف",
+      "ingestAction": "تحليل الرابط",
+      "processing": "جارٍ التحليل… (فرز وفهرسة)",
+      "accepted": "✓ مقبول: {{file}}",
+      "rejected": "✗ مرفوض: {{file}}",
+      "destination": "الوجهة",
+      "filtered": "data/filtered/ (مفهرس)",
+      "blacklisted": "data/blacklisted/",
+      "gate1": "البوابة 1",
+      "gate2": "البوابة 2",
+      "master": "النتيجة النهائية",
+      "pages": "الصفحات",
+      "chunks": "القطع المفهرسة",
+      "indexError": "خطأ في الفهرسة"
+    },
+    "sources": {
+      "title": "إدارة المصادر",
+      "subtitle": "أضف روابط PDF للبحث العميق ثم الفهرسة في ChromaDB.",
+      "addPlaceholder": "https://example.org/rapport.pdf",
+      "crawlPlaceholder": "https://www.steg.com.tn/",
+      "addButton": "إضافة",
+      "crawlButton": "استكشاف",
+      "singleUrl": "رابط مباشر",
+      "crawlWebsite": "استكشاف الموقع",
+      "processing": "جارٍ المعالجة…",
+      "crawlDone": "اكتمل الاستكشاف: {{found}} ملف(ملفات) PDF تم العثور عليه، {{added}} تمت إضافته، {{skipped}} تم تجاهله (مكرر).",
+      "researchButton": "بحث عميق",
+      "ingestButton": "فهرسة في ChromaDB",
+      "researching": "جارٍ البحث…",
+      "ingesting": "جارٍ الفهرسة…",
+      "url": "الرابط",
+      "file": "الملف",
+      "status": "الحالة",
+      "size": "الحجم",
+      "score": "النتيجة",
+      "chunks": "القطع",
+      "totalSources": "مصدر(مصادر)",
+      "pending": "قيد الانتظار",
+      "readyToIngest": "جاهز(ة)",
+      "indexed": "مفهرس",
+      "delete": "حذف",
+      "noSources": "لم تُضف أي مصدر. أضف رابط PDF أعلاه.",
+      "researchDone": "اكتمل البحث: {{downloaded}} تم تحميله، {{failed}} فشل من أصل {{total}}.",
+      "ingestDone": "اكتملت الفهرسة: {{indexed}} مفهرس، {{rejected}} مرفوض، {{failed}} فشل من أصل {{total}}.",
+      "status": {
+        "pending": "قيد الانتظار",
+        "downloading": "جارٍ التحميل…",
+        "downloaded": "تم التحميل",
+        "failed": "فشل",
+        "ingesting": "جارٍ الفهرسة…",
+        "indexed": "مفهرس",
+        "triage_rejected": "مرفوض"
+      }
     }
   },
   "auth": {

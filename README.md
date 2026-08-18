@@ -80,12 +80,44 @@ Notes:
 
 - Connect from the host (e.g. `psql`): `postgresql://postgres:postgres@localhost:5433/energie_tunisie`
 
-### Service healthchecks
+### Service healthchecks (liveness vs readiness)
 
 - `postgres` → `pg_isready -U postgres -d energie_tunisie`
-- `backend` → GET `http://localhost:8000/health`
-- `frontend` → GET `/health` through Nginx (proxied to the backend)
+- `backend` → GET `http://localhost:8000/ready` (readiness: also pings Postgres + ChromaDB)
+- `frontend` → GET `/ready` through Nginx (proxied to the backend)
 - `frontend` and `ngrok` only start once `backend` is healthy (`depends_on: condition: service_healthy`).
+
+The two probes serve different jobs:
+
+| Endpoint | Meaning | Returns
+|---|---|---|
+| `GET /health` | **Liveness** — the process is up and serving | `200` always (even if DB/Chroma are down) |
+| `GET /ready` | **Readiness** — Postgres and ChromaDB both respond | `200` + `{"checks":{"db":true,"chroma":true}}`, else `503` listing what failed |
+
+Use `/ready` for orchestration decisions (Docker healthchecks, load balancers) so traffic never
+reaches a backend whose dependencies are down; keep `/health` for uptime/liveness monitors.
+
+### Backups (Postgres)
+
+A `pg-backup` compose service dumps the database on an interval into `./backups/`
+(custom-format `pg_dump`, retention via `find -mtime`).
+
+```bash
+docker compose up -d pg-backup   # runs inside the stack (default: every 24h, keep 7 days)
+# tune via .env:
+#   BACKUP_INTERVAL_HOURS=12
+#   BACKUP_RETENTION_DAYS=14
+```
+
+Manual one-shot backup / restore drill:
+
+```bash
+bash scripts/backup_db.sh                  # -> backups/energie_tunisie_<ts>.dump
+bash scripts/restore_db.sh backups/energie_tunisie_<ts>.dump   # prompts before restoring
+```
+
+> `backups/` is gitignored. Run the restore drill on a throwaway environment first so a
+> bad backup never silently becomes "production restored".
 
 ## Local development (no Docker)
 
@@ -146,6 +178,33 @@ environment. The React **Admin tab** (right sidebar) asks for this key before sh
 purge stats or the "Purger maintenant" button; the key is kept **in memory only** and
 never written to `localStorage`.
 
+### Admin document ingestion (upload PDF / ingest URL)
+
+Admins can add documents straight from the **/admin** page (or the API):
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/admin/documents/upload` | Multipart PDF file upload (`X-Admin-Key` header) |
+| `POST /api/admin/documents/from-url` | JSON `{"url": "https://…/doc.pdf"}` download (`X-Admin-Key` header) |
+
+Both run the **full auto-ingestion flow** for one document:
+
+```
+upload/download -> data/raw/ -> LLM triage (2 gates) -> data/filtered/ or data/blacklisted/
+                                        |
+                                        +-> (if accepted) chunk + embed -> ChromaDB (searchable)
+```
+
+- Validation: `%PDF` magic-byte check, 50 MB cap (`MAX_UPLOAD_BYTES`), filename
+  sanitization, http/https URLs only.
+- The LLM triage (`src/utils/triage.py`, sync client) and the ChromaDB index
+  (`src/ingestion/indexer.py`) run in a thread pool so the async event loop is
+  never blocked.
+- Re-uploading a file replaces its old chunks in ChromaDB (delete-by-source
+  then upsert) instead of duplicating them.
+- Without `CUSTOM_API_KEY` the triage falls back to its conservative default
+  (everything is blacklisted) — set the key to actually accept documents.
+
 ### Outage report retention
 
 Crowdsourced outage reports are deleted once they are older than `OUTAGE_TTL_HOURS`
@@ -194,6 +253,32 @@ production so limits are shared. Behind nginx/ngrok set
 - `.env` is gitignored; keep real keys (API keys, DB passwords, `NGROK_AUTHTOKEN`) out of version control.
 - Before exposing the app publicly, review the CORS origins and consider HTTPS
   (`SECURE_HSTS`), plus a Redis-backed rate-limit storage for multi-instance deployments.
+
+## RAG quality (hybrid retrieval + evaluation)
+
+Retrieval is now **hybrid**: dense vector search (ChromaDB) fused with sparse
+BM25 keyword search via Reciprocal Rank Fusion, so queries that rely on exact
+French/Arabic terms (e.g. "autoconsommation", "ترشيد") hit even when the
+embeddings drift. Optionally reranked with a multilingual cross-encoder:
+
+```bash
+RERANK_ENABLED=false          # disable reranking (default: true)
+RERANK_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1   # override
+RERANK_TOP_K=10               # candidates passed to the reranker
+```
+
+The cross-encoder downloads on first use (~470 MB, cached by HuggingFace);
+any reranker failure degrades gracefully to the fused order.
+
+Golden retrieval evaluation (grounded in the actual corpus, no LLM calls):
+
+```bash
+python -m src.eval.evaluate --retriever vector --k 5   # baseline
+python -m src.eval.evaluate --retriever hybrid --k 5   # hybrid (default)
+```
+
+Baseline (6 golden queries, k=5): vector recall@5 **0.83** → hybrid **1.00**.
+The golden set lives in `data/eval/golden_qa.json` — extend it as the corpus grows.
 
 ## Tests
 

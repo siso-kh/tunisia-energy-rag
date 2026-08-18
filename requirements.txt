@@ -3,6 +3,7 @@ langchain
 langchain-community
 sentence-transformers
 chromadb
+rank_bm25
 openai
 tiktoken
 langchain-text-splitters
@@ -16,6 +17,7 @@ fastapi
 uvicorn
 requests
 slowapi
+python-multipart  # required for UploadFile (multipart form parsing)
 
 # Auth (user accounts: bcrypt hashing + JWT tokens)
 pyjwt

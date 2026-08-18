@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import sys
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import AsyncOpenAI
@@ -8,7 +9,17 @@ from dotenv import load_dotenv
 from fastapi.concurrency import run_in_threadpool
 from typing import Any, Dict, List, Optional, Tuple
 
+from src.rag.hybrid import retrieve_context_hybrid
 from src.utils.token_manager import get_optimized_history
+
+# Windows consoles default to cp1252 and raise UnicodeEncodeError when the
+# pipeline logs Arabic standalone queries. Force UTF-8 with lossy fallback so
+# console output can never crash the request handling.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # Token budget reserved for chat history when building LLM prompts.
 # Keeps the conversation bounded so the system prompt + retrieved RAG
@@ -266,10 +277,11 @@ async def run_pipeline(
     standalone_query = await rewrite_query_with_history(user_query, optimized_history)
     print(f"    Standalone query: '{standalone_query}'")
     
-    # Step 2: Vector search with standalone query (thread pool: ChromaDB is sync I/O)
-    print("[2] Searching database...")
+    # Step 2: Hybrid search (vector + BM25, RRF-fused, optional rerank) with the
+    # standalone query, run in a thread pool (ChromaDB + BM25 are sync I/O).
+    print("[2] Searching database (hybrid: vector + BM25)...")
     structured_sources = await run_in_threadpool(
-        retrieve_context_structured, standalone_query, n_results=5
+        retrieve_context_hybrid, standalone_query, n_results=5
     )
     context_str = format_sources_for_prompt(structured_sources)
     
@@ -305,7 +317,7 @@ async def stream_pipeline(
 
     yield {"type": "status", "message": "searching"}
     structured_sources = await run_in_threadpool(
-        retrieve_context_structured, standalone_query, n_results=5
+        retrieve_context_hybrid, standalone_query, n_results=5
     )
     context_str = format_sources_for_prompt(structured_sources)
 
