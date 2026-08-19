@@ -844,6 +844,159 @@ async def ingest_sources(
     )
 
 
+# ---------------------------------------------------------------------------
+# Admin: SSE progress endpoints for research & ingest
+# ---------------------------------------------------------------------------
+# These yield real-time progress events so the admin can see which file is
+# being processed, how many are done, and what the result was.
+
+@app.post("/api/admin/sources/research/stream")
+@limiter.limit(ADMIN_LIMIT)
+async def research_sources_stream(
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """SSE stream: download + validate all pending sources with live progress."""
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(Source).where(Source.status == SourceStatus.PENDING)
+    )
+    pending = result.scalars().all()
+
+    async def event_generator():
+        if not pending:
+            yield _sse({"type": "done", "downloaded": 0, "failed": 0, "total": 0})
+            return
+
+        total = len(pending)
+        downloaded = 0
+        failed = 0
+
+        for i, source in enumerate(pending):
+            yield _sse({
+                "type": "progress",
+                "current": i + 1,
+                "total": total,
+                "filename": source.url.split("/")[-1] or source.url,
+                "status": "downloading",
+                "downloaded": downloaded,
+                "failed": failed,
+            })
+
+            dl_result = await run_in_threadpool(download_pdf_from_source, source.url)
+            if dl_result["error"]:
+                source.status = SourceStatus.FAILED
+                source.error_message = dl_result["error"]
+                failed += 1
+            else:
+                source.filename = dl_result["filename"]
+                source.file_size = dl_result["file_size"]
+                source.status = SourceStatus.DOWNLOADED
+                downloaded += 1
+
+            yield _sse({
+                "type": "file_done",
+                "current": i + 1,
+                "total": total,
+                "filename": source.filename or source.url.split("/")[-1],
+                "status": "downloaded" if dl_result["error"] is None else "failed",
+                "error": dl_result["error"],
+                "downloaded": downloaded,
+                "failed": failed,
+            })
+
+        await session.commit()
+        yield _sse({"type": "done", "downloaded": downloaded, "failed": failed, "total": total})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.post("/api/admin/sources/ingest/stream")
+@limiter.limit(ADMIN_LIMIT)
+async def ingest_sources_stream(
+    request: Request,
+    _: None = Depends(require_admin_key),
+    session=Depends(get_db_dependency),
+):
+    """SSE stream: triage + ChromaDB index all downloaded sources with live progress."""
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(Source).where(Source.status == SourceStatus.DOWNLOADED)
+    )
+    ready = result.scalars().all()
+
+    async def event_generator():
+        if not ready:
+            yield _sse({"type": "done", "indexed": 0, "rejected": 0, "failed": 0, "total": 0})
+            return
+
+        total = len(ready)
+        indexed = 0
+        rejected = 0
+        failed = 0
+
+        for i, source in enumerate(ready):
+            yield _sse({
+                "type": "progress",
+                "current": i + 1,
+                "total": total,
+                "filename": source.filename or "unknown",
+                "status": "ingesting",
+                "indexed": indexed,
+                "rejected": rejected,
+                "failed": failed,
+            })
+
+            ing_result = await run_in_threadpool(ingest_downloaded_pdf, source.filename)
+            source.total_pages = ing_result["total_pages"]
+            source.gate1_score = ing_result["gate1_score"]
+            source.master_score = ing_result["master_score"]
+            source.chunks_indexed = ing_result["chunks_indexed"]
+
+            if ing_result["error"]:
+                source.status = SourceStatus.FAILED
+                source.error_message = ing_result["error"]
+                failed += 1
+                file_status = "failed"
+            elif ing_result["status"] == "indexed":
+                source.status = SourceStatus.INDEXED
+                indexed += 1
+                file_status = "indexed"
+            else:
+                source.status = SourceStatus.TRIAGE_REJECTED
+                rejected += 1
+                file_status = "rejected"
+
+            yield _sse({
+                "type": "file_done",
+                "current": i + 1,
+                "total": total,
+                "filename": source.filename or "unknown",
+                "status": file_status,
+                "chunks_indexed": source.chunks_indexed,
+                "master_score": source.master_score,
+                "indexed": indexed,
+                "rejected": rejected,
+                "failed": failed,
+            })
+
+        await session.commit()
+        yield _sse({"type": "done", "indexed": indexed, "rejected": rejected, "failed": failed, "total": total})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 class BulkDeleteRequest(BaseModel):
     ids: Optional[List[uuid.UUID]] = None
     status: Optional[str] = None  # delete all with this status
@@ -855,6 +1008,8 @@ class BulkDeleteResult(BaseModel):
 
 class CrawlRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
+    max_depth: int = Field(default=1, ge=0, le=5, description="Recursive crawl depth (0=single page, 5=max)")
+    max_pages: int = Field(default=50, ge=1, le=200, description="Max HTML pages to crawl")
 
 
 class CrawlResult(BaseModel):
@@ -862,6 +1017,8 @@ class CrawlResult(BaseModel):
     added: int
     skipped: int
     pdf_urls: List[str]
+    pages_crawled: int
+    pages_visited: int
 
 
 @app.post("/api/admin/sources/bulk-delete", response_model=BulkDeleteResult)
@@ -898,10 +1055,16 @@ async def crawl_for_sources(
     _: None = Depends(require_admin_key),
     session=Depends(get_db_dependency),
 ):
-    """Crawl a website page for PDF links and add them as sources."""
+    """Recursively crawl a website for PDF links and add them as sources."""
     from sqlalchemy import select
 
-    pdf_urls = await run_in_threadpool(crawl_website_for_pdfs, payload.url.strip())
+    crawl_result = await run_in_threadpool(
+        crawl_website_for_pdfs,
+        payload.url.strip(),
+        payload.max_depth,
+        payload.max_pages,
+    )
+    pdf_urls = crawl_result["pdf_urls"]
 
     added = 0
     skipped = 0
@@ -924,6 +1087,8 @@ async def crawl_for_sources(
         added=added,
         skipped=skipped,
         pdf_urls=pdf_urls,
+        pages_crawled=crawl_result["pages_crawled"],
+        pages_visited=crawl_result["pages_visited"],
     )
 
 

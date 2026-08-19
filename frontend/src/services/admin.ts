@@ -215,14 +215,103 @@ export interface CrawlResult {
   added: number;
   skipped: number;
   pdf_urls: string[];
+  pages_crawled: number;
+  pages_visited: number;
 }
 
-/** Crawl a website page for PDF links and add them as sources. */
-export async function crawlWebsite(url: string): Promise<CrawlResult> {
+// ---------------------------------------------------------------------------
+// SSE progress streaming for research & ingest
+// ---------------------------------------------------------------------------
+
+export type ProgressEventType = "progress" | "file_done" | "done";
+
+export interface ProgressEvent {
+  type: ProgressEventType;
+  current?: number;
+  total?: number;
+  filename?: string;
+  status?: string;
+  error?: string | null;
+  downloaded?: number;
+  failed?: number;
+  indexed?: number;
+  rejected?: number;
+  chunks_indexed?: number;
+  master_score?: number;
+}
+
+/** Stream research progress via SSE. Returns the final summary event. */
+export async function researchSourcesStream(
+  onProgress: (event: ProgressEvent) => void,
+): Promise<ProgressEvent> {
+  return _streamPost("/admin/sources/research/stream", onProgress);
+}
+
+/** Stream ingest progress via SSE. Returns the final summary event. */
+export async function ingestSourcesStream(
+  onProgress: (event: ProgressEvent) => void,
+): Promise<ProgressEvent> {
+  return _streamPost("/admin/sources/ingest/stream", onProgress);
+}
+
+/** Internal: POST with SSE response, calling onProgress for each event. */
+async function _streamPost(
+  path: string,
+  onProgress: (event: ProgressEvent) => void,
+): Promise<ProgressEvent> {
+  const baseURL = api.defaults.baseURL || "";
+  const fullURL = `${baseURL}${path}`;
+  const resp = await fetch(fullURL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...adminHeaders(),
+    },
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Request failed (${resp.status}): ${text}`);
+  }
+
+  const reader = resp.body?.getReader();
+  if (!reader) throw new Error("No response body");
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let lastEvent: ProgressEvent = { type: "done" };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // Parse SSE frames: "data: {...}\n\n"
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || ""; // keep incomplete frame
+    for (const frame of frames) {
+      const line = frame.trim();
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event: ProgressEvent = JSON.parse(line.slice(6));
+        lastEvent = event;
+        onProgress(event);
+      } catch { /* ignore malformed frames */ }
+    }
+  }
+
+  return lastEvent;
+}
+
+/** Recursively crawl a website for PDF links and add them as sources. */
+export async function crawlWebsite(
+  url: string,
+  maxDepth: number = 1,
+  maxPages: number = 50,
+): Promise<CrawlResult> {
   const { data } = await api.post<CrawlResult>(
     "/admin/sources/crawl",
-    { url },
-    { headers: adminHeaders(), timeout: 60_000 }
+    { url, max_depth: maxDepth, max_pages: maxPages },
+    { headers: adminHeaders(), timeout: 300_000 }  // 5 min for deep crawls
   );
   return data;
 }

@@ -12,6 +12,13 @@ langchain-text-splitters
 pdfplumber
 pypdf
 
+# OCR (used in src/ingestion/indexer.py, src/ingestion/ingest_chunks.py, scripts/ocr_arabic_pdf.py)
+numpy
+torch
+pdf2image
+pytesseract
+easyocr
+
 # API & Web Interface
 fastapi
 uvicorn
@@ -35,16 +42,12 @@ alembic
 # Utilities
 python-dotenv
 pydantic
-requests
 arabic-reshaper
 python-bidi
-pdf2image 
-pytesseract 
-easyocr
-tiktoken
-#web scrapping
+
+# Web scraping (src/ingestion/collector.py, research.py)
 bs4
 ddgs
 
-#test
+# Test
 pytest

@@ -10,13 +10,15 @@ import {
   Zap,
 } from "lucide-react";
 import Button from "../ui/Button";
+import ProgressPanel from "./ProgressPanel";
 import {
   addSource,
   crawlWebsite,
   deleteSource,
   fetchSources,
-  ingestSources,
-  researchSources,
+  ingestSourcesStream,
+  ProgressEvent,
+  researchSourcesStream,
   Source,
   SourceStatus,
 } from "../../services/admin";
@@ -46,6 +48,7 @@ export default function SourcesManager() {
   const [sources, setSources] = useState<Source[]>([]);
   const [inputMode, setInputMode] = useState<InputMode>("url");
   const [urlInput, setUrlInput] = useState("");
+  const [crawlDepth, setCrawlDepth] = useState(1);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [researching, setResearching] = useState(false);
@@ -53,6 +56,8 @@ export default function SourcesManager() {
   const [error, setError] = useState<string | null>(null);
   const [researchResult, setResearchResult] = useState<string | null>(null);
   const [ingestResult, setIngestResult] = useState<string | null>(null);
+  const [progressEvent, setProgressEvent] = useState<ProgressEvent | null>(null);
+  const [progressMode, setProgressMode] = useState<"research" | "ingest">("research");
 
   const load = async () => {
     try {
@@ -85,13 +90,14 @@ export default function SourcesManager() {
     setIngestResult(null);
     try {
       if (inputMode === "crawl") {
-        const result = await crawlWebsite(trimmed);
+        const result = await crawlWebsite(trimmed, crawlDepth);
         setUrlInput("");
         setResearchResult(
           t("admin.sources.crawlDone", {
             found: result.found,
             added: result.added,
             skipped: result.skipped,
+            pages: result.pages_crawled,
           })
         );
       } else {
@@ -119,13 +125,15 @@ export default function SourcesManager() {
     setResearching(true);
     setError(null);
     setResearchResult(null);
+    setProgressMode("research");
+    setProgressEvent(null);
     try {
-      const result = await researchSources();
+      const result = await researchSourcesStream((ev) => setProgressEvent(ev));
       setResearchResult(
         t("admin.sources.researchDone", {
-          downloaded: result.downloaded,
-          failed: result.failed,
-          total: result.total,
+          downloaded: result.downloaded ?? 0,
+          failed: result.failed ?? 0,
+          total: result.total ?? 0,
         })
       );
       await load();
@@ -140,14 +148,16 @@ export default function SourcesManager() {
     setIngesting(true);
     setError(null);
     setIngestResult(null);
+    setProgressMode("ingest");
+    setProgressEvent(null);
     try {
-      const result = await ingestSources();
+      const result = await ingestSourcesStream((ev) => setProgressEvent(ev));
       setIngestResult(
         t("admin.sources.ingestDone", {
-          indexed: result.indexed,
-          rejected: result.rejected,
-          failed: result.failed,
-          total: result.total,
+          indexed: result.indexed ?? 0,
+          rejected: result.rejected ?? 0,
+          failed: result.failed ?? 0,
+          total: result.total ?? 0,
         })
       );
       await load();
@@ -205,35 +215,64 @@ export default function SourcesManager() {
       </div>
 
       {/* URL input form */}
-      <form onSubmit={handleAdd} className="flex gap-2">
-        <input
-          type="url"
-          value={urlInput}
-          onChange={(e) => {
-            setUrlInput(e.target.value);
-            setError(null);
-          }}
-          placeholder={
-            inputMode === "crawl"
-              ? t("admin.sources.crawlPlaceholder")
-              : t("admin.sources.addPlaceholder")
-          }
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-        />
-        <Button type="submit" disabled={adding || !urlInput.trim()} size="md">
-          {adding ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          ) : inputMode === "crawl" ? (
-            <Globe className="size-4" aria-hidden="true" />
-          ) : (
-            <Plus className="size-4" aria-hidden="true" />
-          )}
-          {adding
-            ? t("admin.sources.processing")
-            : inputMode === "crawl"
-            ? t("admin.sources.crawlButton")
-            : t("admin.sources.addButton")}
-        </Button>
+      <form onSubmit={handleAdd} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => {
+              setUrlInput(e.target.value);
+              setError(null);
+            }}
+            placeholder={
+              inputMode === "crawl"
+                ? t("admin.sources.crawlPlaceholder")
+                : t("admin.sources.addPlaceholder")
+            }
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+          />
+          <Button type="submit" disabled={adding || !urlInput.trim()} size="md">
+            {adding ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : inputMode === "crawl" ? (
+              <Globe className="size-4" aria-hidden="true" />
+            ) : (
+              <Plus className="size-4" aria-hidden="true" />
+            )}
+            {adding
+              ? t("admin.sources.processing")
+              : inputMode === "crawl"
+              ? t("admin.sources.crawlButton")
+              : t("admin.sources.addButton")}
+          </Button>
+        </div>
+
+        {/* Depth selector — only shown in crawl mode */}
+        {inputMode === "crawl" && (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+            <label
+              htmlFor="crawl-depth"
+              className="text-xs font-medium text-muted-foreground whitespace-nowrap"
+            >
+              {t("admin.sources.depth")}
+            </label>
+            <input
+              id="crawl-depth"
+              type="range"
+              min={0}
+              max={4}
+              value={crawlDepth}
+              onChange={(e) => setCrawlDepth(Number(e.target.value))}
+              className="flex-1 accent-primary"
+            />
+            <span className="min-w-[2rem] text-center text-xs font-bold text-foreground">
+              {crawlDepth}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {t(`admin.sources.depthHint${crawlDepth}` as any, t("admin.sources.depthHint1"))}
+            </span>
+          </div>
+        )}
       </form>
 
       {/* Summary + action buttons */}
@@ -292,13 +331,20 @@ export default function SourcesManager() {
         </Button>
       </div>
 
+      {/* Live progress panel */}
+      <ProgressPanel
+        mode={progressMode}
+        event={progressEvent}
+        running={researching || ingesting}
+      />
+
       {/* Results */}
-      {researchResult && (
+      {researchResult && !researching && (
         <p className="text-xs text-green-600 dark:text-green-400">
           {researchResult}
         </p>
       )}
-      {ingestResult && (
+      {ingestResult && !ingesting && (
         <p className="text-xs text-green-600 dark:text-green-400">
           {ingestResult}
         </p>
@@ -319,7 +365,7 @@ export default function SourcesManager() {
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.url")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.file")}</th>
-                <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.status")}</th>
+                <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.statusLabel")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.size")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.score")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.chunks")}</th>
@@ -356,7 +402,7 @@ export default function SourcesManager() {
                         src.status === "ingesting") && (
                         <Loader2 className="size-3 animate-spin" />
                       )}
-                      {t(`admin.sources.status.${src.status}`)}
+                      {t(`admin.sources.statusLabels.${src.status}`)}
                     </span>
                     {src.error_message && (
                       <p

@@ -15,8 +15,11 @@ never with ORM objects. This avoids thread-safety issues when called from
 """
 
 import logging
+import re
+import time
+from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -32,13 +35,66 @@ logger = logging.getLogger(__name__)
 
 RAW_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "raw"
 
+# Safety defaults for recursive crawling.
+DEFAULT_MAX_DEPTH = 1
+DEFAULT_MAX_PAGES = 50
+CRAWL_DELAY = 0.5  # seconds between requests (be polite)
+LINK_EXTRACTOR_RE = re.compile(
+    r"""(?:href|src)\s*=\s*["']([^"']+)["']""",
+    re.IGNORECASE,
+)
 
-def crawl_website_for_pdfs(url: str, max_depth: int = 1) -> List[str]:
-    """Fetch a web page and extract all PDF links found on it.
 
-    Returns a list of absolute PDF URLs (deduplicated). Handles both
-    ``<a href="...pdf">`` links and ``src`` attributes. Only follows
-    links on the same domain as the input URL.
+def _extract_links(html: str, base_url: str, base_domain: str) -> Tuple[List[str], List[str]]:
+    """Extract all same-domain links and PDF links from HTML.
+
+    Returns (page_urls, pdf_urls) — both are absolute URLs.
+    """
+    page_urls: List[str] = []
+    pdf_urls: List[str] = []
+
+    for match in LINK_EXTRACTOR_RE.finditer(html):
+        candidate = match.group(1).strip()
+
+        # Skip fragments, mailto, tel, javascript.
+        if candidate.startswith(("#", "mailto:", "tel:", "javascript:")):
+            continue
+
+        absolute = urljoin(base_url, candidate)
+        parsed = urlparse(absolute)
+
+        # Only same-domain links.
+        if parsed.netloc and parsed.netloc != base_domain:
+            continue
+
+        # Normalize: remove fragment.
+        clean = parsed._replace(fragment="").geturl()
+
+        if clean.lower().endswith(".pdf") or clean.lower().endswith(".pdf?"):
+            pdf_urls.append(clean)
+        else:
+            # Only follow http/https pages.
+            if parsed.scheme in ("http", "https"):
+                page_urls.append(clean)
+
+    return page_urls, pdf_urls
+
+
+def crawl_website_for_pdfs(
+    url: str,
+    max_depth: int = DEFAULT_MAX_DEPTH,
+    max_pages: int = DEFAULT_MAX_PAGES,
+) -> Dict[str, Any]:
+    """Recursively crawl a website and extract all PDF links.
+
+    Uses BFS (breadth-first) to discover pages across subdirectories and
+    endpoints. Follows same-domain links only, with configurable depth and
+    page limits to prevent runaway crawling.
+
+    Returns a dict with:
+        - ``pdf_urls``: list of deduplicated PDF URLs found
+        - ``pages_crawled``: number of HTML pages actually fetched
+        - ``pages_visited``: total pages seen (including skipped)
     """
     headers = {
         "User-Agent": (
@@ -47,59 +103,87 @@ def crawl_website_for_pdfs(url: str, max_depth: int = 1) -> List[str]:
         )
     }
 
-    try:
-        response = requests.get(url, headers=headers, timeout=20)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        logger.warning("Failed to crawl %s: %s", url, e)
-        return []
+    parsed_start = urlparse(url)
+    base_domain = parsed_start.netloc
 
-    content_type = response.headers.get("Content-Type", "").lower()
-    if "text/html" not in content_type:
-        logger.info("Non-HTML page at %s (Content-Type: %s), no PDFs to extract.", url, content_type)
-        return []
+    if not base_domain:
+        return {"pdf_urls": [], "pages_crawled": 0, "pages_visited": 0}
 
-    try:
-        from html.parser import HTMLParser
+    # BFS state.
+    visited: Set[str] = set()
+    all_pdfs: Set[str] = set()
+    queue: deque[Tuple[str, int]] = deque()  # (url, depth)
+    queue.append((url, 0))
+    pages_crawled = 0
 
-        parsed_base = urlparse(url)
-        base_domain = parsed_base.netloc
-        pdf_urls: set = set()
+    while queue:
+        current_url, depth = queue.popleft()
 
-        class PDFLinkExtractor(HTMLParser):
-            def handle_starttag(self, tag, attrs):
-                for attr_name, attr_val in attrs:
-                    if not attr_val:
-                        continue
-                    # Check href and src attributes for PDF links.
-                    if attr_name in ("href", "src"):
-                        candidate = attr_val.strip()
-                        if candidate.lower().endswith(".pdf"):
-                            absolute = urljoin(url, candidate)
-                            abs_parsed = urlparse(absolute)
-                            # Only include same-domain links.
-                            if abs_parsed.netloc == base_domain or abs_parsed.netloc == "":
-                                pdf_urls.add(absolute)
+        # Skip if already visited.
+        if current_url in visited:
+            continue
+        visited.add(current_url)
 
-        parser = PDFLinkExtractor()
-        parser.feed(response.text)
+        # Depth limit.
+        if depth > max_depth:
+            continue
 
-        # Also try regex for cases the parser might miss (e.g. in JS strings).
-        import re
-        for match in re.finditer(r'["\']([^"\'"]+\.pdf)["\']', response.text, re.IGNORECASE):
-            candidate = match.group(1)
-            absolute = urljoin(url, candidate)
-            abs_parsed = urlparse(absolute)
-            if abs_parsed.netloc == base_domain or abs_parsed.netloc == "":
-                pdf_urls.add(absolute)
+        # Page limit.
+        if pages_crawled >= max_pages:
+            logger.info("Reached max_pages limit (%d), stopping crawl.", max_pages)
+            break
 
-        result = sorted(pdf_urls)
-        logger.info("Found %d PDF link(s) on %s", len(result), url)
-        return result
+        # Polite delay between requests.
+        if pages_crawled > 0:
+            time.sleep(CRAWL_DELAY)
 
-    except Exception as e:
-        logger.warning("Failed to parse HTML from %s: %s", url, e)
-        return []
+        # Fetch the page.
+        try:
+            response = requests.get(current_url, headers=headers, timeout=15)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.warning("Failed to crawl %s: %s", current_url, e)
+            continue
+
+        content_type = response.headers.get("Content-Type", "").lower()
+        if "text/html" not in content_type:
+            # Non-HTML — skip but still count as visited.
+            continue
+
+        pages_crawled += 1
+        logger.info(
+            "Crawled [%d/%d] depth=%d: %s",
+            pages_crawled,
+            max_pages,
+            depth,
+            current_url,
+        )
+
+        # Extract links.
+        page_urls, pdf_urls = _extract_links(response.text, current_url, base_domain)
+
+        # Collect PDFs.
+        for pdf_url in pdf_urls:
+            all_pdfs.add(pdf_url)
+
+        # Enqueue discovered pages for next depth level.
+        if depth < max_depth:
+            for page_url in page_urls:
+                if page_url not in visited:
+                    queue.append((page_url, depth + 1))
+
+    result = sorted(all_pdfs)
+    logger.info(
+        "Crawl complete: %d PDFs found across %d pages (visited %d total)",
+        len(result),
+        pages_crawled,
+        len(visited),
+    )
+    return {
+        "pdf_urls": result,
+        "pages_crawled": pages_crawled,
+        "pages_visited": len(visited),
+    }
 
 
 def download_pdf_from_source(url: str) -> Dict[str, Any]:

@@ -204,14 +204,20 @@
       "singleUrl": "رابط مباشر",
       "crawlWebsite": "استكشاف الموقع",
       "processing": "جارٍ المعالجة…",
-      "crawlDone": "اكتمل الاستكشاف: {{found}} ملف(ملفات) PDF تم العثور عليه، {{added}} تمت إضافته، {{skipped}} تم تجاهله (مكرر).",
+      "crawlDone": "اكتمل الاستكشاف: {{found}} ملف PDF على {{pages}} صفحة، {{added}} تمت إضافته، {{skipped}} تم تجاهله.",
+      "depth": "العمق",
+      "depthHint0": "صفحة واحدة",
+      "depthHint1": "مستوى واحد من الروابط",
+      "depthHint2": "مستويان",
+      "depthHint3": "3 مستويات",
+      "depthHint4": "4 مستويات (حد أقصى)",
       "researchButton": "بحث عميق",
       "ingestButton": "فهرسة في ChromaDB",
       "researching": "جارٍ البحث…",
       "ingesting": "جارٍ الفهرسة…",
       "url": "الرابط",
       "file": "الملف",
-      "status": "الحالة",
+      "statusLabel": "الحالة",
       "size": "الحجم",
       "score": "النتيجة",
       "chunks": "القطع",
@@ -223,8 +229,8 @@
       "noSources": "لم تُضف أي مصدر. أضف رابط PDF أعلاه.",
       "researchDone": "اكتمل البحث: {{downloaded}} تم تحميله، {{failed}} فشل من أصل {{total}}.",
       "ingestDone": "اكتملت الفهرسة: {{indexed}} مفهرس، {{rejected}} مرفوض، {{failed}} فشل من أصل {{total}}.",
-      "status": {
-        "pending": "قيد الانتظار",
+    "statusLabels": {
+      "pending": "قيد الانتظار",
         "downloading": "جارٍ التحميل…",
         "downloaded": "تم التحميل",
         "failed": "فشل",
@@ -232,6 +238,13 @@
         "indexed": "مفهرس",
         "triage_rejected": "مرفوض"
       }
+    },
+    "progress": {
+      "done": "تم",
+      "downloaded": "تم التحميل",
+      "indexed": "مفهرس",
+      "rejected": "مرفوض",
+      "failed": "فشل"
     }
   },
   "auth": {

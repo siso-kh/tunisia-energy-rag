@@ -110,14 +110,20 @@
       "singleUrl": "URL directe",
       "crawlWebsite": "Explorer le site",
       "processing": "Traitement…",
-      "crawlDone": "Exploration terminée : {{found}} PDF(s) trouvé(s), {{added}} ajouté(s), {{skipped}} ignoré(s) (doublons).",
+      "crawlDone": "Exploration terminée : {{found}} PDF(s) trouvé(s) sur {{pages}} page(s), {{added}} ajouté(s), {{skipped}} ignoré(s).",
+      "depth": "Profondeur",
+      "depthHint0": "Page unique",
+      "depthHint1": "1 niveau de liens",
+      "depthHint2": "2 niveaux",
+      "depthHint3": "3 niveaux",
+      "depthHint4": "4 niveaux (max)",
       "researchButton": "Recherche approfondie",
       "ingestButton": "Indexer dans ChromaDB",
       "researching": "Recherche en cours…",
       "ingesting": "Indexation en cours…",
       "url": "URL",
       "file": "Fichier",
-      "status": "Statut",
+      "statusLabel": "Statut",
       "size": "Taille",
       "score": "Score",
       "chunks": "Chunks",
@@ -129,8 +135,8 @@
       "noSources": "Aucune source ajoutée. Ajoutez une URL PDF ci-dessus.",
       "researchDone": "Recherche terminée : {{downloaded}} téléchargé(s), {{failed}} échoué(s) sur {{total}}.",
       "ingestDone": "Indexation terminée : {{indexed}} indexé(s), {{rejected}} rejeté(s), {{failed}} échoué(s) sur {{total}}.",
-      "status": {
-        "pending": "En attente",
+    "statusLabels": {
+      "pending": "En attente",
         "downloading": "Téléchargement…",
         "downloaded": "Téléchargé",
         "failed": "Échoué",
@@ -138,6 +144,13 @@
         "indexed": "Indexé",
         "triage_rejected": "Rejeté"
       }
+    },
+    "progress": {
+      "done": "Terminé",
+      "downloaded": "Téléchargés",
+      "indexed": "Indexés",
+      "rejected": "Rejetés",
+      "failed": "Échoués"
     }
   },
   "telemetry": {

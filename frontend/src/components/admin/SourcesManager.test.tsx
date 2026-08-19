@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SourcesManager from "./SourcesManager";
 import {
   addSource,
   deleteSource,
   fetchSources,
-  ingestSources,
-  researchSources,
+  ingestSourcesStream,
+  researchSourcesStream,
   Source,
 } from "../../services/admin";
 
@@ -25,7 +25,7 @@ vi.mock("react-i18next", () => ({
         "admin.sources.ingesting": "Indexation en cours…",
         "admin.sources.url": "URL",
         "admin.sources.file": "Fichier",
-        "admin.sources.status": "Statut",
+        "admin.sources.statusLabel": "Statut",
         "admin.sources.size": "Taille",
         "admin.sources.score": "Score",
         "admin.sources.chunks": "Chunks",
@@ -35,14 +35,15 @@ vi.mock("react-i18next", () => ({
         "admin.sources.indexed": "indexé(s)",
         "admin.sources.delete": "Supprimer",
         "admin.sources.noSources": "Aucune source ajoutée.",
+        "admin.progress.done": "Terminé",
         "common.loading": "Chargement…",
-        "admin.sources.status.pending": "En attente",
-        "admin.sources.status.downloading": "Téléchargement…",
-        "admin.sources.status.downloaded": "Téléchargé",
-        "admin.sources.status.failed": "Échoué",
-        "admin.sources.status.ingesting": "Indexation…",
-        "admin.sources.status.indexed": "Indexé",
-        "admin.sources.status.triage_rejected": "Rejeté",
+        "admin.sources.statusLabels.pending": "En attente",
+        "admin.sources.statusLabels.downloading": "Téléchargement…",
+        "admin.sources.statusLabels.downloaded": "Téléchargé",
+        "admin.sources.statusLabels.failed": "Échoué",
+        "admin.sources.statusLabels.ingesting": "Indexation…",
+        "admin.sources.statusLabels.indexed": "Indexé",
+        "admin.sources.statusLabels.triage_rejected": "Rejeté",
       };
       if (key === "admin.sources.researchDone")
         return `Recherche: ${opts?.downloaded} téléchargé(s), ${opts?.failed} échoué(s)`;
@@ -57,8 +58,9 @@ vi.mock("../../services/admin", () => ({
   fetchSources: vi.fn(),
   addSource: vi.fn(),
   deleteSource: vi.fn(),
-  researchSources: vi.fn(),
-  ingestSources: vi.fn(),
+  crawlWebsite: vi.fn(),
+  researchSourcesStream: vi.fn(),
+  ingestSourcesStream: vi.fn(),
 }));
 
 const PENDING_SOURCE: Source = {
@@ -72,21 +74,6 @@ const PENDING_SOURCE: Source = {
   master_score: null,
   chunks_indexed: null,
   error_message: null,
-  created_at: "2026-08-18T10:00:00Z",
-  updated_at: "2026-08-18T10:00:00Z",
-};
-
-const INDEXED_SOURCE: Source = {
-  ...PENDING_SOURCE,
-  id: "s2",
-  url: "https://example.org/good.pdf",
-  filename: "good.pdf",
-  status: "indexed",
-  file_size: 102400,
-  total_pages: 10,
-  gate1_score: 85,
-  master_score: 82,
-  chunks_indexed: 15,
   created_at: "2026-08-18T10:00:00Z",
   updated_at: "2026-08-18T10:00:00Z",
 };
@@ -149,12 +136,12 @@ describe("SourcesManager", () => {
     expect(deleteSource).toHaveBeenCalledWith("s1");
   });
 
-  it("calls researchSources when research button clicked", async () => {
+  it("calls researchSourcesStream when research button clicked", async () => {
     vi.mocked(fetchSources).mockResolvedValue([PENDING_SOURCE]);
-    vi.mocked(researchSources).mockResolvedValue({
-      downloaded: 1,
-      failed: 0,
-      total: 1,
+    vi.mocked(researchSourcesStream).mockImplementation(async (onProgress) => {
+      onProgress({ type: "progress", current: 1, total: 1, status: "downloading", filename: "doc.pdf" });
+      onProgress({ type: "file_done", current: 1, total: 1, status: "downloaded", filename: "doc.pdf" });
+      return { type: "done", downloaded: 1, failed: 0, total: 1 };
     });
     const user = userEvent.setup();
     render(<SourcesManager />);
@@ -162,17 +149,16 @@ describe("SourcesManager", () => {
     await screen.findByText("example.org/doc.pdf");
     await user.click(screen.getByRole("button", { name: /Recherche approfondie/i }));
 
-    expect(researchSources).toHaveBeenCalled();
+    expect(researchSourcesStream).toHaveBeenCalled();
   });
 
-  it("calls ingestSources when ingest button clicked", async () => {
+  it("calls ingestSourcesStream when ingest button clicked", async () => {
     const downloadedSource = { ...PENDING_SOURCE, status: "downloaded" as const, filename: "doc.pdf" };
     vi.mocked(fetchSources).mockResolvedValue([downloadedSource]);
-    vi.mocked(ingestSources).mockResolvedValue({
-      indexed: 1,
-      rejected: 0,
-      failed: 0,
-      total: 1,
+    vi.mocked(ingestSourcesStream).mockImplementation(async (onProgress) => {
+      onProgress({ type: "progress", current: 1, total: 1, status: "ingesting", filename: "doc.pdf" });
+      onProgress({ type: "file_done", current: 1, total: 1, status: "indexed", filename: "doc.pdf" });
+      return { type: "done", indexed: 1, rejected: 0, failed: 0, total: 1 };
     });
     const user = userEvent.setup();
     render(<SourcesManager />);
@@ -180,7 +166,7 @@ describe("SourcesManager", () => {
     await screen.findByText("doc.pdf");
     await user.click(screen.getByRole("button", { name: /Indexer dans ChromaDB/i }));
 
-    expect(ingestSources).toHaveBeenCalled();
+    expect(ingestSourcesStream).toHaveBeenCalled();
   });
 
   it("disables research button when no pending sources", async () => {

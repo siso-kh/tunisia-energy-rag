@@ -206,7 +206,7 @@ export default function DashboardTab() {
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.file")}</th>
-                <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.status")}</th>
+                <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.statusLabel")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.size")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.sources.score")}</th>
                 <th className="pb-1.5 pr-2 font-medium">{t("admin.dashboard.gate1")}</th>
@@ -228,7 +228,7 @@ export default function DashboardTab() {
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${STATUS_STYLES[src.status]}`}
                     >
-                      {t(`admin.sources.status.${src.status}`)}
+                      {t(`admin.sources.statusLabels.${src.status}`)}
                     </span>
                   </td>
                   <td className="py-1.5 pr-2 text-muted-foreground">
