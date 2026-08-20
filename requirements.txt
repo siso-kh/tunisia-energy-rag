@@ -49,5 +49,9 @@ python-bidi
 bs4
 ddgs
 
+# Structured logging + metrics
+python-json-logger
+prometheus-client
+
 # Test
 pytest

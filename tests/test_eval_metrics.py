@@ -100,6 +100,7 @@ def test_golden_set_schema():
     for entry in golden:
         expected = entry.get("expected_source") or entry.get("expected_sources")
         assert entry["id"] and entry["query"]
-        assert isinstance(expected, list) and expected, "expected_sources list required"
+        assert isinstance(expected, list), "expected_sources must be a list"
+        # Empty list is valid for out-of-scope / edge-case queries
         queries.add(entry["query"])
     assert len(queries) == len(golden), "golden queries must be unique"

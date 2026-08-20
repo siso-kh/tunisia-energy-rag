@@ -1,0 +1,2400 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-08-20T18:40:47.241754+00:00",
+      "retriever": "hybrid",
+      "k": 5,
+      "n": 34,
+      "mean_recall_at_k": 0.8824,
+      "mean_mrr": 0.773,
+      "rows": [
+        {
+          "id": "fr-renewables-2030",
+          "query": "Quel est l'objectif de la Tunisie en matière d'énergies renouvelables à l'horizon 2030 ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-anme-subventions",
+          "query": "Quelles subventions l'ANME offre-t-elle pour l'installation de panneaux solaires ?",
+          "expected_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-autoconsommation",
+          "query": "Comment fonctionne le régime d'autoconsommation en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-efficacite-batiments",
+          "query": "Quelles mesures d'efficacité énergétique recommande-t-on pour les bâtiments en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tarshid-electricite",
+          "query": "ترشيد استهلاك الكهرباء في المباني",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "qat181775.pdf",
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "guide-communes.pdf",
+            "06.pdf",
+            "Rapport_FR2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-objectifs-2030",
+          "query": "أهداف الطاقة المتجددة في تونس 2030",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "qat181775.pdf",
+            "06.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-chiffres-cles",
+          "query": "Quels sont les chiffres clés du rapport d'activité STEG 2017 en matière d'électricité et de gaz ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Annuel_STEG_2014_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-revenus",
+          "query": "Quel était le chiffre d'affaires de la STEG en 2009 ?",
+          "expected_sources": [
+            "Rap_STEG_2009.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "Rap_STEG_2010.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_annuel_fr_steg_2013.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-gaz-naturel",
+          "query": "Comment la STEG distribue-t-elle le gaz naturel en Tunisie ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf",
+            "REG_N_13_2005.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-panneaux-anme",
+          "query": "Quels sont les panneaux photovoltaïques acceptés par l'ANME pour les projets d'autoproduction ?",
+          "expected_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-raccordement-reseau-pv",
+          "query": "Quelles sont les exigences techniques pour le raccordement d'installations photovoltaïques au réseau basse tension en Tunisie ?",
+          "expected_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rap_STEG_2010.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-decarbonation-industrie",
+          "query": "Quelles stratégies de décarbonation et d'électrification sont proposées pour l'industrie tunisienne ?",
+          "expected_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irpeef-froid",
+          "query": "Comment diagnostiquer et optimiser les installations de production de froid en matière d'efficacité énergétique ?",
+          "expected_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-protocole-mesure-ee",
+          "query": "Quels sont les protocoles de mesure et de vérification des actions d'efficacité énergétique dans le secteur industriel ?",
+          "expected_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-gouvernance-locale",
+          "query": "Comment une commune tunisienne peut-elle mettre en place une gouvernance énergétique locale ?",
+          "expected_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-communes.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-emploi-energie",
+          "query": "Quelle est la situation de l'emploi et de l'employabilité des femmes dans le secteur de la maîtrise de l'énergie en Tunisie ?",
+          "expected_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-rd-energie",
+          "query": "Quel est le potentiel de recherche et développement dans le secteur de l'énergie renouvelable en Tunisie ?",
+          "expected_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-parc-vehicules",
+          "query": "Quelles sont les bonnes pratiques de gestion de parcs de véhicules utilisés pour le transport de marchandises ?",
+          "expected_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-peeb-sante",
+          "query": "Quelles sont les recommandations d'efficacité énergétique pour les bâtiments de santé en Tunisie ?",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-comportement-consommation",
+          "query": "Comment se comporte le consommateur d'énergie tunisien, que ce soit les ménages ou les entreprises ?",
+          "expected_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "guide-communes.pdf",
+            "R000405v5.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-financement-transition",
+          "query": "Comment est financée la transition énergétique au niveau mondial selon le paysage global 2025 ?",
+          "expected_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-afrique-nord",
+          "query": "Quelles sont les politiques et le financement pour les énergies renouvelables en Afrique du Nord selon IRENA ?",
+          "expected_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_Planning_Prospects_NAfrica_2023.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-strategie-panarabe",
+          "query": "Quel est le plan d'action de la stratégie pan-arabe pour les énergies renouvelables d'IRENA ?",
+          "expected_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-cop28",
+          "query": "Quels sont les objectifs du consensus de l'UAE (COP28) concernant le triplement des énergies renouvelables d'ici 2030 ?",
+          "expected_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "IRENA_Rnewable_energy_markets_GCC_2023.pdf",
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-ee-eau-assainissement",
+          "query": "Quelles lignes directrices d'efficacité énergétique s'appliquent aux services d'approvisionnement en eau et d'assainissement ?",
+          "expected_sources": [
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "EE-Guidelines-final-web_french.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "R000405v5.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-construction-collectivites",
+          "query": "Qu'est-ce que l'éco-construction pour les collectivités locales en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-steg-distribution",
+          "query": "توزيع الكهرباء والغاز عبر شركة STEG في تونس",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "REG_N_13_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "RA_2012_Vfr_STEG.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "qat181775.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-mabani-sihha",
+          "query": "تحسين كفاءة الطاقة في مباني المستشفيات في تونس",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "manuel-des-batiments-a-usage-de-bureaux.pdf",
+            "qat181775.pdf",
+            "qat181775.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tajhizat-fardiya",
+          "query": "استهلاك الطاقة في الأجهزة المنزلية وتقليل فواتير الكهرباء",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.2,
+          "top_sources": [
+            "qat181775.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "06.pdf",
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-installer-panneaux",
+          "query": "Quelles sont les étapes pour installer des panneaux solaires photovoltaïques en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-20232024.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "1TXH000671B0301-v3.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-evolution-gaz-steg",
+          "query": "Comment le secteur du gaz naturel en Tunisie a-t-il évolué au cours des dernières années ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-weather",
+          "query": "Quelle est la météo à Tunis demain ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-cooking",
+          "query": "Comment préparer un couscous traditionnel tunisien ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-empty-query",
+          "query": "   ",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_FR2016.pdf",
+            "Rapport_AR2016.pdf"
+          ],
+          "error": null
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-08-20T18:41:29.450404+00:00",
+      "retriever": "hybrid",
+      "k": 5,
+      "n": 34,
+      "mean_recall_at_k": 0.8824,
+      "mean_mrr": 0.777,
+      "rows": [
+        {
+          "id": "fr-renewables-2030",
+          "query": "Quel est l'objectif de la Tunisie en matière d'énergies renouvelables à l'horizon 2030 ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-anme-subventions",
+          "query": "Quelles subventions l'ANME offre-t-elle pour l'installation de panneaux solaires ?",
+          "expected_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-autoconsommation",
+          "query": "Comment fonctionne le régime d'autoconsommation en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-efficacite-batiments",
+          "query": "Quelles mesures d'efficacité énergétique recommande-t-on pour les bâtiments en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tarshid-electricite",
+          "query": "ترشيد استهلاك الكهرباء في المباني",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "qat181775.pdf",
+            "guide-communes.pdf",
+            "06.pdf",
+            "Rapport_FR2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-objectifs-2030",
+          "query": "أهداف الطاقة المتجددة في تونس 2030",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "qat181775.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "06.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-chiffres-cles",
+          "query": "Quels sont les chiffres clés du rapport d'activité STEG 2017 en matière d'électricité et de gaz ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf",
+            "Rapport_Annuel_STEG_2014_fr.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-revenus",
+          "query": "Quel était le chiffre d'affaires de la STEG en 2009 ?",
+          "expected_sources": [
+            "Rap_STEG_2009.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rap_STEG_2009.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rapport_annuel_fr_steg_2013.pdf",
+            "Rap_STEG_2010.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-gaz-naturel",
+          "query": "Comment la STEG distribue-t-elle le gaz naturel en Tunisie ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "REG_N_13_2005.pdf",
+            "REG_N_13_2005.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rap_STEG_2005.pdf",
+            "RA_2012_Vfr_STEG.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-panneaux-anme",
+          "query": "Quels sont les panneaux photovoltaïques acceptés par l'ANME pour les projets d'autoproduction ?",
+          "expected_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-raccordement-reseau-pv",
+          "query": "Quelles sont les exigences techniques pour le raccordement d'installations photovoltaïques au réseau basse tension en Tunisie ?",
+          "expected_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rap_STEG_2010.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-decarbonation-industrie",
+          "query": "Quelles stratégies de décarbonation et d'électrification sont proposées pour l'industrie tunisienne ?",
+          "expected_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irpeef-froid",
+          "query": "Comment diagnostiquer et optimiser les installations de production de froid en matière d'efficacité énergétique ?",
+          "expected_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-protocole-mesure-ee",
+          "query": "Quels sont les protocoles de mesure et de vérification des actions d'efficacité énergétique dans le secteur industriel ?",
+          "expected_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-gouvernance-locale",
+          "query": "Comment une commune tunisienne peut-elle mettre en place une gouvernance énergétique locale ?",
+          "expected_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-communes.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-emploi-energie",
+          "query": "Quelle est la situation de l'emploi et de l'employabilité des femmes dans le secteur de la maîtrise de l'énergie en Tunisie ?",
+          "expected_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-rd-energie",
+          "query": "Quel est le potentiel de recherche et développement dans le secteur de l'énergie renouvelable en Tunisie ?",
+          "expected_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-parc-vehicules",
+          "query": "Quelles sont les bonnes pratiques de gestion de parcs de véhicules utilisés pour le transport de marchandises ?",
+          "expected_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-peeb-sante",
+          "query": "Quelles sont les recommandations d'efficacité énergétique pour les bâtiments de santé en Tunisie ?",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-comportement-consommation",
+          "query": "Comment se comporte le consommateur d'énergie tunisien, que ce soit les ménages ou les entreprises ?",
+          "expected_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "R000405v5.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "guide-communes.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-financement-transition",
+          "query": "Comment est financée la transition énergétique au niveau mondial selon le paysage global 2025 ?",
+          "expected_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-afrique-nord",
+          "query": "Quelles sont les politiques et le financement pour les énergies renouvelables en Afrique du Nord selon IRENA ?",
+          "expected_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "IRENA_Planning_Prospects_NAfrica_2023.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-strategie-panarabe",
+          "query": "Quel est le plan d'action de la stratégie pan-arabe pour les énergies renouvelables d'IRENA ?",
+          "expected_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-cop28",
+          "query": "Quels sont les objectifs du consensus de l'UAE (COP28) concernant le triplement des énergies renouvelables d'ici 2030 ?",
+          "expected_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "IRENA_Rnewable_energy_markets_GCC_2023.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-ee-eau-assainissement",
+          "query": "Quelles lignes directrices d'efficacité énergétique s'appliquent aux services d'approvisionnement en eau et d'assainissement ?",
+          "expected_sources": [
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-construction-collectivites",
+          "query": "Qu'est-ce que l'éco-construction pour les collectivités locales en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-steg-distribution",
+          "query": "توزيع الكهرباء والغاز عبر شركة STEG في تونس",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "REG_N_13_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "RA_2012_Vfr_STEG.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-mabani-sihha",
+          "query": "تحسين كفاءة الطاقة في مباني المستشفيات في تونس",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "manuel-des-batiments-a-usage-de-bureaux.pdf",
+            "qat181775.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "qat181775.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tajhizat-fardiya",
+          "query": "استهلاك الطاقة في الأجهزة المنزلية وتقليل فواتير الكهرباء",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "qat181775.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "06.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-installer-panneaux",
+          "query": "Quelles sont les étapes pour installer des panneaux solaires photovoltaïques en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-20232024.pdf",
+            "1TXH000671B0301-v3.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-evolution-gaz-steg",
+          "query": "Comment le secteur du gaz naturel en Tunisie a-t-il évolué au cours des dernières années ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "top_sources": [
+            "Rap_STEG_2005.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-weather",
+          "query": "Quelle est la météo à Tunis demain ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-cooking",
+          "query": "Comment préparer un couscous traditionnel tunisien ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-empty-query",
+          "query": "   ",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "Rapport_AR2016.pdf",
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_FR2016.pdf",
+            "Rapport_AR2016.pdf"
+          ],
+          "error": null
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-08-20T18:43:48.865819+00:00",
+      "retriever": "hybrid",
+      "k": 5,
+      "n": 34,
+      "mean_recall_at_k": 0.8824,
+      "mean_mrr": 0.777,
+      "rows": [
+        {
+          "id": "fr-renewables-2030",
+          "query": "Quel est l'objectif de la Tunisie en matière d'énergies renouvelables à l'horizon 2030 ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-anme-subventions",
+          "query": "Quelles subventions l'ANME offre-t-elle pour l'installation de panneaux solaires ?",
+          "expected_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-autoconsommation",
+          "query": "Comment fonctionne le régime d'autoconsommation en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-efficacite-batiments",
+          "query": "Quelles mesures d'efficacité énergétique recommande-t-on pour les bâtiments en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tarshid-electricite",
+          "query": "ترشيد استهلاك الكهرباء في المباني",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "qat181775.pdf",
+            "guide-communes.pdf",
+            "06.pdf",
+            "Rapport_FR2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-objectifs-2030",
+          "query": "أهداف الطاقة المتجددة في تونس 2030",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "qat181775.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "06.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-chiffres-cles",
+          "query": "Quels sont les chiffres clés du rapport d'activité STEG 2017 en matière d'électricité et de gaz ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf",
+            "Rapport_Annuel_STEG_2014_fr.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-revenus",
+          "query": "Quel était le chiffre d'affaires de la STEG en 2009 ?",
+          "expected_sources": [
+            "Rap_STEG_2009.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rap_STEG_2009.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rapport_annuel_fr_steg_2013.pdf",
+            "Rap_STEG_2010.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-gaz-naturel",
+          "query": "Comment la STEG distribue-t-elle le gaz naturel en Tunisie ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "REG_N_13_2005.pdf",
+            "REG_N_13_2005.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rap_STEG_2005.pdf",
+            "RA_2012_Vfr_STEG.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-panneaux-anme",
+          "query": "Quels sont les panneaux photovoltaïques acceptés par l'ANME pour les projets d'autoproduction ?",
+          "expected_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-raccordement-reseau-pv",
+          "query": "Quelles sont les exigences techniques pour le raccordement d'installations photovoltaïques au réseau basse tension en Tunisie ?",
+          "expected_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rap_STEG_2010.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-decarbonation-industrie",
+          "query": "Quelles stratégies de décarbonation et d'électrification sont proposées pour l'industrie tunisienne ?",
+          "expected_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irpeef-froid",
+          "query": "Comment diagnostiquer et optimiser les installations de production de froid en matière d'efficacité énergétique ?",
+          "expected_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-protocole-mesure-ee",
+          "query": "Quels sont les protocoles de mesure et de vérification des actions d'efficacité énergétique dans le secteur industriel ?",
+          "expected_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-gouvernance-locale",
+          "query": "Comment une commune tunisienne peut-elle mettre en place une gouvernance énergétique locale ?",
+          "expected_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-communes.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-emploi-energie",
+          "query": "Quelle est la situation de l'emploi et de l'employabilité des femmes dans le secteur de la maîtrise de l'énergie en Tunisie ?",
+          "expected_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-rd-energie",
+          "query": "Quel est le potentiel de recherche et développement dans le secteur de l'énergie renouvelable en Tunisie ?",
+          "expected_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-parc-vehicules",
+          "query": "Quelles sont les bonnes pratiques de gestion de parcs de véhicules utilisés pour le transport de marchandises ?",
+          "expected_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-peeb-sante",
+          "query": "Quelles sont les recommandations d'efficacité énergétique pour les bâtiments de santé en Tunisie ?",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-comportement-consommation",
+          "query": "Comment se comporte le consommateur d'énergie tunisien, que ce soit les ménages ou les entreprises ?",
+          "expected_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "R000405v5.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "guide-communes.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-financement-transition",
+          "query": "Comment est financée la transition énergétique au niveau mondial selon le paysage global 2025 ?",
+          "expected_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-afrique-nord",
+          "query": "Quelles sont les politiques et le financement pour les énergies renouvelables en Afrique du Nord selon IRENA ?",
+          "expected_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "IRENA_Planning_Prospects_NAfrica_2023.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-strategie-panarabe",
+          "query": "Quel est le plan d'action de la stratégie pan-arabe pour les énergies renouvelables d'IRENA ?",
+          "expected_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-cop28",
+          "query": "Quels sont les objectifs du consensus de l'UAE (COP28) concernant le triplement des énergies renouvelables d'ici 2030 ?",
+          "expected_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "IRENA_Rnewable_energy_markets_GCC_2023.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-ee-eau-assainissement",
+          "query": "Quelles lignes directrices d'efficacité énergétique s'appliquent aux services d'approvisionnement en eau et d'assainissement ?",
+          "expected_sources": [
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-construction-collectivites",
+          "query": "Qu'est-ce que l'éco-construction pour les collectivités locales en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-steg-distribution",
+          "query": "توزيع الكهرباء والغاز عبر شركة STEG في تونس",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "REG_N_13_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "RA_2012_Vfr_STEG.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-mabani-sihha",
+          "query": "تحسين كفاءة الطاقة في مباني المستشفيات في تونس",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "manuel-des-batiments-a-usage-de-bureaux.pdf",
+            "qat181775.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "qat181775.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tajhizat-fardiya",
+          "query": "استهلاك الطاقة في الأجهزة المنزلية وتقليل فواتير الكهرباء",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "qat181775.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "06.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-installer-panneaux",
+          "query": "Quelles sont les étapes pour installer des panneaux solaires photovoltaïques en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-20232024.pdf",
+            "1TXH000671B0301-v3.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-evolution-gaz-steg",
+          "query": "Comment le secteur du gaz naturel en Tunisie a-t-il évolué au cours des dernières années ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "top_sources": [
+            "Rap_STEG_2005.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-weather",
+          "query": "Quelle est la météo à Tunis demain ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-cooking",
+          "query": "Comment préparer un couscous traditionnel tunisien ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-empty-query",
+          "query": "   ",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "Rapport_AR2016.pdf",
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_FR2016.pdf",
+            "Rapport_AR2016.pdf"
+          ],
+          "error": null
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-08-20T23:06:42.806682+00:00",
+      "retriever": "hybrid",
+      "k": 5,
+      "n": 34,
+      "mean_recall_at_k": 0.8824,
+      "mean_mrr": 0.773,
+      "rows": [
+        {
+          "id": "fr-renewables-2030",
+          "query": "Quel est l'objectif de la Tunisie en matière d'énergies renouvelables à l'horizon 2030 ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-anme-subventions",
+          "query": "Quelles subventions l'ANME offre-t-elle pour l'installation de panneaux solaires ?",
+          "expected_sources": [
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-autoconsommation",
+          "query": "Comment fonctionne le régime d'autoconsommation en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-efficacite-batiments",
+          "query": "Quelles mesures d'efficacité énergétique recommande-t-on pour les bâtiments en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "appui-a-la-realisation-d_une-cartographie-du-secteur-des-batiments-publics-en-tunisie.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tarshid-electricite",
+          "query": "ترشيد استهلاك الكهرباء في المباني",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "qat181775.pdf",
+            "ng-conservation-curriculum-booklet-layout.pdf",
+            "guide-communes.pdf",
+            "06.pdf",
+            "Rapport_FR2016.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-objectifs-2030",
+          "query": "أهداف الطاقة المتجددة في تونس 2030",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "qat181775.pdf",
+            "06.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-chiffres-cles",
+          "query": "Quels sont les chiffres clés du rapport d'activité STEG 2017 en matière d'électricité et de gaz ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Annuel_STEG_2014_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-revenus",
+          "query": "Quel était le chiffre d'affaires de la STEG en 2009 ?",
+          "expected_sources": [
+            "Rap_STEG_2009.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "top_sources": [
+            "Rap_STEG_2010.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rap_STEG_2009.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_annuel_fr_steg_2013.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-steg-gaz-naturel",
+          "query": "Comment la STEG distribue-t-elle le gaz naturel en Tunisie ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "REG_N_13_2005.pdf",
+            "Rap_STEG_2005.pdf",
+            "REG_N_13_2005.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-panneaux-anme",
+          "query": "Quels sont les panneaux photovoltaïques acceptés par l'ANME pour les projets d'autoproduction ?",
+          "expected_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-raccordement-reseau-pv",
+          "query": "Quelles sont les exigences techniques pour le raccordement d'installations photovoltaïques au réseau basse tension en Tunisie ?",
+          "expected_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rap_STEG_2010.pdf",
+            "referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf",
+            "Rapport_Annuel_steg_2020_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-decarbonation-industrie",
+          "query": "Quelles stratégies de décarbonation et d'électrification sont proposées pour l'industrie tunisienne ?",
+          "expected_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irpeef-froid",
+          "query": "Comment diagnostiquer et optimiser les installations de production de froid en matière d'efficacité énergétique ?",
+          "expected_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-installations-de-production-de-froid.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-protocole-mesure-ee",
+          "query": "Quels sont les protocoles de mesure et de vérification des actions d'efficacité énergétique dans le secteur industriel ?",
+          "expected_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-gouvernance-locale",
+          "query": "Comment une commune tunisienne peut-elle mettre en place une gouvernance énergétique locale ?",
+          "expected_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-communes.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "guide-gouvernance-energerique-locale-1.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-emploi-energie",
+          "query": "Quelle est la situation de l'emploi et de l'employabilité des femmes dans le secteur de la maîtrise de l'énergie en Tunisie ?",
+          "expected_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-rd-energie",
+          "query": "Quel est le potentiel de recherche et développement dans le secteur de l'énergie renouvelable en Tunisie ?",
+          "expected_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-parc-vehicules",
+          "query": "Quelles sont les bonnes pratiques de gestion de parcs de véhicules utilisés pour le transport de marchandises ?",
+          "expected_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf",
+            "guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-peeb-sante",
+          "query": "Quelles sont les recommandations d'efficacité énergétique pour les bâtiments de santé en Tunisie ?",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-comportement-consommation",
+          "query": "Comment se comporte le consommateur d'énergie tunisien, que ce soit les ménages ou les entreprises ?",
+          "expected_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2024.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "guide-communes.pdf",
+            "R000405v5.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-financement-transition",
+          "query": "Comment est financée la transition énergétique au niveau mondial selon le paysage global 2025 ?",
+          "expected_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf",
+            "IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-afrique-nord",
+          "query": "Quelles sont les politiques et le financement pour les énergies renouvelables en Afrique du Nord selon IRENA ?",
+          "expected_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_Planning_Prospects_NAfrica_2023.pdf",
+            "emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-strategie-panarabe",
+          "query": "Quel est le plan d'action de la stratégie pan-arabe pour les énergies renouvelables d'IRENA ?",
+          "expected_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "IRENA_Arab_Region_Overview_2016.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-irena-cop28",
+          "query": "Quels sont les objectifs du consensus de l'UAE (COP28) concernant le triplement des énergies renouvelables d'ici 2030 ?",
+          "expected_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "IRENA_Rnewable_energy_markets_GCC_2023.pdf",
+            "IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf",
+            "DECARBOTEX_DIGITAL_1P.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-ee-eau-assainissement",
+          "query": "Quelles lignes directrices d'efficacité énergétique s'appliquent aux services d'approvisionnement en eau et d'assainissement ?",
+          "expected_sources": [
+            "EE-Guidelines-final-web_french.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "EE-Guidelines-final-web_french.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "EE-Guidelines-final-web_french.pdf",
+            "R000405v5.pdf",
+            "R000405v5.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-construction-collectivites",
+          "query": "Qu'est-ce que l'éco-construction pour les collectivités locales en Tunisie ?",
+          "expected_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-steg-distribution",
+          "query": "توزيع الكهرباء والغاز عبر شركة STEG في تونس",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "REG_N_13_2005.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "RA_2012_Vfr_STEG.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "RA_2012_Vfr_STEG.pdf",
+            "qat181775.pdf",
+            "qat181775.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-mabani-sihha",
+          "query": "تحسين كفاءة الطاقة في مباني المستشفيات في تونس",
+          "expected_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "top_sources": [
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "manuel-des-batiments-a-usage-de-bureaux.pdf",
+            "qat181775.pdf",
+            "qat181775.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "ar-tajhizat-fardiya",
+          "query": "استهلاك الطاقة في الأجهزة المنزلية وتقليل فواتير الكهرباء",
+          "expected_sources": [
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.2,
+          "top_sources": [
+            "qat181775.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "1TXH000671B0301-v3.pdf",
+            "06.pdf",
+            "ng-conservation-curriculum-booklet-layout.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-installer-panneaux",
+          "query": "Quelles sont les étapes pour installer des panneaux solaires photovoltaïques en Tunisie ?",
+          "expected_sources": [
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+          ],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-20232024.pdf",
+            "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+            "1TXH000671B0301-v3.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "fr-evolution-gaz-steg",
+          "query": "Comment le secteur du gaz naturel en Tunisie a-t-il évolué au cours des dernières années ?",
+          "expected_sources": [
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rapport_Activite_steg_2016_fr.pdf",
+            "Rapport_Activite_steg_2019_fr.pdf"
+          ],
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "top_sources": [
+            "IRENA_North_Africa_policies_finance_RE_2023.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+            "Rapport_Activite_steg_2017_fr.pdf",
+            "Rap_STEG_2005.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-weather",
+          "query": "Quelle est la météo à Tunis demain ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf",
+            "donnes-climatiques-de-base-pour-le-dimensionnement-des-installations-de-chauffage-et-de-refroidissement.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-out-of-scope-cooking",
+          "query": "Comment préparer un couscous traditionnel tunisien ?",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "FCCQ_Guide_Decarbonation_Final-1.pdf",
+            "peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf",
+            "guide-eco-construction-pour-les-collectivites-locales.pdf",
+            "Guide_20Pratique_Management_20de_20l__C3_A9nergie_20dans_20les_20h_C3_B4tels_20alpins1.pdf"
+          ],
+          "error": null
+        },
+        {
+          "id": "edge-empty-query",
+          "query": "   ",
+          "expected_sources": [],
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "top_sources": [
+            "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_AR2016.pdf",
+            "Rapport_FR2016.pdf",
+            "Rapport_AR2016.pdf"
+          ],
+          "error": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,179 +1,152 @@
-# Tunisia Energy RAG — Product Completion Plan
+# Tunisia Energy RAG — Product Plan
 
-> Status: draft plan (2026-08-16). Covers the gap between the current working prototype
-> and a deployable, maintainable product.
+> Updated 2026-08-20. Simplified plan focused on AI quality, guardrails, and product features.
 
 ---
 
-## 1. Current state (what's already built)
+## 1. What's Built
 
 | Area | Status |
 |---|---|
-| **RAG pipeline** | Collector → LLM triage → OCR/chunk ingest → ChromaDB embeddings → Mistral generation (async, token-budgeted, SSE streaming) ✅ |
-| **Backend API** | FastAPI: chat (JSON + SSE), conversations, outage CRUD, admin purge stats/config, runtime settings, liveness (`/health`) + readiness (`/ready`). **112 tests** ✅ |
-| **Frontend** | React 18 + Vite + TS: chat w/ citations dropdown, Tunisia SVG map + Leaflet, solar ROI calculator, 2-locale i18n (fr/ar), `/admin` page. **108 tests** ✅ |
-| **Data layer** | Async SQLAlchemy, Postgres everywhere (dev = prod), Alembic migrations, seeder, outage TTL purge task, runtime-config settings table, nightly pg_dump backups ✅ |
-| **Infra** | docker-compose (postgres, db-seed, pg-backup, backend, frontend/nginx, ngrok), readiness-based healthchecks ✅ |
-| **Security** | Real auth (JWT), slowapi rate limiting, env-driven CORS + security headers, Admin API-key (constant-time), no secrets committed ✅ |
-| **CI/CD** | ❌ Empty — `.github/workflows/` has no workflows |
-| **Auth** | ✅ Email/password + JWT (register/login/me), per-user conversation + outage ownership |
-| **Sentry** | ❌ Not integrated — the last unchecked P0 item |
+| **RAG pipeline** | Hybrid retrieval (vector + BM25 + RRF + rerank) → Mistral Large generation (SSE streaming) ✅ |
+| **Backend API** | 35 endpoints, 168 tests, structured JSON logs, Prometheus /metrics ✅ |
+| **Frontend** | React 18 + Vite, chat, outage map, admin panel, 126 tests ✅ |
+| **Data layer** | PostgreSQL 16, async SQLAlchemy, Alembic migrations, seeder ✅ |
+| **Observability** | JSON logs, Prometheus metrics, built-in HTML dashboard at `/dashboard` ✅ |
+| **Ingestion** | PDF triage (2-gate LLM scoring), recursive BFS crawl, SSE progress ✅ |
+| **Security** | JWT auth, rate limiting, CORS, security headers ✅ |
+| **Tests** | 168 backend + 126 frontend = **294 total** ✅ |
 
 ---
 
-## 2. Phase 0 — Pre-launch blockers (P0, before any real user)
+## 2. AI Guardrails (P1 — Current Focus)
 
-### 2.1 Real user authentication — ✅ DONE
-Email/password signup + login (bcrypt hashing, JWT), `/me`, per-user conversation +
-outage ownership; frontend auth store + login/register modal. Remaining: logout/refresh,
-password reset.
+These protect users from bad LLM outputs and control costs.
 
-### 2.2 Rate limiting — ✅ DONE
-slowapi per-IP limits on chat/outages/auth/admin (env-tunable, Redis-backed storage
-optional), 429 + `Retry-After`, friendly frontend 429 messages.
+### 2.1 Hallucination detection — ⬜
+- **Groundedness check**: after generation, verify answer references retrieved chunks
+- Score each answer 0–1 based on claim-support ratio
+- Flag low-score answers for review; optionally refuse to show them
+- Metric: % of answers grounded in source documents
 
-### 2.3 Production CORS + security headers — ✅ DONE
-Env-driven `CORS_ORIGINS` whitelist + security-headers middleware (nosniff, DENY,
-Referrer-Policy, opt-in HSTS/CSP). TLS still terminates at the reverse proxy.
+### 2.2 Prompt injection defense — ⬜
+- Sanitize user queries before sending to LLM (strip system-prompt-like instructions)
+- Validate that generated answers don't leak system prompt content
+- Rate-limit follow-up queries to prevent prompt-stuffing attacks
+- Test: adversarial query suite (injection attempts, role-play, language-switching)
 
-### 2.4 DB migrations (Alembic) — ✅ DONE
-Versioned, reversible migrations (async env, initial revision, adopt-aware
-`ensure_schema`, generated `schema.sql` reference). Dev runs the same Postgres as prod.
+### 2.3 Content filtering — ⬜
+- Refuse answers on topics outside energy sector scope (guardrails topic filter)
+- Detect and block harmful/offensive content in both input and output
+- Fallback message: "This question is outside the scope of energy sector data."
+- Configurable via admin settings table
 
-### 2.5 Error tracking (Sentry)
-Errors are logged and sanitized today; Sentry gives real stack traces + prod alerting.
+### 2.4 Cost guardrails — ⬜
+- Per-user daily chat cap (admin-configurable, default 50/day)
+- Per-query token budget: refuse if estimated context > 6000 tokens
+- Track total LLM tokens/day in metrics + admin dashboard
+- Alert threshold: daily token budget warning at 80%
+- Monitor via `/dashboard` LLM tokens chart
 
----
-
-## 3. Phase 1 — Reliability & operations (P0/P1)
-
-### 3.1 CI/CD pipeline
-GitHub Actions: backend pytest (fast run) + frontend vitest/build on every PR;
-auto-deploy to staging on merge, prod on tag. **Biggest product-readiness lever.**
-
-### 3.2 Structured logging + metrics
-JSON logs, Prometheus `/metrics` (request latency, LLM tokens, purge counts),
-Grafana dashboard.
-
-### 3.3 Postgres backups — ✅ DONE (local)
-Nightly `pg_dump` via the `pg-backup` compose service into `./backups/` with
-retention, plus `scripts/backup_db.sh` / `scripts/restore_db.sh`. Remaining: ship
-backups off-host (object storage) once hosting is chosen.
-
-### 3.4 Health/readiness split — ✅ DONE
-`/health` (liveness, always 200) vs `/ready` (DB + Chroma reachable, 503 with a
-per-dependency `checks` map when degraded); Docker healthchecks now gate on `/ready`.
+### 2.5 Answer quality scoring — ⬜
+- Auto-score every generated answer on: relevance, citation count, length
+- Store scores in a new `answer_scores` table (query, score, tokens, latency)
+- Dashboard panel: average quality score over time
+- Regression alert: quality drops below baseline
 
 ---
 
-## 4. Phase 2 — Product features (P1)
+## 3. AI Testing (P1 — Current Focus)
+
+Systematic evaluation to catch quality regressions before users do.
+
+### 3.1 Expand golden evaluation set — ⬜
+- Current: 6 queries in `data/eval/golden_qa.json`
+- Target: 30+ queries covering:
+  - Tunisian energy policy (ANME, STEG, solar, wind)
+  - Technical documents (efficiency standards, grid data)
+  - Arabic-language queries
+  - Follow-up / multi-turn queries
+  - Edge cases (ambiguous, out-of-scope, mixed languages)
+
+### 3.2 Automated eval pipeline — ⬜
+- Run eval suite on every ingestion (or weekly)
+- Track recall@5, MRR, answer quality over time
+- Store results in `data/eval/results.json` with timestamps
+- Compare against baseline; fail CI if recall drops >5%
+
+### 3.3 Adversarial test suite — ⬜
+- Injection attempts: "Ignore previous instructions and..."
+- Language mixing: French/Arabic/English in one query
+- Out-of-scope: "What's the weather?" → should refuse gracefully
+- Very long queries (500+ words)
+- Empty/whitespace-only queries
+- Unicode edge cases (RTL, Arabic diacritics, emoji)
+
+### 3.4 Retrieval regression tests — ⬜
+- After each ingestion batch, verify recall@5 doesn't degrade
+- Check that new documents are actually retrievable (index + query test)
+- Verify embedding model consistency (same model = same vectors)
+
+### 3.5 Prompt regression tests — ⬜
+- Snapshot test: same query → similar answer structure (not exact match)
+- Token efficiency: track prompt + completion tokens per query type
+- Language consistency: French query → French answer, Arabic → Arabic
+
+---
+
+## 4. Product Features (P1)
 
 ### 4.1 Outage moderation workflow
-Today *anyone* can create reports and flip status to `VERIFIED`/`RESOLVED`.
-Add: moderator role, approve/reject queue, duplicate detection (same region +
-utility + window), report voting ("me too"). **Biggest trust feature for a
-crowdsourced map.**
+Approve/reject queue for crowdsource reports, duplicate detection
+(same governorate + time window). Biggest trust feature for crowdsourced map.
 
-### 4.2 Outage notifications
-Users subscribe to a region → Telegram/email/push when a report appears or
-resolves. Turns the map into a service.
+### 4.2 Usage quotas
+Per-user daily chat caps, admin-configurable. Fits the existing `settings` table.
 
 ### 4.3 User profiles & cross-device history
-Requires auth (2.1); then conversations list, rename, delete, resume from any device.
+Conversations list, rename, delete, resume from any device. Auth is done.
 
-### 4.4 RAG quality program — ✅ DONE (retrieval half)
-- Hybrid retrieval (vector + BM25, RRF fusion) — `src/rag/hybrid.py`, wired into the pipeline ✅
-- Cross-encoder reranking (multilingual, env-gated, lazy, graceful fallback) ✅
-- Golden Q/A set (`data/eval/golden_qa.json`) + offline eval harness (`src/eval/`):
-  recall@5 **0.83 → 1.00**, MRR **0.700 → 1.000** on 6 queries ✅
-- **Remaining:** scheduled corpus refresh (Phase 3 §5.1) and growing the golden
-  set / adding `ragas`-style groundedness metrics in CI once a deploy exists.
-
-### 4.5 Usage quotas / cost guardrails
-Per-user daily chat caps, admin-configurable (fits the existing `settings`
-table + admin page).
+### 4.4 Scheduled ingestion cron
+`src/ingestion/collector.py` already works; wrap in background task for
+nightly corpus refresh.
 
 ---
 
-## 5. Phase 3 — Data pipeline automation (P1)
+## 5. Production Hardening (P2)
 
-### 5.1 Scheduled ingestion
-Collector → triage → OCR → embed is currently manual. Package as a
-containerized job (cron / GitHub Actions scheduled) running weekly, re-embedding
-only changed docs (drive off `data/collection_log.json`).
+### 5.1 CI/CD pipeline
+GitHub Actions: pytest + vitest on every PR. PostgreSQL service container.
 
-### 5.2 Vector DB ops
-Chroma backup + rebuild script, embedding-model version pinning, doc-source
-tracking so stale docs can be dropped.
+### 5.2 Sentry error tracking
+`sentry-sdk[fastapi]` for backend + React error boundary for frontend.
 
----
+### 5.3 Redis cache
+Shared rate limit storage, response caching for repeated queries.
 
-## 6. Phase 4 — Scale & performance (P2)
+### 5.4 Load testing
+`locust` or `k6`: 100 concurrent chatters + map pollers.
 
-### 6.1 Redis cache
-Cache hot chat responses (identical query+history hash), outage queries, public
-config. Keeps LLM costs down at scale.
-
-### 6.2 CDN for static assets
-Nginx already caches hashed assets; a CDN in front for global latency.
-
-### 6.3 Load testing
-k6 / `locust` scenario: 100 concurrent chatters + map pollers; tune uvicorn
-workers + Postgres pool. Use the test-time baseline in `tests/auto_test_config.md`
-as the perf yardstick.
+### 5.5 Landing page + docs
+Public-facing page with screenshots; API docs from OpenAPI.
 
 ---
 
-## 7. Phase 5 — Launch readiness (P2)
-
-### 7.1 Legal & compliance
-Privacy policy + terms (user-submitted location data on the outage map is
-sensitive — GDPR), cookie consent, data-retention statement (aligns with the 5h
-TTL story).
-
-### 7.2 Landing page + docs
-Explain the product, demo, screenshots; user guide in fr/ar.
-
-### 7.3 Privacy-friendly analytics
-Plausible/Umami (not GA) — chat usage, map views, retention.
-
-### 7.4 Security review
-Dependency audit (`pip-audit`, `npm audit`), OWASP pass on the API, pen-test the
-admin surface.
-
-### 7.5 Runbook + alerts
-On-call doc: how to restart, restore a backup, hotfix a broken embedding model.
-
----
-
-## 8. Suggested order & effort
+## 6. Sprint Roadmap
 
 ```
-Sprint 1  (P0)   Auth ✅ · Rate limiting ✅ · CORS/headers ✅ · Sentry ⬜
-Sprint 2  (P0/P1) Alembic migrations ✅ · CI/CD ⬜ · backups ✅ · health split ✅
-Sprint 3  (P1)   Outage moderation · notifications
-Sprint 4  (P1)   RAG quality program (rerank + eval set) · scheduled ingestion
-Sprint 5  (P2)   Redis · CDN · load test · landing page + docs
-Sprint 6  (P2)   Legal · analytics · security audit · runbook
+Sprint 1 (now)  AI Guardrails: hallucination detection, prompt injection, content filter
+Sprint 2        AI Testing: golden set expansion, eval pipeline, adversarial suite
+Sprint 3        Cost guardrails: usage caps, token budgets, quality scoring
+Sprint 4        Product: outage moderation, usage quotas, user profiles
+Sprint 5        Ops: CI/CD, Sentry, Redis cache, load testing
+Sprint 6        Launch: landing page, docs, security audit
 ```
-
-**Next up:** finish Sprint 1 with **Sentry**, then **CI/CD** (the remaining
-unblocker — now that migrations exist, CI can verify `alembic upgrade head` on
-a fresh DB on every PR).
-
-**Rough total: 6 focused sprints (~4–6 weeks solo, ~2–3 with a second dev).**
-The two things that unblock everything else are **(1) real auth** and
-**(2) CI/CD** — without them the rest is polish on a demo.
 
 ---
 
-## 9. Open decision points
+## 7. Open Questions
 
-1. **Audience** — internal STEG/utility tool, or public-facing for Tunisian
-   citizens? (Drives auth type, moderation strictness, GDPR scope, hosting.)
-2. **Hosting** — VPS, Railway/Render/Fly, or a real cloud with k8s? (Drives
-   CI/CD + backup design.)
-3. **Monetization** — free public service, or paid tiers with quotas? (Drives
-   usage-quota + billing work.)
-4. **LLM budget** — monthly cap on the Mistral API? (Sets how urgent rate
-   limiting + caching are.)
+1. **LLM budget** — monthly cap on Mistral API? Sets urgency of cost guardrails.
+2. **Audience** — internal STEG tool or public citizens? Drives moderation strictness.
+3. **Hosting** — VPS, Railway/Render, or cloud? Drives CI/CD and backup design.

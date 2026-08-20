@@ -33,6 +33,17 @@ from src.ingestion.admin_ingest import (
 
 logger = logging.getLogger(__name__)
 
+# Lazy import to avoid circular import at module load
+_ingestions_counter = None
+
+
+def _get_ingestions():
+    global _ingestions_counter
+    if _ingestions_counter is None:
+        from src.api.metrics import INGESTIONS as _c
+        _ingestions_counter = _c
+    return _ingestions_counter
+
 RAW_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "raw"
 
 # Safety defaults for recursive crawling.
@@ -265,6 +276,10 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
         decision = ingest_pdf(pdf_path)
     except Exception as e:
         logger.exception("Triage failed for %s: %s", filename, e)
+        try:
+            _get_ingestions().labels(result="failed").inc()
+        except Exception:
+            pass
         return {
             "status": "failed",
             "total_pages": None,
@@ -275,6 +290,10 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
         }
 
     if decision.get("index_error"):
+        try:
+            _get_ingestions().labels(result="failed").inc()
+        except Exception:
+            pass
         return {
             "status": "failed",
             "total_pages": decision.get("total_pages"),
@@ -285,6 +304,10 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
         }
 
     if decision["status"] == "PASSED":
+        try:
+            _get_ingestions().labels(result="indexed").inc()
+        except Exception:
+            pass
         return {
             "status": "indexed",
             "total_pages": decision.get("total_pages"),
@@ -294,6 +317,10 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
             "error": None,
         }
 
+    try:
+        _get_ingestions().labels(result="rejected").inc()
+    except Exception:
+        pass
     return {
         "status": "triage_rejected",
         "total_pages": decision.get("total_pages"),

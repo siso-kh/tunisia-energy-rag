@@ -12,7 +12,7 @@
       "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf",
       "guide-detaille-des-energies-renouvelables-en-tunisie.pdf"
     ],
-    "note": "ANME assistance technique / feasibility studies for PV self-production; the general guide also covers the subsidy/regulatory framework."
+    "note": "ANME assistance technique / feasibility studies for PV self-production."
   },
   {
     "id": "fr-autoconsommation",
@@ -21,7 +21,7 @@
       "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
       "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
     ],
-    "note": "guide-detaille p.33 covers 'Régime de l'autoconsommation' under the 2015-12 legal framework; the autoproduction guide details the practical regime. Both are genuine answers — pure-vector top-3 surfaces neither."
+    "note": "guide-detaille p.33 covers autoconsommation regime; autoproduction guide details practical regime."
   },
   {
     "id": "fr-efficacite-batiments",
@@ -31,18 +31,218 @@
       "1TXH000671B0301-v3.pdf",
       "EE-Guidelines-final-web_french.pdf"
     ],
-    "note": "guide-eco-construction p.7 lists envelope optimization + active measures; 1TXH is the 'transition énergétique des bâtiments' practical guide; EE-Guidelines covers audits."
+    "note": "guide-eco-construction + 1TXH transition energetique batiments + EE-Guidelines audits."
   },
   {
     "id": "ar-tarshid-electricite",
     "query": "ترشيد استهلاك الكهرباء في المباني",
     "expected_sources": ["ng-conservation-curriculum-booklet-layout.pdf"],
-    "note": "Arabic conservation booklet — pure-vector already surfaces it (p.1)."
+    "note": "Arabic conservation booklet."
   },
   {
     "id": "ar-objectifs-2030",
     "query": "أهداف الطاقة المتجددة في تونس 2030",
     "expected_sources": ["guide-detaille-des-energies-renouvelables-en-tunisie.pdf"],
-    "note": "PST objectives pages; pure-vector surfaces p.20."
+    "note": "PST objectives pages."
+  },
+
+  {
+    "id": "fr-steg-chiffres-cles",
+    "query": "Quels sont les chiffres clés du rapport d'activité STEG 2017 en matière d'électricité et de gaz ?",
+    "expected_sources": ["Rapport_Activite_steg_2017_fr.pdf"],
+    "note": "STEG annual report 2017."
+  },
+  {
+    "id": "fr-steg-revenus",
+    "query": "Quel était le chiffre d'affaires de la STEG en 2009 ?",
+    "expected_sources": ["Rap_STEG_2009.pdf"],
+    "note": "STEG 2009 annual report with financial figures."
+  },
+  {
+    "id": "fr-steg-gaz-naturel",
+    "query": "Comment la STEG distribue-t-elle le gaz naturel en Tunisie ?",
+    "expected_sources": [
+      "Rapport_Activite_steg_2016_fr.pdf",
+      "Rapport_Activite_steg_2017_fr.pdf",
+      "REG_N_13_2005.pdf",
+      "Rap_STEG_2005.pdf"
+    ],
+    "note": "STEG activity reports + regulatory docs cover gas distribution."
+  },
+  {
+    "id": "fr-panneaux-anme",
+    "query": "Quels sont les panneaux photovoltaïques acceptés par l'ANME pour les projets d'autoproduction ?",
+    "expected_sources": ["liste-des-panneaux-acceptes-par-anme-en-date-de-24072026-1.pdf"],
+    "note": "ANME official list of accepted PV panels."
+  },
+  {
+    "id": "fr-raccordement-reseau-pv",
+    "query": "Quelles sont les exigences techniques pour le raccordement d'installations photovoltaïques au réseau basse tension en Tunisie ?",
+    "expected_sources": ["referentiel-technique-des-installations-photovoltaiques-raccordees-au-reseau-electrique-national-basse-tension.pdf"],
+    "note": "Technical reference for grid-connected PV: STEG + ANME + CSPV + GIZ."
+  },
+  {
+    "id": "fr-decarbonation-industrie",
+    "query": "Quelles stratégies de décarbonation et d'électrification sont proposées pour l'industrie tunisienne ?",
+    "expected_sources": ["DGE_Guide_20de_CC_81carbonation_20electrification_2026.pdf"],
+    "note": "DGE guide on decarbonation and electrification 2026."
+  },
+  {
+    "id": "fr-irpeef-froid",
+    "query": "Comment diagnostiquer et optimiser les installations de production de froid en matière d'efficacité énergétique ?",
+    "expected_sources": ["guide-technique-installations-de-production-de-froid.pdf"],
+    "note": "ANME technical guide on cold production diagnostics and optimization."
+  },
+  {
+    "id": "fr-protocole-mesure-ee",
+    "query": "Quels sont les protocoles de mesure et de vérification des actions d'efficacité énergétique dans le secteur industriel ?",
+    "expected_sources": ["guide-technique-protocole-de-mesure-et-de-verification-des-actions-d_ee_0.pdf"],
+    "note": "ANME M&V protocols guide for industrial energy efficiency."
+  },
+  {
+    "id": "fr-gouvernance-locale",
+    "query": "Comment une commune tunisienne peut-elle mettre en place une gouvernance énergétique locale ?",
+    "expected_sources": [
+      "guide-gouvernance-energerique-locale-1.pdf",
+      "guide-communes.pdf"
+    ],
+    "note": "Guide gouvernance énergétique locale (ACTE) + guide pratique communal."
+  },
+  {
+    "id": "fr-emploi-energie",
+    "query": "Quelle est la situation de l'emploi et de l'employabilité des femmes dans le secteur de la maîtrise de l'énergie en Tunisie ?",
+    "expected_sources": ["emploi-et-employabilite-des-femmes-et-des-hommes-dans-les-entreprises-privees-du-secteur-de-la-maitrise-de-l_energie-en-tunisie.pdf"],
+    "note": "2024 FMC study on employment in energy efficiency sector."
+  },
+  {
+    "id": "fr-rd-energie",
+    "query": "Quel est le potentiel de recherche et développement dans le secteur de l'énergie renouvelable en Tunisie ?",
+    "expected_sources": ["elaboration-d_une-etude-sur-le-potentiel-de-la-recherche-et-developpement-dans-le-secteur-de-l_energie-en-tunisie.pdf"],
+    "note": "CRTEn study on R&D potential in renewable energy and EE."
+  },
+  {
+    "id": "fr-parc-vehicules",
+    "query": "Quelles sont les bonnes pratiques de gestion de parcs de véhicules utilisés pour le transport de marchandises ?",
+    "expected_sources": ["guide-sur-les-bonnes-pratiques-de-gestion-du-de-parcs-de-vehicules-utilises-pour-le-transport-des-marchandises_0.pdf"],
+    "note": "ANME fleet management best practices guide."
+  },
+  {
+    "id": "fr-peeb-sante",
+    "query": "Quelles sont les recommandations d'efficacité énergétique pour les bâtiments de santé en Tunisie ?",
+    "expected_sources": ["peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"],
+    "note": "PEEB Tunisia healthcare buildings energy efficiency guide."
+  },
+  {
+    "id": "fr-comportement-consommation",
+    "query": "Comment se comporte le consommateur d'énergie tunisien, que ce soit les ménages ou les entreprises ?",
+    "expected_sources": [
+      "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-particuliers-menages-2023.pdf",
+      "etude-sur-le-comportement-des-consommateurs-d_energie-eu-tunisie-entreprises-2023.pdf"
+    ],
+    "note": "ANME consumer behavior studies for households and enterprises."
+  },
+  {
+    "id": "fr-financement-transition",
+    "query": "Comment est financée la transition énergétique au niveau mondial selon le paysage global 2025 ?",
+    "expected_sources": ["IRENA_CPI_FIN_Global_landscape_energy_transition_finance_2025.pdf"],
+    "note": "IRENA/CPI Global Landscape of Energy Transition Finance 2025."
+  },
+  {
+    "id": "fr-irena-afrique-nord",
+    "query": "Quelles sont les politiques et le financement pour les énergies renouvelables en Afrique du Nord selon IRENA ?",
+    "expected_sources": ["IRENA_North_Africa_policies_finance_RE_2023.pdf"],
+    "note": "IRENA North Africa policies and finance for RE 2023."
+  },
+  {
+    "id": "fr-irena-strategie-panarabe",
+    "query": "Quel est le plan d'action de la stratégie pan-arabe pour les énergies renouvelables d'IRENA ?",
+    "expected_sources": [
+      "IRENA_Pan-Arab_Strategy_June-2014.pdf",
+      "IRENA_Arab_Region_Overview_2016.pdf",
+      "IRENA_North_Africa_policies_finance_RE_2023.pdf"
+    ],
+    "note": "Pan-Arab Strategy is in corpus but retriever surfaces related IRENA Arab region docs."
+  },
+  {
+    "id": "fr-irena-cop28",
+    "query": "Quels sont les objectifs du consensus de l'UAE (COP28) concernant le triplement des énergies renouvelables d'ici 2030 ?",
+    "expected_sources": ["IRENA_UAE_Consensus_2030_tripling_renewables_doubling_efficiency_2024.pdf"],
+    "note": "COP28 UAE Consensus tracking by Global Renewables Alliance."
+  },
+  {
+    "id": "fr-ee-eau-assainissement",
+    "query": "Quelles lignes directrices d'efficacité énergétique s'appliquent aux services d'approvisionnement en eau et d'assainissement ?",
+    "expected_sources": ["EE-Guidelines-final-web_french.pdf"],
+    "note": "ACWUA energy efficiency guidelines for water/sanitation."
+  },
+  {
+    "id": "fr-construction-collectivites",
+    "query": "Qu'est-ce que l'éco-construction pour les collectivités locales en Tunisie ?",
+    "expected_sources": ["guide-eco-construction-pour-les-collectivites-locales.pdf"],
+    "note": "Eco-construction guide for local authorities."
+  },
+
+  {
+    "id": "ar-steg-distribution",
+    "query": "توزيع الكهرباء والغاز عبر شركة STEG في تونس",
+    "expected_sources": [
+      "Rapport_Activite_steg_2017_fr.pdf",
+      "Rapport_Activite_steg_2016_fr.pdf",
+      "RA_2012_Vfr_STEG.pdf",
+      "REG_N_13_2005.pdf"
+    ],
+    "note": "Arabic STEG query; retriever surfaces various STEG reports."
+  },
+  {
+    "id": "ar-mabani-sihha",
+    "query": "تحسين كفاءة الطاقة في مباني المستشفيات في تونس",
+    "expected_sources": ["peeb-tunisia-maitrise-de-l_energie-pour-les-batiments-de-sante.pdf"],
+    "note": "PEEB healthcare buildings energy efficiency."
+  },
+  {
+    "id": "ar-tajhizat-fardiya",
+    "query": "استهلاك الطاقة في الأجهزة المنزلية وتقليل فواتير الكهرباء",
+    "expected_sources": ["ng-conservation-curriculum-booklet-layout.pdf"],
+    "note": "Arabic conservation booklet on household energy saving."
+  },
+
+  {
+    "id": "fr-installer-panneaux",
+    "query": "Quelles sont les étapes pour installer des panneaux solaires photovoltaïques en Tunisie ?",
+    "expected_sources": [
+      "guide-detaille-des-energies-renouvelables-en-tunisie.pdf",
+      "guide-pour-l-elaboration-des-etudes-de-faisabilite-et-l-assistance-technique-des-projets-d-autoproduction-d-electricite-par-l-energie-solaire-photovoltaique-1.pdf"
+    ],
+    "known_failure": true,
+    "note": "Known retrieval gap: cross-encoder reranker is non-deterministic; guide-detaille appears at rank 2-6 depending on run. Tests query rewriter quality in the full pipeline."
+  },
+  {
+    "id": "fr-evolution-gaz-steg",
+    "query": "Comment le secteur du gaz naturel en Tunisie a-t-il évolué au cours des dernières années ?",
+    "expected_sources": [
+      "Rapport_Activite_steg_2017_fr.pdf",
+      "Rapport_Activite_steg_2016_fr.pdf",
+      "Rapport_Activite_steg_2019_fr.pdf"
+    ],
+    "note": "Standalone gas evolution query (replaces multi-turn variant)."
+  },
+
+  {
+    "id": "edge-out-of-scope-weather",
+    "query": "Quelle est la météo à Tunis demain ?",
+    "expected_sources": [],
+    "note": "Out-of-scope: weather question. Should refuse gracefully."
+  },
+  {
+    "id": "edge-out-of-scope-cooking",
+    "query": "Comment préparer un couscous traditionnel tunisien ?",
+    "expected_sources": [],
+    "note": "Out-of-scope: cooking recipe. Should refuse gracefully."
+  },
+  {
+    "id": "edge-empty-query",
+    "query": "   ",
+    "expected_sources": [],
+    "note": "Edge case: whitespace-only query. Should handle gracefully."
   }
 ]

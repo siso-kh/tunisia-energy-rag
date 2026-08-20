@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import os
+import time
 import uuid
 import requests
 from collections import deque
@@ -12,11 +13,25 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from prometheus_client import generate_latest
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 
 from src.api.auth import get_current_user_optional, router as auth_router
+from src.api.dashboard import DASHBOARD_HTML
+from src.api.logging_config import setup_logging
+from src.api.metrics import (
+    ACTIVE_REQUESTS,
+    HTTP_DURATION,
+    HTTP_REQUESTS,
+    INGESTIONS,
+    LLM_REQUESTS,
+    LLM_TOKENS,
+    PURGE_DELETED,
+    PURGE_RUNS,
+    normalize_path,
+)
 from src.api.ratelimit import (
     ADMIN_LIMIT,
     CHAT_LIMIT,
@@ -38,6 +53,7 @@ from src.ingestion.admin_ingest import (
 from src.ingestion.research import crawl_website_for_pdfs, download_pdf_from_source, ingest_downloaded_pdf
 from src.rag.retrieve import collection, run_pipeline, stream_pipeline
 
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # Outage report TTL: crowdsourced reports are purged once they are older than
@@ -99,6 +115,9 @@ async def _purge_expired_outages() -> int:
 
     PURGE_TOTAL_RUNS += 1
     PURGE_TOTAL_DELETED += deleted
+    PURGE_RUNS.inc()
+    if deleted:
+        PURGE_DELETED.inc(deleted)
     PURGE_HISTORY.appendleft(
         {
             "run": PURGE_TOTAL_RUNS,
@@ -146,6 +165,38 @@ app.include_router(auth_router)
 # CORS (env-driven origins) + security headers + rate limiting.
 add_security_middlewares(app)
 configure_limiter(app, limiter)
+
+
+# ---------------------------------------------------------------------------
+# Metrics middleware — request latency + count
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Record request duration and count for Prometheus."""
+    # Skip the /metrics endpoint itself to avoid self-referential noise
+    path = request.url.path
+    if path == "/metrics":
+        return await call_next(request)
+
+    ACTIVE_REQUESTS.inc()
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+        elapsed = time.perf_counter() - start
+        norm = normalize_path(path)
+        status = str(response.status_code)
+        HTTP_DURATION.labels(method=request.method, path=norm, status=status).observe(elapsed)
+        HTTP_REQUESTS.labels(method=request.method, path=norm, status=status).inc()
+        return response
+    except Exception:
+        elapsed = time.perf_counter() - start
+        norm = normalize_path(path)
+        HTTP_DURATION.labels(method=request.method, path=norm, status="500").observe(elapsed)
+        HTTP_REQUESTS.labels(method=request.method, path=norm, status="500").inc()
+        raise
+    finally:
+        ACTIVE_REQUESTS.dec()
 
 
 # ---------------------------------------------------------------------------
@@ -1089,6 +1140,23 @@ async def crawl_for_sources(
         pdf_urls=pdf_urls,
         pages_crawled=crawl_result["pages_crawled"],
         pages_visited=crawl_result["pages_visited"],
+    )
+
+
+@app.get("/dashboard")
+@limiter.exempt
+def dashboard(request: Request):
+    """Built-in metrics dashboard — no Docker/Grafana needed."""
+    return HTMLResponse(content=DASHBOARD_HTML)
+
+
+@app.get("/metrics")
+@limiter.exempt
+def metrics_endpoint(request: Request):
+    """Prometheus scrape endpoint — returns all registered metrics in text format."""
+    return PlainTextResponse(
+        generate_latest().decode("utf-8"),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
     )
 
 

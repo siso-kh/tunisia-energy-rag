@@ -12,6 +12,20 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.rag.hybrid import retrieve_context_hybrid
 from src.utils.token_manager import get_optimized_history
 
+# Lazy import to avoid circular imports at module load time
+_llm_tokens = None
+_llm_requests = None
+
+
+def _get_llm_metrics():
+    """Lazy-load Prometheus counters to avoid import-time side effects."""
+    global _llm_tokens, _llm_requests
+    if _llm_tokens is None:
+        from src.api.metrics import LLM_TOKENS as _t, LLM_REQUESTS as _r
+        _llm_tokens = _t
+        _llm_requests = _r
+    return _llm_tokens, _llm_requests
+
 # Windows consoles default to cp1252 and raise UnicodeEncodeError when the
 # pipeline logs Arabic standalone queries. Force UTF-8 with lossy fallback so
 # console output can never crash the request handling.
@@ -88,7 +102,17 @@ Standalone Query:"""
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1
     )
-    
+
+    # Track token usage
+    try:
+        tokens, requests_ctr = _get_llm_metrics()
+        if response.usage:
+            tokens.labels(model="mistral-large", type="prompt").inc(response.usage.prompt_tokens)
+            tokens.labels(model="mistral-large", type="completion").inc(response.usage.completion_tokens)
+        requests_ctr.labels(model="mistral-large", endpoint="rewrite").inc()
+    except Exception:
+        pass  # never let metrics break the pipeline
+
     return response.choices[0].message.content.strip()
 
 
@@ -223,6 +247,15 @@ async def generate_answer_stream(
     )
     async for chunk in stream:
         if not chunk.choices:
+            # The last chunk may carry usage info (prompt_tokens, completion_tokens)
+            if hasattr(chunk, "usage") and chunk.usage:
+                try:
+                    tokens, requests_ctr = _get_llm_metrics()
+                    tokens.labels(model="mistral-large", type="prompt").inc(chunk.usage.prompt_tokens)
+                    tokens.labels(model="mistral-large", type="completion").inc(chunk.usage.completion_tokens)
+                    requests_ctr.labels(model="mistral-large", endpoint="generate").inc()
+                except Exception:
+                    pass
             continue
         delta = chunk.choices[0].delta
         if delta and delta.content:
@@ -254,7 +287,17 @@ async def generate_answer(user_query: str, context: str, chat_history: Optional[
         messages=messages,
         temperature=0.1
     )
-    
+
+    # Track token usage
+    try:
+        tokens, requests_ctr = _get_llm_metrics()
+        if response.usage:
+            tokens.labels(model="mistral-large", type="prompt").inc(response.usage.prompt_tokens)
+            tokens.labels(model="mistral-large", type="completion").inc(response.usage.completion_tokens)
+        requests_ctr.labels(model="mistral-large", endpoint="generate").inc()
+    except Exception:
+        pass
+
     return response.choices[0].message.content
 
 

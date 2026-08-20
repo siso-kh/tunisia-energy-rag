@@ -1,5 +1,5 @@
 # Project Snapshot — Tunisia Energy RAG
-**Generated:** 2026-08-18 · **Branch:** main · **Last commit:** `21a12ae` (rate limiting, security headers, Alembic schema)
+**Generated:** 2026-08-20 · **Branch:** main · **Last commit:** `8972cf7` (SSE progress panel + recursive crawl + cleanup)
 
 ---
 
@@ -10,7 +10,7 @@ A RAG (Retrieval-Augmented Generation) platform for the Tunisian energy sector:
 - **Chat** — users ask energy questions; the system retrieves relevant PDF chunks and generates sourced answers (French + Arabic)
 - **Outage Map** — crowdsourced live outage map with animated SVG Tunisia map + Leaflet markers
 - **Solar ROI Calculator** — client-side financial projections
-- **Admin Panel** — document upload, outage purge, runtime config, PDF ingestion (upload/link → triage → chunk + embed into ChromaDB)
+- **Admin Panel** — document upload, outage purge, runtime config, URL source management with website crawling, real-time SSE progress tracking, and a dashboard log view
 
 ### Tech stack
 
@@ -24,19 +24,23 @@ A RAG (Retrieval-Augmented Generation) platform for the Tunisian energy sector:
 | **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS · Zustand · React-Leaflet · i18next (fr/ar) | `frontend/` directory |
 | **Serving** | Nginx (Docker) reverse-proxies `/api` to backend | Docker Compose full stack |
 | **Auth** | Email/password + JWT (bcrypt + HS256) | `src/api/auth.py` + `src/utils/security.py` |
-| **Infra** | Docker Compose (postgres, backend, frontend/nginx, ngrok, pg-backup) | `docker-compose.yml` |
+| **Observability** | Structured JSON logs (python-json-logger) · Prometheus /metrics · Built-in HTML dashboard (Chart.js) | `src/api/logging_config.py`, `metrics.py`, `dashboard.py` |
+| **Infra** | Docker Compose (postgres, backend, frontend/nginx, ngrok, pg-backup) · Prometheus + Grafana (optional) | `docker-compose.yml`, `config/prometheus.yml`, `config/grafana/` |
 
 ### Key file map
 ```
 src/
 ├── api/
-│   ├── main.py          # FastAPI app, all endpoints (chat, outages, admin, auth router)
+│   ├── main.py          # FastAPI app, ALL endpoints (chat, outages, admin, sources, auth router)
 │   ├── auth.py           # register/login/me endpoints + JWT dependency
+│   ├── dashboard.py      # Built-in HTML metrics dashboard (Chart.js)
+│   ├── logging_config.py # Structured JSON logging (python-json-logger)
+│   ├── metrics.py        # Prometheus metrics (request latency, LLM tokens, purge counts)
 │   ├── ratelimit.py      # slowapi rate limiter config
 │   └── security.py       # CORS + security headers middleware
 ├── database/
 │   ├── connection.py     # AsyncEngine + session factory (reads DATABASE_URL from .env)
-│   ├── models.py         # SQLAlchemy models (User, Conversation, Message, OutageReport, Setting)
+│   ├── models.py         # SQLAlchemy models (User, Conversation, Message, OutageReport, Setting, Source)
 │   ├── service.py        # All DB CRUD operations
 │   ├── seed.py           # Database seeder (demo data)
 │   └── schema.py         # Alembic env + ensure_schema
@@ -44,7 +48,8 @@ src/
 │   ├── collector.py      # PDF downloader (SerpApi + DuckDuckGo fallback)
 │   ├── ingest_chunks.py  # PDF → text extraction → chunking → processed_chunks.json
 │   ├── indexer.py        # chunk + embed + upsert into ChromaDB (for admin upload)
-│   └── admin_ingest.py   # orchestrate upload/download → triage → index
+│   ├── admin_ingest.py   # orchestrate upload/download → triage → index
+│   └── research.py       # URL source management, recursive BFS crawl, download + ingest
 ├── rag/
 │   ├── retrieve.py       # Async pipeline: rewrite query → retrieve → generate (SSE streaming)
 │   └── hybrid.py         # BM25 + vector + RRF fusion + optional cross-encoder rerank
@@ -63,7 +68,7 @@ frontend/src/
 │   ├── chat/             # ChatInput, MessageBubble, SourcesDropdown, ChatPanel
 │   ├── map/              # TunisiaMap (animated SVG), OutageMap (Leaflet), ReportForm
 │   ├── sidebar/          # CarteTab, AdminTab, TelemetryTab
-│   ├── admin/            # ConfigEditor, DocumentUpload
+│   ├── admin/            # ConfigEditor, DocumentUpload, SourcesManager, DashboardTab, ProgressPanel
 │   ├── auth/             # AuthModal (login/register)
 │   └── ui/               # Button, Spinner, ThemeToggle, LanguageSwitcher
 ├── services/             # api.ts (axios), auth.ts, chat.ts, admin.ts, outage.ts, token.ts
@@ -86,6 +91,8 @@ tests/
 ├── test_hybrid.py         # Hybrid retrieval (BM25, RRF, rerank)
 ├── test_eval_metrics.py   # Recall@k, MRR metrics
 ├── test_admin_docs.py     # Admin document upload/ingestion
+├── test_sources_api.py    # Source CRUD, research, ingest, crawl, bulk-delete
+├── test_metrics.py        # /metrics endpoint, Prometheus format, logging config, normalization
 ├── test_token_manager.py  # Token budget truncation
 └── stress_checks.py       # Huge payload stress tests (not in default suite)
 ```
@@ -100,6 +107,18 @@ scripts/
 ├── patch_arabic.py        # Normalize Arabic Presentation Forms to logical Unicode
 ├── ocr_arabic_pdf.py      # EasyOCR-based PDF→text for Arabic documents
 └── bench_tokens.py        # Benchmark token budget usage of conversations
+```
+
+## Config & monitoring
+```
+config/
+├── prometheus.yml              # Prometheus scrape config (targets backend:8000)
+└── grafana/
+    ├── dashboards/
+    │   ├── dashboards.yml      # Grafana provisioning: auto-load dashboards
+    │   └── tunisia-energy-rag.json  # 12-panel Grafana dashboard
+    └── datasources/
+        └── datasources.yml     # Grafana provisioning: Prometheus datasource
 ```
 
 ## Root-level docs
@@ -136,11 +155,22 @@ data/
 - Cross-encoder reranking (env-gated, graceful fallback)
 - Evaluation harness: recall@5 improved from 0.83 → 1.00 on golden set
 
-### ✅ Backend API (144 tests, all green)
+### ✅ Observability
+- Structured JSON logging (python-json-logger → stdout, configurable via `LOG_LEVEL` env var)
+- **Prometheus `/metrics` endpoint**: request latency histogram, request counters, LLM token usage, purge counts, ingestion results, active request gauge
+- **Built-in HTML dashboard** (`GET /dashboard`): dark-themed Chart.js dashboard with 6 stat cards + 6 charts, auto-refreshes every 15s
+- Request metrics middleware: records latency and count for every endpoint (excludes /metrics itself)
+- LLM token tracking: prompt + completion tokens on every model call (rewrite, generate, triage)
+- Ingestion counters: indexed/rejected/failed per document
+- Prometheus + Grafana config files ready for Docker Compose deployment (`config/`)
+
+### ✅ Backend API (168 tests, all green)
 - Chat endpoints: `/api/chat` (JSON) + `/api/chat/stream` (SSE)
 - Conversations: CRUD, per-user ownership, message persistence
 - Outage reports: CRUD, status filtering, TTL auto-purge (5h default, 30min interval)
-- Admin endpoints: purge stats, manual purge, runtime config (settings table), document upload/ingestion
+- Admin endpoints: purge stats, manual purge, runtime config, document upload/ingestion
+- **Source management**: CRUD + crawl + research (download) + ingest (triage + ChromaDB) + bulk-delete
+- **SSE progress streaming**: `/api/admin/sources/research/stream` and `/ingest/stream` — per-file progress events
 - Auth: register/login/me, JWT, bcrypt, constant-time admin key check
 - Rate limiting: per-endpoint (slowapi), env-tunable, in-memory (Redis-ready)
 - Security headers: nosniff, DENY, Referrer-Policy, opt-in HSTS/CSP
@@ -148,21 +178,26 @@ data/
 - Readiness probe: `/ready` (DB + Chroma, 503 when degraded), `/health` (liveness)
 - Outage TTL purge: background loop, admin-configurable TTL + interval via settings table
 
-### ✅ Frontend (118 tests, all green)
+### ✅ Frontend (126 tests, all green)
 - Chat interface with SSE streaming, SourcesDropdown (copy + expand full text)
 - Animated Tunisia SVG map (24 governorates) + Leaflet outage map
 - Click-to-filter: SVG node → Leaflet markers filtered by governorate
 - Status filter (ALL/PENDING/RESOLVED) with donut chart segments
 - Solar ROI calculator (Recharts)
 - Auth modal (login/register tabs)
-- Admin panel: purge stats, "Purge now" button, config editor, document upload (file/link)
+- **Admin panel** with two tabs:
+  - **Sources tab**: add URL (single PDF) or crawl website (BFS with configurable depth), research (download), ingest (triage + ChromaDB)
+  - **Dashboard tab**: master log of indexed/rejected/failed sources with stats cards, filter tabs, bulk clear
+- **ProgressPanel**: real-time SSE progress bar, current filename, live stats during research/ingest
 - i18n: French, Arabic (RTL) — Derja locale removed this session
 - Theme: dark/light toggle
 - Responsive layout with sidebar
+- Sticky footer on admin page
 
 ### ✅ Database & Migrations
 - PostgreSQL 16 (async SQLAlchemy + asyncpg)
-- Alembic migrations: `0001_initial.py` (users, conversations, messages, outage_reports, settings)
+- Alembic migrations: `0001_initial.py` (users, conversations, messages, outage_reports, settings), `0002_add_sources_table.py` (sources)
+- Source model with SourceStatus enum (pending, downloading, downloaded, failed, ingesting, indexed, triage_rejected)
 - Seeder: demo data, idempotent, `--reset` support
 - Local dev + Docker use the same schema
 
@@ -172,6 +207,7 @@ data/
 - Chunking (LangChain RecursiveCharacterTextSplitter, 1000/150)
 - LLM triage: 2-gate scoring (metadata + text samples)
 - Admin upload: file or URL → raw → triage → filtered/blacklisted → chunk + embed into ChromaDB
+- **Recursive website crawl**: BFS with configurable depth (0-4), same-domain only, polite delay, PDF link extraction
 
 ### ✅ Infrastructure
 - Docker Compose: postgres, db-seed, backend, frontend/nginx, ngrok, pg-backup
@@ -181,69 +217,102 @@ data/
 - `start_dev.bat` for local development
 
 ### ✅ Tests
-- **Backend: 144 tests** (fast: 138, medium: 140, full: 144)
-- **Frontend: 118 tests** (vitest + React Testing Library)
+- **Backend: 168 tests** (all green) — 157 existing + 11 new metrics/logging tests
+- **Frontend: 126 tests** (vitest + React Testing Library, all green)
 - Auto-test config with timing baseline (`tests/auto_test_config.md`)
 
 ---
 
-## 3. Immediate Task & Current Status
+## 3. Current API Endpoints
 
-### What we just fixed (this session)
-**Registration was returning 500.** Root cause chain:
-1. `.env` was missing `JWT_SECRET` → auth endpoints returned 503 (this was fixed by the user adding it)
-2. `.env` was also missing `DATABASE_URL` → app fell back to `postgres:postgres@localhost:5432/energie_tunisie`
-3. **Local PostgreSQL 18** (installed at `C:/Program Files/PostgreSQL/18`) was running on port 5432 with password **`siso`** — not `postgres`
-4. The app had been started with **`uv`'s Python** (separate from the project venv), which was a stale process
+### Chat
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/chat` | JWT (optional) | RAG answer (JSON) |
+| POST | `/api/chat/stream` | JWT (optional) | RAG answer (SSE stream) |
 
-### What was done to fix it
-1. Created `DATABASE_URL=postgresql+asyncpg://postgres:siso@localhost:5432/energie_tunisie` in `.env`
-2. Created the `energie_tunisie` database (it didn't exist — the local PG only had `sgel_db` and `sgel_db_test`)
-3. Ran `alembic upgrade head` → all tables created
-4. Killed the stale uv-python process on :8000, restarted with the project venv (`.venv/Scripts/python.exe -m uvicorn src.api.main:app --port 8000`)
-5. Verified: register → 201 + JWT, login → 200 + JWT, auth suite 20/20
+### Conversations
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/conversations` | JWT | List user's conversations |
+| POST | `/api/conversations` | JWT | Create conversation |
+| GET | `/api/conversations/{id}` | JWT | Get conversation messages |
+| DELETE | `/api/conversations/{id}` | JWT | Delete conversation |
 
-### What's NOT committed yet (all these changes are uncommitted)
-The `git status` shows 15 modified files + 14 new files. These include:
-- `src/api/auth.py` (auth endpoints)
-- `src/api/security.py` (CORS + headers)
-- `src/api/ratelimit.py` (rate limiting)
-- `src/rag/hybrid.py` (hybrid retrieval)
-- `src/eval/` (evaluation harness)
-- `src/ingestion/indexer.py` + `admin_ingest.py` (admin document upload)
-- `tests/test_readiness.py`, `test_hybrid.py`, `test_eval_metrics.py`, `test_admin_docs.py`
-- `frontend/` locale updates, AdminPage, DocumentUpload, etc. (derja removed)
-- `docker-compose.yml` (pg-backup, healthchecks)
-- `README.md`, `PRODUCT_PLAN.md`, `tests/auto_test_config.md`
-- File reorganization: 4 scripts moved to `scripts/`, stale files deleted
+### Outages
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/outages` | No | List outage reports |
+| POST | `/api/outages` | No | Create outage report |
+| GET | `/api/outages/stats` | No | Outage statistics |
+| DELETE | `/api/outages/{id}` | No | Delete report |
 
-**User's standing rule: never commit unless they explicitly ask.**
+### Admin
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/admin/purge-stats` | Admin key | Purge statistics |
+| POST | `/api/admin/purge` | Admin key | Manual purge |
+| GET | `/api/admin/config` | Admin key | Runtime settings |
+| PUT | `/api/admin/config` | Admin key | Update settings |
+| POST | `/api/admin/documents/upload` | Admin key | Upload PDF → triage → index |
+| POST | `/api/admin/documents/from-url` | Admin key | Ingest PDF from URL |
+| GET | `/api/admin/sources` | Admin key | List all sources |
+| POST | `/api/admin/sources` | Admin key | Add PDF URL |
+| DELETE | `/api/admin/sources/{id}` | Admin key | Delete source |
+| POST | `/api/admin/sources/crawl` | Admin key | Crawl website for PDFs |
+| POST | `/api/admin/sources/research` | Admin key | Download all pending (JSON response) |
+| POST | `/api/admin/sources/research/stream` | Admin key | Download all pending (SSE progress) |
+| POST | `/api/admin/sources/ingest` | Admin key | Triage + index all downloaded (JSON) |
+| POST | `/api/admin/sources/ingest/stream` | Admin key | Triage + index all downloaded (SSE progress) |
+| POST | `/api/admin/sources/bulk-delete` | Admin key | Bulk delete by IDs or status |
 
-### What's NOT done yet per PRODUCT_PLAN.md
-- ❌ Sentry error tracking (P0 — user said skip for now, solo dev)
-- ❌ CI/CD pipeline (P0 — user said skip for now, solo dev)
-- ❌ Outage moderation workflow (P1 — approve/reject queue, duplicate detection)
-- ❌ Outage notifications (P1 — Telegram/email/push)
-- ❌ Usage quotas / cost guardrails (P1)
-- ❌ Scheduled ingestion (P1 — collector → triage → OCR → embed as cron)
-- ❌ Vector DB ops (P1 — Chroma backup/rebuild scripts)
-- ❌ Redis cache (P2)
-- ❌ CDN (P2)
-- ❌ Load testing (P2)
-- ❌ Legal/compliance (P2)
-- ❌ Landing page + docs (P2)
-- ❌ Privacy-friendly analytics (P2)
-- ❌ Security audit (P2)
-- ❌ Runbook (P2)
+### Auth
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | No | Create account |
+| POST | `/api/auth/login` | No | Login → JWT |
+| GET | `/api/auth/me` | JWT | Current user info |
+
+### Observability
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | No | Liveness (always 200) |
+| GET | `/ready` | No | Readiness (DB + Chroma check) |
+| GET | `/metrics` | No | Prometheus metrics (text/plain) |
+| GET | `/dashboard` | No | Built-in HTML metrics dashboard (Chart.js) |
 
 ---
 
-## 4. Lessons Learned
+## 4. .env Variables Reference
+
+```
+# === Required ===
+DATABASE_URL=postgresql+asyncpg://postgres:siso@localhost:5432/energie_tunisie
+JWT_SECRET=<long random string>
+CUSTOM_API_KEY=<LLM API key>
+OPENAI_BASE_URL=<LLM base URL>
+ADMIN_API_KEY=<long random string>
+
+# === Optional ===
+LOG_LEVEL=INFO|DEBUG|WARNING
+RATE_LIMIT_ENABLED=true|false
+RATE_LIMIT_CHAT=10/minute
+RATE_LIMIT_AUTH=10/minute
+RATE_LIMIT_DEFAULT=60/minute
+CORS_ORIGINS=*
+NGROK_AUTHTOKEN=<if using ngrok>
+BACKUP_INTERVAL_HOURS=24
+BACKUP_RETENTION_DAYS=7
+```
+
+---
+
+## 5. Lessons Learned
 
 ### 🔴 Critical traps — DO NOT repeat
 
 #### 1. The `uv` Python trap (caused the 500 + stale process confusion)
-**What happened:** A backend process was started with `uv`'s Python (`AppData\Roaming\uv\python\...`), which is a **different Python environment** than the project's `.venv`. This caused:
+**What happened:** A backend process was started with `uv`'s Python (`AppData\\Roaming\\uv\\python\\...`), which is a **different Python environment** than the project's `.venv`. This caused:
 - Different package versions
 - Different environment variable loading behavior
 - The process returned 500 instead of the expected 503 (suggesting different code or behavior)
@@ -304,9 +373,37 @@ The `git status` shows 15 modified files + 14 new files. These include:
 
 **Lesson:** When testing file uploads with `<input accept>`, always use the correct extension in the test file name.
 
+#### 11. Duplicate i18n key causes "object instead of string" error
+**What happened:** Both `fr.json` and `ar.json` had two `"status"` keys inside `admin.sources` — a string (column header) and an object (status labels). i18next silently uses the last duplicate key, so `t("admin.sources.status")` returned the object instead of the string.
+
+**Fix:** Renamed the nested object to `"statusLabels"` and updated all component references.
+
+**Lesson:** Always verify locale JSON files don't have duplicate keys at the same nesting level. Use a JSON linter or IDE that flags this.
+
+#### 12. SSE streaming needs `fetch` not `axios`
+**What happened:** `axios` doesn't support streaming responses natively. The SSE progress endpoints returned `text/event-stream` but `axios` tried to parse the whole response as JSON.
+
+**Fix:** Used native `fetch()` with `ReadableStream` for SSE endpoints, keeping `axios` for regular JSON endpoints.
+
+**Lesson:** For SSE streaming, always use native `fetch()` with `resp.body.getReader()`. `axios` is for JSON/REST only.
+
+#### 14. WSL2 Docker networking: localhost ports don't reach Windows
+**What happened:** Docker containers running inside WSL2 with `-p 9090:9090` bind ports inside WSL2's network namespace, but Windows' `localhost` doesn't forward to WSL2 ports. Even with `networkingMode=mirrored` in `.wslconfig`, Docker containers don't get the mirrored treatment. `netsh interface portproxy` also didn't work reliably.
+
+**Fix:** Created a built-in HTML dashboard (`GET /dashboard`) served directly from the FastAPI backend at port 8000 — no Docker/Prometheus/Grafana networking required. For production, install Docker Desktop for Windows (which handles port forwarding), or deploy Prometheus/Grafana as separate containers outside WSL2.
+
+**Lesson:** Don't rely on WSL2 port forwarding for Docker containers. Either use Docker Desktop for Windows, or serve dashboards from the app itself. The `/metrics` endpoint (Prometheus text format) works fine for external scraping; the visualization just needs to reach it.
+
+#### 15. ORM objects are not thread-safe
+**What happened:** The research/ingest functions modified SQLAlchemy ORM objects (`source.status = ...`) inside `run_in_threadpool()`, which caused "another operation is in progress" errors in async tests.
+
+**Fix:** Refactored to plain-data functions (`download_pdf_from_source()` returns a dict, API endpoint applies it to ORM objects in the async context).
+
+**Lesson:** Never pass ORM objects into thread pool workers. Return plain data dicts from thread pool functions and apply them to ORM objects in the async event loop.
+
 ---
 
-## 5. Running the App Locally
+## 6. Running the App Locally
 
 ### Local dev (recommended)
 ```bash
@@ -332,21 +429,62 @@ ADMIN_API_KEY=<any long random string for admin panel>
 
 ### Running tests
 ```bash
-# Backend fast (138 tests, ~10s + 20s model load)
-python -m pytest tests/test_integration.py -k "health or empty or retrieval" -q && python -m pytest tests/test_retrieval.py tests/test_token_manager.py tests/test_database.py tests/test_seed.py tests/test_api_db.py tests/test_auth.py tests/test_ratelimit.py tests/test_migrations.py tests/test_readiness.py tests/test_hybrid.py tests/test_eval_metrics.py tests/test_admin_docs.py -q
+# Backend (168 tests)
+python -m pytest tests/ -q
 
-# Frontend (118 tests)
+# Frontend (126 tests)
 cd frontend && npm test
+
+# Metrics dashboard
+open http://localhost:8000/dashboard
+# Raw Prometheus metrics
+open http://localhost:8000/metrics
 ```
 
 ---
 
-## 6. Commit Status
+## 7. Commit Status
 
-**Last commit:** `21a12ae` — "Add rate limiting, security headers, and Alembic-managed schema"
+**Last commit:** `8972cf7` — "Add real-time SSE progress panel for research/ingest + recursive crawl + cleanup"
 
-**Uncommitted changes (15 modified + 14 new files):**
-- Modified: `.gitignore`, `PRODUCT_PLAN.md`, `README.md`, `docker-compose.yml`, `frontend/nginx.conf`, `frontend/src/locales/*`, `frontend/src/pages/AdminPage.tsx`, `frontend/src/services/admin.ts`, `requirements.txt`, `src/api/main.py`, `src/rag/retrieve.py`, `src/utils/triage.py`, `tests/auto_test_config.md`
-- New: `COMPTE_RENDU_PROJET.md`, `data/eval/`, `frontend/src/components/admin/DocumentUpload.*`, `scripts/`, `src/eval/`, `src/ingestion/admin_ingest.py`, `src/ingestion/indexer.py`, `src/rag/hybrid.py`, `tests/test_admin_docs.py`, `tests/test_eval_metrics.py`, `tests/test_hybrid.py`, `tests/test_readiness.py`
+**Uncommitted changes this session:**
+- New: `src/api/dashboard.py`, `src/api/logging_config.py`, `src/api/metrics.py`, `tests/test_metrics.py`
+- New: `config/prometheus.yml`, `config/grafana/dashboards/`, `config/grafana/datasources/`
+- Modified: `src/api/main.py`, `src/rag/retrieve.py`, `src/ingestion/research.py`, `requirements.txt`, `docker-compose.yml`, `PRODUCT_PLAN.md`, `PROJECT_SNAPSHOT.md`
 
 **User's standing rule: never commit unless they explicitly ask.**
+
+---
+
+## 8. Next Steps for Next Chat
+
+### Next steps (from PRODUCT_PLAN.md — focus: AI guardrails + testing)
+
+**Sprint 1 — AI Guardrails:**
+1. **Hallucination detection** — verify answers reference retrieved chunks; score groundedness
+2. **Prompt injection defense** — sanitize queries, detect role-play/jailbreak attempts
+3. **Content filtering** — refuse out-of-scope topics (non-energy), block harmful content
+4. **Cost guardrails** — per-user daily chat cap, token budget limits, dashboard alerts
+5. **Answer quality scoring** — auto-score relevance/citations, track over time
+
+**Sprint 2 — AI Testing:**
+6. **Expand golden set** — grow from 6 to 30+ queries (Arabic, French, multi-turn, edge cases)
+7. **Automated eval pipeline** — run eval on ingestion, track recall@5/MRR over time
+8. **Adversarial test suite** — injection attempts, language mixing, out-of-scope, long queries
+9. **Retrieval regression tests** — verify new docs are retrievable, embedding consistency
+10. **Prompt regression tests** — snapshot testing, token efficiency, language consistency
+
+**Sprint 3 — Product + Ops:**
+11. Outage moderation, usage quotas, user profiles
+12. CI/CD, Sentry, Redis cache, load testing
+
+### Context for next chat
+- The project is fully functional: chat, map, calculator, admin panel with sources management + dashboard
+- **Observability is complete**: structured JSON logs, Prometheus /metrics, built-in HTML dashboard at `http://localhost:8000/dashboard`
+- All **294 tests** pass (168 backend + 126 frontend)
+- The server runs on port 8000 (backend) + 5173 (frontend dev)
+- PostgreSQL is local on port 5432 (password: `siso`)
+- The LLM is accessed via OpenAI-compatible API (Mistral Large via BYNA router)
+- 17 STEG documents (2,491 chunks) are indexed in ChromaDB
+- The admin can crawl websites, download PDFs, triage them, and index accepted ones — all with real-time progress
+- **Current focus: AI guardrails and testing (Sprint 1 + 2 of PRODUCT_PLAN.md)**
