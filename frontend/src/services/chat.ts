@@ -1,4 +1,5 @@
 import api from "./api";
+import { getStoredToken } from "./token";
 import type {
   ChatMessage,
   QueryResponse,
@@ -29,9 +30,15 @@ export async function streamChat(
   onEvent: (event: StreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getStoredToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch("/api/chat/stream", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
     signal,
   });

@@ -15,6 +15,7 @@ from typing import List, Optional
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only, noload
 
 from src.database.models import (
     Conversation,
@@ -79,7 +80,7 @@ async def get_conversation(session: AsyncSession, conversation_id: uuid.UUID) ->
 async def create_conversation(
     session: AsyncSession, user_id: uuid.UUID, title: Optional[str] = None
 ) -> Conversation:
-    conversation = Conversation(user_id=user_id, title=title or "Nouvelle conversation")
+    conversation = Conversation(user_id=user_id, title=title)
     session.add(conversation)
     await session.commit()
     await session.refresh(conversation)
@@ -91,8 +92,38 @@ async def list_conversations(session: AsyncSession, user_id: uuid.UUID) -> List[
         select(Conversation)
         .where(Conversation.user_id == user_id)
         .order_by(Conversation.updated_at.desc())
+        .options(
+            load_only(Conversation.id, Conversation.title, Conversation.created_at, Conversation.updated_at),
+            noload(Conversation.messages),
+            noload(Conversation.user),
+        )
     )
     return list(result.scalars().all())
+
+
+async def delete_conversation(session: AsyncSession, conversation_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    """Delete a conversation owned by the given user. Returns True if deleted."""
+    result = await session.execute(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == user_id,
+        )
+    )
+    conversation = result.scalar_one_or_none()
+    if conversation is None:
+        return False
+    await session.delete(conversation)
+    await session.commit()
+    return True
+
+
+async def delete_all_conversations(session: AsyncSession, user_id: uuid.UUID) -> int:
+    """Delete all conversations owned by the given user. Returns count deleted."""
+    result = await session.execute(
+        delete(Conversation).where(Conversation.user_id == user_id)
+    )
+    await session.commit()
+    return result.rowcount or 0
 
 
 async def persist_chat_turn(
@@ -102,10 +133,19 @@ async def persist_chat_turn(
     answer: str,
     sources: Optional[List[dict]] = None,
 ) -> None:
-    """Append a user question + assistant answer (with sources) to a conversation."""
+    """Append a user question + assistant answer (with sources) to a conversation.
+
+    On the first turn of a new conversation, the title is automatically set to
+    a truncated version of the user's question so the conversation list is
+    easy to distinguish at a glance.
+    """
     conversation = await session.get(Conversation, conversation_id)
     if conversation is None:
         raise ValueError(f"Conversation {conversation_id} does not exist")
+
+    # Auto-title: set the conversation title from the first user message
+    if not conversation.title:
+        conversation.title = user_query[:120]
 
     conversation.messages.append(Message(role="user", content=user_query))
     conversation.messages.append(

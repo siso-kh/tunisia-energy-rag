@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import event, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy.pool import StaticPool
 
 from src.database import connection
@@ -30,11 +31,15 @@ from src.database.models import (
     UtilityType,
 )
 from src.database.service import (
+    create_conversation,
     create_user,
+    delete_all_conversations,
+    delete_conversation,
     delete_expired_outages,
     get_all_settings,
     get_setting,
     get_user_by_email,
+    persist_chat_turn,
     set_setting,
 )
 
@@ -156,7 +161,11 @@ def test_create_user_with_conversation_and_messages():
 
         # Fresh session: verify persistence + relationships
         async with factory() as session:
-            result = await session.execute(select(User).where(User.id == uid))
+            result = await session.execute(
+                select(User)
+                .where(User.id == uid)
+                .options(selectinload(User.conversations).selectinload(Conversation.messages))
+            )
             loaded_user = result.scalar_one()
             assert loaded_user.conversations[0].title == "Premiere discussion"
             assert [m.role for m in loaded_user.conversations[0].messages] == [
@@ -197,10 +206,11 @@ def test_cascade_delete_user_removes_conversations_and_messages():
     async def scenario(factory):
         async with factory() as session:
             user = User()
-            convo = Conversation(user_id=None, title="orphan-to-be")
-            user.conversations.append(convo)
-            convo.messages.append(Message(role="user", content="x"))
             session.add(user)
+            await session.flush()
+            convo = Conversation(user_id=user.id, title="orphan-to-be")
+            convo.messages.append(Message(role="user", content="x"))
+            session.add(convo)
             await session.commit()
 
             uid, cid, mid = user.id, convo.id, convo.messages[0].id
@@ -296,6 +306,163 @@ def test_messages_ordered_by_created_at():
             convo = await session.get(Conversation, cid)
             # relationship is declared with order_by="Message.created_at"
             assert [m.content for m in convo.messages] == ["msg-0", "msg-1", "msg-2"]
+
+    run_scenario(scenario)
+
+
+# ---------------------------------------------------------------------------
+# Auto-title + delete conversation (service layer)
+# ---------------------------------------------------------------------------
+
+def test_persist_chat_turn_auto_titles_conversation():
+    """First turn should set the conversation title from the user's question."""
+    async def scenario(factory):
+        async with factory() as session:
+            user = User()
+            session.add(user)
+            await session.flush()
+            convo = await create_conversation(session, user.id)
+            assert convo.title is None  # starts untitled
+
+            await persist_chat_turn(
+                session, convo.id,
+                "Quel est le rôle de l'ANME ?",
+                "L'ANME conçoit la politique énergétique.",
+            )
+
+        # Fresh session: title must be set
+        async with factory() as session:
+            loaded = await session.get(Conversation, convo.id)
+            assert loaded.title == "Quel est le rôle de l'ANME ?"
+
+    run_scenario(scenario)
+
+
+def test_persist_chat_turn_does_not_overwrite_existing_title():
+    """If the conversation already has a title, persist_chat_turn must keep it."""
+    async def scenario(factory):
+        async with factory() as session:
+            user = User()
+            session.add(user)
+            await session.flush()
+            convo = await create_conversation(session, user.id, title="My Custom Title")
+
+            await persist_chat_turn(
+                session, convo.id,
+                "Some question",
+                "Some answer",
+            )
+
+        async with factory() as session:
+            loaded = await session.get(Conversation, convo.id)
+            assert loaded.title == "My Custom Title"
+
+    run_scenario(scenario)
+
+
+def test_persist_chat_turn_truncates_long_title():
+    """Titles longer than 120 chars should be truncated."""
+    async def scenario(factory):
+        async with factory() as session:
+            user = User()
+            session.add(user)
+            await session.flush()
+            convo = await create_conversation(session, user.id)
+
+            long_query = "x" * 200
+            await persist_chat_turn(session, convo.id, long_query, "answer")
+
+        async with factory() as session:
+            loaded = await session.get(Conversation, convo.id)
+            assert loaded.title == "x" * 120
+
+    run_scenario(scenario)
+
+
+def test_delete_conversation_removes_conversation_and_messages():
+    """delete_conversation must remove the conversation and its messages."""
+    async def scenario(factory):
+        async with factory() as session:
+            user = User()
+            session.add(user)
+            await session.flush()
+            convo = Conversation(user_id=user.id, title="to-delete")
+            convo.messages.append(Message(role="user", content="hi"))
+            convo.messages.append(Message(role="assistant", content="hello"))
+            session.add(convo)
+            await session.commit()
+            cid, uid = convo.id, user.id
+
+        async with factory() as session:
+            deleted = await delete_conversation(session, cid, uid)
+            assert deleted is True
+
+        async with factory() as session:
+            assert await session.get(Conversation, cid) is None
+
+    run_scenario(scenario)
+
+
+def test_delete_conversation_returns_false_for_wrong_user():
+    """delete_conversation must not delete if the user_id doesn't match."""
+    async def scenario(factory):
+        async with factory() as session:
+            owner = User()
+            other = User()
+            session.add_all([owner, other])
+            await session.flush()
+            convo = Conversation(user_id=owner.id, title="not-yours")
+            session.add(convo)
+            await session.commit()
+            cid, other_id = convo.id, other.id
+
+        async with factory() as session:
+            deleted = await delete_conversation(session, cid, other_id)
+            assert deleted is False
+
+        # Still exists
+        async with factory() as session:
+            assert await session.get(Conversation, cid) is not None
+
+    run_scenario(scenario)
+
+
+def test_delete_all_conversations_removes_all_for_user():
+    async def scenario(factory):
+        async with factory() as session:
+            owner = User()
+            other = User()
+            session.add_all([owner, other])
+            await session.flush()
+            for i in range(3):
+                c = Conversation(user_id=owner.id, title=f"conv-{i}")
+                c.messages.append(Message(role="user", content=f"q-{i}"))
+                session.add(c)
+            # One conversation for a different user
+            other_c = Conversation(user_id=other.id, title="other-conv")
+            other_c.messages.append(Message(role="user", content="other-q"))
+            session.add(other_c)
+            await session.commit()
+            owner_id = owner.id
+            other_id = other.id
+
+        async with factory() as session:
+            deleted = await delete_all_conversations(session, owner_id)
+            assert deleted == 3
+
+        # Owner's conversations are gone
+        async with factory() as session:
+            remaining = await session.execute(
+                select(Conversation).where(Conversation.user_id == owner_id)
+            )
+            assert len(remaining.scalars().all()) == 0
+
+        # Other user's conversation still exists
+        async with factory() as session:
+            remaining = await session.execute(
+                select(Conversation).where(Conversation.user_id == other_id)
+            )
+            assert len(remaining.scalars().all()) == 1
 
     run_scenario(scenario)
 

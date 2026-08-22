@@ -21,7 +21,8 @@
     "carte": "Carte",
     "telemetrie": "Télémétrie",
     "calculator": "Calculateur",
-    "admin": "Admin"
+    "admin": "Admin",
+    "history": "Historique"
   },
   "admin": {
     "title": "Administration",
@@ -184,7 +185,17 @@
     "quickTarifs": "Tarifs STEG B2",
     "quickSubventions": "Subventions ANME",
     "quickCoupures": "Coupures Sousse",
-    "quickNetmetering": "Net-metering"
+    "quickNetmetering": "Net-metering",
+    "history": "Conversations",
+    "new": "Nouveau",
+    "yesterday": "Hier",
+    "daysAgo": "il y a {{count}} jours",
+    "noConversations": "Aucune conversation",
+    "untitled": "Conversation sans titre",
+    "delete": "Supprimer",
+    "deleteAll": "Tout supprimer",
+    "confirmDeleteAll": "Supprimer toutes les conversations ? Cette action est irréversible.",
+    "refresh": "Actualiser"
   },
   "map": {
     "title": "Carte des pannes",

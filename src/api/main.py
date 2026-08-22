@@ -505,6 +505,29 @@ async def get_conversation(conversation_id: uuid.UUID, session=Depends(get_db_de
     )
 
 
+@app.delete("/api/conversations")
+async def delete_all_conversations(
+    session=Depends(get_db_dependency),
+    user: Optional[User] = Depends(get_current_user_optional),
+):
+    owner = user if user is not None else await service.get_or_create_demo_user(session)
+    count = await service.delete_all_conversations(session, owner.id)
+    return {"status": "ok", "deleted": count}
+
+
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: uuid.UUID,
+    session=Depends(get_db_dependency),
+    user: Optional[User] = Depends(get_current_user_optional),
+):
+    owner = user if user is not None else await service.get_or_create_demo_user(session)
+    deleted = await service.delete_conversation(session, conversation_id, owner.id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return {"status": "ok"}
+
+
 # ---------------------------------------------------------------------------
 # Outage reports (crowdsourced map)
 # ---------------------------------------------------------------------------

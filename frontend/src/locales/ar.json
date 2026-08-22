@@ -21,7 +21,8 @@
     "carte": "الخريطة",
     "telemetrie": "القياسات",
     "calculator": "الحاسبة",
-    "admin": "الإدارة"
+    "admin": "الإدارة",
+    "history": "السجل"
   },
   "telemetry": {
     "gridTitle": "طلب الشبكة",
@@ -54,7 +55,17 @@
     "quickTarifs": "تعرفة STEG B2",
     "quickSubventions": "دعم ANME",
     "quickCoupures": "انقطاعات سوسة",
-    "quickNetmetering": "صافي القياس"
+    "quickNetmetering": "صافي القياس",
+    "history": "المحادثات",
+    "new": "جديد",
+    "yesterday": "أمس",
+    "daysAgo": "منذ {{count}} أيام",
+    "noConversations": "لا توجد محادثات",
+    "untitled": "محادثة بدون عنوان",
+    "delete": "حذف",
+    "deleteAll": "حذف الكل",
+    "confirmDeleteAll": "هل تريد حذف جميع المحادثات؟ لا يمكن التراجع عن هذا الإجراء.",
+    "refresh": "تحديث"
   },
   "map": {
     "title": "خريطة الأعطال",

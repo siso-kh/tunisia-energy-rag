@@ -34,8 +34,13 @@ class User(Base):
 
     # Relationships
     # lazy="selectin" keeps eager loading async-safe (avoids MissingGreenlet in async endpoints)
+    # Note: User.conversations uses lazy="noload" to prevent cascading selectin
+    # loads — loading a Conversation already selectin-loads the User, and if the
+    # User then selectin-loads ALL its Conversations + Messages, performance
+    # degrades exponentially. Use explicit selectinload(User.conversations) when
+    # needed.
     conversations: Mapped[List["Conversation"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan", lazy="selectin"
+        back_populates="user", cascade="all, delete-orphan", lazy="noload"
     )
     outage_reports: Mapped[List["OutageReport"]] = relationship(
         back_populates="user", lazy="selectin"
