@@ -1,5 +1,5 @@
 # Project Snapshot — Tunisia Energy RAG
-**Generated:** 2026-08-20 · **Branch:** main · **Last commit:** `8972cf7` (SSE progress panel + recursive crawl + cleanup)
+**Generated:** 2026-08-22 · **Branch:** main · **Last commit:** `a3f0a25` (conversation history sidebar + auto-titling + delete)
 
 ---
 
@@ -8,6 +8,7 @@
 ### What this is
 A RAG (Retrieval-Augmented Generation) platform for the Tunisian energy sector:
 - **Chat** — users ask energy questions; the system retrieves relevant PDF chunks and generates sourced answers (French + Arabic)
+- **Conversation History** — sidebar panel listing past conversations, auto-titled from first user message, with delete and delete-all
 - **Outage Map** — crowdsourced live outage map with animated SVG Tunisia map + Leaflet markers
 - **Solar ROI Calculator** — client-side financial projections
 - **Admin Panel** — document upload, outage purge, runtime config, URL source management with website crawling, real-time SSE progress tracking, and a dashboard log view
@@ -65,14 +66,14 @@ frontend/src/
 ├── App.tsx               # Router + layout shell
 ├── pages/                # ChatPage, OutageMapPage, SolarROIPage, AdminPage
 ├── components/
-│   ├── chat/             # ChatInput, MessageBubble, SourcesDropdown, ChatPanel
+│   ├── chat/             # ChatInput, MessageBubble, SourcesDropdown, ChatPanel, ConversationList
 │   ├── map/              # TunisiaMap (animated SVG), OutageMap (Leaflet), ReportForm
 │   ├── sidebar/          # CarteTab, AdminTab, TelemetryTab
 │   ├── admin/            # ConfigEditor, DocumentUpload, SourcesManager, DashboardTab, ProgressPanel
 │   ├── auth/             # AuthModal (login/register)
 │   └── ui/               # Button, Spinner, ThemeToggle, LanguageSwitcher
-├── services/             # api.ts (axios), auth.ts, chat.ts, admin.ts, outage.ts, token.ts
-├── store/                # chatStore (Zustand), authStore (Zustand)
+├── services/             # api.ts (axios), auth.ts, chat.ts, conversations.ts, admin.ts, outage.ts, token.ts
+├── store/                # chatStore (Zustand), authStore (Zustand), uiStore (sidebar tab, theme, language)
 ├── hooks/                # useChatStream (SSE consumption)
 ├── locales/              # fr.json, ar.json (i18n)
 └── lib/                  # governorates.ts, outage-stats.ts, tunisia-geo.ts
@@ -164,9 +165,9 @@ data/
 - Ingestion counters: indexed/rejected/failed per document
 - Prometheus + Grafana config files ready for Docker Compose deployment (`config/`)
 
-### ✅ Backend API (168 tests, all green)
+### ✅ Backend API (168+ tests, all green)
 - Chat endpoints: `/api/chat` (JSON) + `/api/chat/stream` (SSE)
-- Conversations: CRUD, per-user ownership, message persistence
+- Conversations: CRUD, per-user ownership, message persistence, auto-titling from first user message, delete single + delete-all
 - Outage reports: CRUD, status filtering, TTL auto-purge (5h default, 30min interval)
 - Admin endpoints: purge stats, manual purge, runtime config, document upload/ingestion
 - **Source management**: CRUD + crawl + research (download) + ingest (triage + ChromaDB) + bulk-delete
@@ -180,6 +181,7 @@ data/
 
 ### ✅ Frontend (126 tests, all green)
 - Chat interface with SSE streaming, SourcesDropdown (copy + expand full text)
+- **Conversation History sidebar**: lists past conversations with auto-titles (first user message), delete button per conversation, delete-all button with confirmation, auto-refresh on new messages
 - Animated Tunisia SVG map (24 governorates) + Leaflet outage map
 - Click-to-filter: SVG node → Leaflet markers filtered by governorate
 - Status filter (ALL/PENDING/RESOLVED) with donut chart segments
@@ -238,6 +240,7 @@ data/
 | POST | `/api/conversations` | JWT | Create conversation |
 | GET | `/api/conversations/{id}` | JWT | Get conversation messages |
 | DELETE | `/api/conversations/{id}` | JWT | Delete conversation |
+| DELETE | `/api/conversations` | JWT | Delete all conversations |
 
 ### Outages
 | Method | Endpoint | Auth | Description |
@@ -445,14 +448,31 @@ open http://localhost:8000/metrics
 
 ## 7. Commit Status
 
-**Last commit:** `8972cf7` — "Add real-time SSE progress panel for research/ingest + recursive crawl + cleanup"
+**Last commit:** `a3f0a25` — "Add conversation history sidebar with auto-titling, delete, and delete-all"
 
-**Uncommitted changes this session:**
-- New: `src/api/dashboard.py`, `src/api/logging_config.py`, `src/api/metrics.py`, `tests/test_metrics.py`
-- New: `config/prometheus.yml`, `config/grafana/dashboards/`, `config/grafana/datasources/`
-- Modified: `src/api/main.py`, `src/rag/retrieve.py`, `src/ingestion/research.py`, `requirements.txt`, `docker-compose.yml`, `PRODUCT_PLAN.md`, `PROJECT_SNAPSHOT.md`
+**Committed this session:**
+- New: `frontend/src/components/chat/ConversationList.tsx`, `frontend/src/services/conversations.ts`
+- Modified: `src/database/service.py` (auto-title, delete, delete-all, list optimization), `src/database/models.py` (noload fix), `src/api/main.py` (delete endpoints), `frontend/src/components/layout/EnergySidebar.tsx` (history tab), `frontend/src/services/chat.ts` (auth token), `frontend/src/store/uiStore.ts` (history tab type), `frontend/src/locales/ar.json` + `fr.json` (history translations), `tests/test_database.py` (6 new tests)
 
 **User's standing rule: never commit unless they explicitly ask.**
+
+---
+
+### New Lessons (this session)
+
+#### 16. Cascading selectin loads cause exponential slowdown
+**What happened:** Adding a ConversationList sidebar that called `list_conversations` triggered a cascading selectin load: Conversation → User (selectin) → ALL User's Conversations (selectin) → ALL Messages for each (selectin). With 196 conversations, this caused a 10x response time regression.
+
+**Fix:** Changed `User.conversations` from `lazy="selectin"` to `lazy="noload"`. Conversations are always queried directly, never through the User back-reference. Also added `load_only` + `noload` to `list_conversations` to skip loading unnecessary message/user data.
+
+**Lesson:** In SQLAlchemy async, `lazy="selectin"` on both sides of a bidirectional relationship creates a cascade. Use `lazy="noload"` on the back-reference if it's not needed, and always use `load_only` when listing entities you don't need full data for.
+
+#### 17. SQLAlchemy `Load().noload()` no longer accepts strings
+**What happened:** `Load(Conversation).noload("messages")` raised `ArgumentError: Strings are not accepted for attribute names in loader options`. This broke the `list_conversations` endpoint after the selectin fix.
+
+**Fix:** Use the top-level `noload()` function instead: `from sqlalchemy.orm import noload` then `noload(Conversation.messages)`.
+
+**Lesson:** In newer SQLAlchemy versions, loader options require class-bound attributes, not strings. Always use the top-level `selectinload()`, `noload()`, `joinedload()` functions with model attributes.
 
 ---
 
@@ -479,12 +499,14 @@ open http://localhost:8000/metrics
 12. CI/CD, Sentry, Redis cache, load testing
 
 ### Context for next chat
-- The project is fully functional: chat, map, calculator, admin panel with sources management + dashboard
+- The project is fully functional: chat, map, calculator, admin panel with sources management + dashboard + **conversation history sidebar**
 - **Observability is complete**: structured JSON logs, Prometheus /metrics, built-in HTML dashboard at `http://localhost:8000/dashboard`
-- All **294 tests** pass (168 backend + 126 frontend)
+- All **294+ tests** pass (168+ backend + 126 frontend)
 - The server runs on port 8000 (backend) + 5173 (frontend dev)
 - PostgreSQL is local on port 5432 (password: `siso`)
 - The LLM is accessed via OpenAI-compatible API (Mistral Large via BYNA router)
 - 17 STEG documents (2,491 chunks) are indexed in ChromaDB
+- Conversations auto-title from first user message, with delete single + delete-all
+- Performance optimized: cascading selectin loads eliminated, list_conversations uses load_only
 - The admin can crawl websites, download PDFs, triage them, and index accepted ones — all with real-time progress
 - **Current focus: AI guardrails and testing (Sprint 1 + 2 of PRODUCT_PLAN.md)**
