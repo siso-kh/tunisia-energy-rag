@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 import sys
@@ -16,6 +17,8 @@ from src.rag.guardrails import (
     assess_confidence, verify_claims, mask_sensitive_content,
 )
 from src.utils.token_manager import get_optimized_history
+
+logger = logging.getLogger(__name__)
 
 # Lazy import to avoid circular imports at module load time
 _llm_tokens = None
@@ -339,8 +342,7 @@ async def run_pipeline(
     # Step 0: GUARDRAILS — Query validation (L1 fix)
     guard = check_query(user_query)
     if not guard.allowed:
-        print(f"[GUARDRAIL] Query blocked: {guard.block_reason}")
-        print(f"[GUARDRAIL] Detections: {guard.detections}")
+        logger.warning("Query blocked: %s | detections=%s", guard.block_reason, guard.detections)
         return get_safe_response(), []
     
     user_query = guard.sanitised_query
@@ -348,31 +350,31 @@ async def run_pipeline(
     # L6 FIX: Domain classification
     domain_result = classify_domain(user_query)
     if domain_result["domain"] == "non_energy":
-        print(f"[GUARDRAIL] Non-energy query blocked: {domain_result}")
+        logger.warning("Non-energy query blocked: %s", domain_result)
         return get_safe_response(), []
 
     # Step 1: Contextualize query using the token-optimized history
     optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
-    print("\n[1] Contextualizing query...")
+    logger.info("[1] Contextualizing query...")
     standalone_query = await rewrite_query_with_history(user_query, optimized_history)
-    print(f"    Standalone query: '{standalone_query}'")
+    logger.debug("    Standalone query: '%s'", standalone_query)
     
     # Step 2: Hybrid search (vector + BM25, RRF-fused, optional rerank) with the
     # standalone query, run in a thread pool (ChromaDB + BM25 are sync I/O).
-    print("[2] Searching database (hybrid: vector + BM25)...")
+    logger.info("[2] Searching database (hybrid: vector + BM25)...")
     structured_sources = await run_in_threadpool(
         retrieve_context_hybrid, standalone_query, n_results=5
     )
     context_str = format_sources_for_prompt(structured_sources)
     
     # Step 3: Synthesize answer using the token-optimized history
-    print("[3] Synthesizing answer with Mistral Large...\n")
+    logger.info("[3] Synthesizing answer with Mistral Large...")
     answer = await generate_answer(user_query, context_str, optimized_history)
     
     # Step 4: GUARDRAILS — Output validation (L8 fix)
     validation = validate_output(answer)
     if not validation["clean"]:
-        print(f"[GUARDRAIL] Output validation failed: {validation['violations']}")
+        logger.warning("Output validation failed: %s", validation['violations'])
         return get_safe_response(), structured_sources
     
     # L6 FIX: Domain compliance filtering
@@ -381,7 +383,7 @@ async def run_pipeline(
     # L7 FIX: Confidence assessment
     confidence = assess_confidence(answer, context_str)
     if confidence["level"] == "low":
-        print(f"[GUARDRAIL] Low confidence response: {confidence}")
+        logger.warning("Low confidence response: %s", confidence)
         return (
             "I'm not confident I can answer this accurately based on the provided documents. "
             "Please rephrase your question or ask about a specific topic in the Tunisian energy sector."
@@ -390,7 +392,7 @@ async def run_pipeline(
     # L7 FIX: Fact verification
     claim_violations = verify_claims(answer, context_str)
     if claim_violations:
-        print(f"[GUARDRAIL] Fact verification failed: {claim_violations}")
+        logger.warning("Fact verification failed: %s", claim_violations)
         return (
             "I cannot verify some claims in my response against the provided documents. "
             "Please ask a more specific question about the Tunisian energy sector."
@@ -427,8 +429,7 @@ async def stream_pipeline(
     # Step 0: GUARDRAILS — Query validation (L1 fix)
     guard = check_query(user_query)
     if not guard.allowed:
-        print(f"[GUARDRAIL] Query blocked: {guard.block_reason}")
-        print(f"[GUARDRAIL] Detections: {guard.detections}")
+        logger.warning("Query blocked: %s | detections=%s", guard.block_reason, guard.detections)
         safe_response = get_safe_response()
         yield {"type": "sources", "sources": []}
         yield {"type": "token", "content": safe_response}
@@ -440,7 +441,7 @@ async def stream_pipeline(
     # L6 FIX: Domain classification
     domain_result = classify_domain(user_query)
     if domain_result["domain"] == "non_energy":
-        print(f"[GUARDRAIL] Non-energy query blocked: {domain_result}")
+        logger.warning("Non-energy query blocked: %s", domain_result)
         safe_response = get_safe_response()
         yield {"type": "sources", "sources": []}
         yield {"type": "token", "content": safe_response}
@@ -473,7 +474,7 @@ async def stream_pipeline(
     # GUARDRAILS — Output validation (L8 fix)
     validation = validate_output(answer)
     if not validation["clean"]:
-        print(f"[GUARDRAIL] Output validation failed: {validation['violations']}")
+        logger.warning("Output validation failed: %s", validation['violations'])
         safe_response = get_safe_response()
         yield {"type": "done", "answer": safe_response, "sources": structured_sources}
         return
@@ -484,7 +485,7 @@ async def stream_pipeline(
     # L7 FIX: Confidence assessment
     confidence = assess_confidence(answer, context_str)
     if confidence["level"] == "low":
-        print(f"[GUARDRAIL] Low confidence response: {confidence}")
+        logger.warning("Low confidence response: %s", confidence)
         safe_response = (
             "I'm not confident I can answer this accurately based on the provided documents. "
             "Please rephrase your question or ask about a specific topic in the Tunisian energy sector."
@@ -495,7 +496,7 @@ async def stream_pipeline(
     # L7 FIX: Fact verification
     claim_violations = verify_claims(answer, context_str)
     if claim_violations:
-        print(f"[GUARDRAIL] Fact verification failed: {claim_violations}")
+        logger.warning("Fact verification failed: %s", claim_violations)
         safe_response = (
             "I cannot verify some claims in my response against the provided documents. "
             "Please ask a more specific question about the Tunisian energy sector."

@@ -441,31 +441,25 @@ async def chat_stream_endpoint(
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
     
     # Manual rate limiting for streaming (L11 fix)
-    if limiter.enabled:
-        from src.api.ratelimit import _rate_key
-        key = _rate_key(request, limiter._key_func.__closure__[0].cell_contents if hasattr(limiter._key_func, '__closure__') else False)
-        # Check if rate limited by making a test request
-        # If the limiter would reject, we return 429
-        try:
-            # Use slowapi's internal check
-            from slowapi.util import get_remote_address
-            rate_key = get_remote_address(request)
-            # Simple in-memory check: count requests in current window
-            import time
-            now = time.time()
-            window_key = f"stream:{rate_key}"
-            if not hasattr(app.state, '_stream_counts'):
-                app.state._stream_counts = {}
-            counts = app.state._stream_counts
-            # Clean old entries
-            counts[window_key] = [t for t in counts.get(window_key, []) if now - t < 60]
-            if len(counts.get(window_key, [])) >= 10:  # 10/minute limit for streaming
-                raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
-            counts.setdefault(window_key, []).append(now)
-        except HTTPException:
-            raise
-        except Exception:
-            pass  # Don't let rate limiting errors break the stream
+    # @limiter.limit decorator doesn't work with StreamingResponse,
+    # so we implement a simple sliding-window counter per client IP.
+    try:
+        from slowapi.util import get_remote_address
+        rate_key = get_remote_address(request)
+        now = time.time()
+        window_key = f"stream:{rate_key}"
+        if not hasattr(app.state, '_stream_counts'):
+            app.state._stream_counts = {}
+        counts = app.state._stream_counts
+        # Clean entries older than 60 seconds
+        counts[window_key] = [t for t in counts.get(window_key, []) if now - t < 60]
+        if len(counts.get(window_key, [])) >= 10:  # 10/minute limit
+            raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
+        counts.setdefault(window_key, []).append(now)
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # Don't let rate limiting errors break the stream
 
     history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
     parsed_cid = _parse_conversation_id(payload.conversation_id)
@@ -509,8 +503,10 @@ async def chat_stream_endpoint(
     async def event_generator_with_timeout():
         try:
             async with asyncio.timeout(120):  # 2 minutes max
-                async for event in event_generator():
-                    yield _sse(event)
+                async for sse_frame in event_generator():
+                    # event_generator() already yields SSE-formatted strings,
+                    # so yield them directly — do NOT wrap in _sse() again.
+                    yield sse_frame
         except asyncio.TimeoutError:
             yield _sse({"type": "error", "message": "Request timed out. Please try a simpler query."})
         except Exception as e:

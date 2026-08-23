@@ -346,12 +346,14 @@ def classify_domain(query: str) -> dict:
     query_lower = query.lower()
     
     # L6 FIX: Check non-energy indicators FIRST to block non-energy queries
-    for indicator in non_energy_indicators:
-        if indicator in query_lower:
-            # Check if energy keywords are also present
-            has_energy = any(e in query_lower for e in ["energy", "solar", "electricity", "power"])
-            if not has_energy:
-                return {"domain": "non_energy", "confidence": "high"}
+    # But allow mixed queries (e.g., "economic benefits of solar energy")
+    non_energy_count = sum(1 for ind in non_energy_indicators if ind in query_lower)
+    has_energy = any(e in query_lower for e in ["energy", "solar", "electricity", "power", "renewable"])
+    
+    # Block only if there are 2+ non-energy indicators AND no energy keywords
+    # (single non-energy word with energy context is usually legitimate)
+    if non_energy_count >= 2 and not has_energy:
+        return {"domain": "non_energy", "confidence": "high"}
     
     # Check for strong Tunisia-specific indicators
     for indicator in strong_indicators:
