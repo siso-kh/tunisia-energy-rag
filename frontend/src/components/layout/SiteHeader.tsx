@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, LogOut, Shield, User, Zap } from "lucide-react";
+import { ArrowRight, LogOut, Shield, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useUIStore } from "../../store/uiStore";
 import { useAuthStore } from "../../store/authStore";
@@ -74,9 +74,7 @@ export default function SiteHeader() {
     <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 md:px-6">
       {/* Left: logo + brand */}
       <div className="flex items-center gap-2.5">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Zap className="size-4" aria-hidden="true" />
-        </span>
+        <img src="/logo.jpg" alt="Tunisia Energy Intelligence" className="size-8 rounded-lg object-cover" />
         <div className="hidden leading-tight sm:block">
           <span className="block text-sm font-bold tracking-tight text-foreground">
             {t("app.name")}

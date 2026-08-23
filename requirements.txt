@@ -23,6 +23,7 @@ easyocr
 fastapi
 uvicorn
 requests
+httpx>=0.27
 slowapi
 python-multipart  # required for UploadFile (multipart form parsing)
 

@@ -1,0 +1,176 @@
+{
+  "test": "regression",
+  "timestamp": "2026-08-23T19:58:19.803787",
+  "duration_s": 33.8,
+  "total": 11,
+  "consistent": 10,
+  "changed": 0,
+  "new": 1,
+  "results": [
+    {
+      "id": "L0_health",
+      "status_code": 200,
+      "classification": "HEALTHY"
+    },
+    {
+      "id": "L9_auth_no_key",
+      "status_code": 404,
+      "classification": "REFUSED"
+    },
+    {
+      "id": "L9_auth_wrong_key",
+      "status_code": 404,
+      "classification": "REFUSED"
+    },
+    {
+      "id": "L4_idor_no_auth",
+      "status_code": 422,
+      "classification": "REFUSED"
+    },
+    {
+      "id": "L4_idor_with_auth",
+      "status_code": 422,
+      "classification": "VULNERABLE"
+    },
+    {
+      "id": "L10_jwt_forge_none",
+      "status_code": 200,
+      "classification": "VULNERABLE"
+    },
+    {
+      "id": "L10_jwt_forge_weak",
+      "status_codes": [
+        200,
+        200,
+        200
+      ],
+      "classification": "VULNERABLE"
+    },
+    {
+      "id": "L14_xff_spoof",
+      "status_codes": [
+        201,
+        201,
+        201,
+        201,
+        201,
+        201
+      ],
+      "success": 6,
+      "rate_limited": 0,
+      "conflict": 0,
+      "classification": "VULNERABLE"
+    },
+    {
+      "id": "L14_sequential_rate",
+      "status_codes": [
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        429,
+        429,
+        429,
+        429,
+        429,
+        429
+      ],
+      "rate_limited": 6,
+      "classification": "REFUSED"
+    },
+    {
+      "id": "L11: Stream no auth",
+      "classification": "ERROR",
+      "error": ""
+    },
+    {
+      "id": "L13_pool_exhaustion",
+      "results": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "success": 0,
+      "errors": 0,
+      "classification": "PARTIAL"
+    }
+  ],
+  "comparison": [
+    {
+      "id": "L0_health",
+      "current": "HEALTHY",
+      "previous": "HEALTHY",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L9_auth_no_key",
+      "current": "REFUSED",
+      "previous": "REFUSED",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L9_auth_wrong_key",
+      "current": "REFUSED",
+      "previous": "REFUSED",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L4_idor_no_auth",
+      "current": "REFUSED",
+      "previous": "REFUSED",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L4_idor_with_auth",
+      "current": "VULNERABLE",
+      "previous": "VULNERABLE",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L10_jwt_forge_none",
+      "current": "VULNERABLE",
+      "previous": "VULNERABLE",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L10_jwt_forge_weak",
+      "current": "VULNERABLE",
+      "previous": "VULNERABLE",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L14_xff_spoof",
+      "current": "VULNERABLE",
+      "previous": "VULNERABLE",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L14_sequential_rate",
+      "current": "REFUSED",
+      "previous": "REFUSED",
+      "status": "CONSISTENT"
+    },
+    {
+      "id": "L11: Stream no auth",
+      "current": "ERROR",
+      "previous": "NOT_FOUND",
+      "status": "NEW"
+    },
+    {
+      "id": "L13_pool_exhaustion",
+      "current": "PARTIAL",
+      "previous": "PARTIAL",
+      "status": "CONSISTENT"
+    }
+  ]
+}

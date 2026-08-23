@@ -10,6 +10,11 @@ from fastapi.concurrency import run_in_threadpool
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.rag.hybrid import retrieve_context_hybrid
+from src.rag.guardrails import (
+    check_query, validate_output, get_safe_response,
+    classify_domain, filter_domain_violations,
+    assess_confidence, verify_claims, mask_sensitive_content,
+)
 from src.utils.token_manager import get_optimized_history
 
 # Lazy import to avoid circular imports at module load time
@@ -208,11 +213,21 @@ def retrieve_context_structured(user_query: str, n_results: int = 5) -> List[Dic
     return structured_sources
 
 def format_sources_for_prompt(sources: List[Dict[str, Any]]) -> str:
-    """Helper function to format structured sources into a clean prompt context string."""
+    """Helper function to format structured sources into a clean prompt context string.
+    
+    L3 FIX: Applies content masking and length limits to prevent document extraction.
+    """
     formatted_chunks = []
     for idx, src in enumerate(sources, 1):
+        # L3 FIX: Mask sensitive content
+        content = mask_sensitive_content(src['content'])
+        
+        # L3 FIX: Limit chunk length to prevent extraction
+        if len(content) > 1000:
+            content = content[:1000] + "..."
+        
         formatted_chunks.append(
-            f"[Doc {idx} - Source: {src['source_file']} (Page {src['page']})]\n{src['content']}"
+            f"[Doc {idx} - Source: {src['source_file']} (Page {src['page']})]\n{content}"
         )
     return "\n\n---\n\n".join(formatted_chunks)
 
@@ -310,9 +325,31 @@ async def run_pipeline(
     Returns a tuple of (answer, structured_sources).
     ChromaDB's synchronous file I/O is offloaded to a thread pool so it
     does not block the async event loop.
+    
+    Includes guardrails for:
+    - L1: System prompt leak prevention (query sanitization)
+    - L3: Document extraction prevention (content masking)
+    - L6: Domain escape prevention (domain classification)
+    - L7: Hallucination prevention (confidence scoring)
+    - L8: Poisoned response prevention (output validation)
     """
     if chat_history is None:
         chat_history = []
+
+    # Step 0: GUARDRAILS — Query validation (L1 fix)
+    guard = check_query(user_query)
+    if not guard.allowed:
+        print(f"[GUARDRAIL] Query blocked: {guard.block_reason}")
+        print(f"[GUARDRAIL] Detections: {guard.detections}")
+        return get_safe_response(), []
+    
+    user_query = guard.sanitised_query
+    
+    # L6 FIX: Domain classification
+    domain_result = classify_domain(user_query)
+    if domain_result["domain"] == "non_energy":
+        print(f"[GUARDRAIL] Non-energy query blocked: {domain_result}")
+        return get_safe_response(), []
 
     # Step 1: Contextualize query using the token-optimized history
     optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
@@ -332,6 +369,33 @@ async def run_pipeline(
     print("[3] Synthesizing answer with Mistral Large...\n")
     answer = await generate_answer(user_query, context_str, optimized_history)
     
+    # Step 4: GUARDRAILS — Output validation (L8 fix)
+    validation = validate_output(answer)
+    if not validation["clean"]:
+        print(f"[GUARDRAIL] Output validation failed: {validation['violations']}")
+        return get_safe_response(), structured_sources
+    
+    # L6 FIX: Domain compliance filtering
+    answer = filter_domain_violations(answer, user_query)
+    
+    # L7 FIX: Confidence assessment
+    confidence = assess_confidence(answer, context_str)
+    if confidence["level"] == "low":
+        print(f"[GUARDRAIL] Low confidence response: {confidence}")
+        return (
+            "I'm not confident I can answer this accurately based on the provided documents. "
+            "Please rephrase your question or ask about a specific topic in the Tunisian energy sector."
+        ), structured_sources
+    
+    # L7 FIX: Fact verification
+    claim_violations = verify_claims(answer, context_str)
+    if claim_violations:
+        print(f"[GUARDRAIL] Fact verification failed: {claim_violations}")
+        return (
+            "I cannot verify some claims in my response against the provided documents. "
+            "Please ask a more specific question about the Tunisian energy sector."
+        ), structured_sources
+    
     return answer, structured_sources
 
 
@@ -349,9 +413,39 @@ async def stream_pipeline(
 
     Chat history is token-budgeted server-side (HISTORY_TOKEN_BUDGET), so the
     client can safely send the full session.
+    
+    Includes guardrails for:
+    - L1: System prompt leak prevention (query sanitization)
+    - L3: Document extraction prevention (content masking)
+    - L6: Domain escape prevention (domain classification)
+    - L7: Hallucination prevention (confidence scoring)
+    - L8: Poisoned response prevention (output validation)
     """
     if chat_history is None:
         chat_history = []
+
+    # Step 0: GUARDRAILS — Query validation (L1 fix)
+    guard = check_query(user_query)
+    if not guard.allowed:
+        print(f"[GUARDRAIL] Query blocked: {guard.block_reason}")
+        print(f"[GUARDRAIL] Detections: {guard.detections}")
+        safe_response = get_safe_response()
+        yield {"type": "sources", "sources": []}
+        yield {"type": "token", "content": safe_response}
+        yield {"type": "done", "answer": safe_response, "sources": []}
+        return
+    
+    user_query = guard.sanitised_query
+    
+    # L6 FIX: Domain classification
+    domain_result = classify_domain(user_query)
+    if domain_result["domain"] == "non_energy":
+        print(f"[GUARDRAIL] Non-energy query blocked: {domain_result}")
+        safe_response = get_safe_response()
+        yield {"type": "sources", "sources": []}
+        yield {"type": "token", "content": safe_response}
+        yield {"type": "done", "answer": safe_response, "sources": []}
+        return
 
     optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
 
@@ -375,6 +469,40 @@ async def stream_pipeline(
         yield {"type": "token", "content": part}
 
     answer = "".join(answer_parts)
+    
+    # GUARDRAILS — Output validation (L8 fix)
+    validation = validate_output(answer)
+    if not validation["clean"]:
+        print(f"[GUARDRAIL] Output validation failed: {validation['violations']}")
+        safe_response = get_safe_response()
+        yield {"type": "done", "answer": safe_response, "sources": structured_sources}
+        return
+    
+    # L6 FIX: Domain compliance filtering
+    answer = filter_domain_violations(answer, user_query)
+    
+    # L7 FIX: Confidence assessment
+    confidence = assess_confidence(answer, context_str)
+    if confidence["level"] == "low":
+        print(f"[GUARDRAIL] Low confidence response: {confidence}")
+        safe_response = (
+            "I'm not confident I can answer this accurately based on the provided documents. "
+            "Please rephrase your question or ask about a specific topic in the Tunisian energy sector."
+        )
+        yield {"type": "done", "answer": safe_response, "sources": structured_sources}
+        return
+    
+    # L7 FIX: Fact verification
+    claim_violations = verify_claims(answer, context_str)
+    if claim_violations:
+        print(f"[GUARDRAIL] Fact verification failed: {claim_violations}")
+        safe_response = (
+            "I cannot verify some claims in my response against the provided documents. "
+            "Please ask a more specific question about the Tunisian energy sector."
+        )
+        yield {"type": "done", "answer": safe_response, "sources": structured_sources}
+        return
+    
     yield {"type": "done", "answer": answer, "sources": structured_sources}
 
 

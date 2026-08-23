@@ -45,8 +45,10 @@ def build_session_factory(engine: AsyncEngine) -> "async_sessionmaker[AsyncSessi
 
 engine = build_engine(
     echo=False,  # Set to True for SQL query debugging in development
-    pool_size=10,
-    max_overflow=20,
+    pool_size=30,          # Increased from 10 to handle more concurrent requests (L13 fix)
+    max_overflow=20,       # Keep overflow for burst handling
+    pool_recycle=3600,     # Recycle connections every hour (prevents stale connections)
+    pool_pre_ping=True,    # Detect stale connections before use
 )
 
 AsyncSessionLocal = build_session_factory(engine)

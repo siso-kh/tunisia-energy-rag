@@ -166,6 +166,9 @@ app.include_router(auth_router)
 add_security_middlewares(app)
 configure_limiter(app, limiter)
 
+# L14 Fix: Global concurrency limiter — prevents pool exhaustion from burst traffic
+_concurrency_semaphore = asyncio.Semaphore(15)  # Max 15 concurrent LLM requests
+
 
 # ---------------------------------------------------------------------------
 # Metrics middleware — request latency + count
@@ -374,11 +377,20 @@ async def chat_endpoint(
         user_query = payload.query.strip()
         if not user_query:
             raise HTTPException(status_code=400, detail="Query cannot be empty.")
+        
+        # L12 FIX: Query complexity validation
+        if len(user_query) > 5000:
+            raise HTTPException(
+                status_code=400,
+                detail="Query too long. Please keep questions under 5000 characters."
+            )
 
         history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
 
-        # Await the fully asynchronous pipeline (ChromaDB retrieval runs in a thread pool)
-        answer, structured_sources = await run_pipeline(user_query, history_dicts)
+        # L14 Fix: Use concurrency limiter to prevent pool exhaustion
+        async with _concurrency_semaphore:
+            # Await the fully asynchronous pipeline (ChromaDB retrieval runs in a thread pool)
+            answer, structured_sources = await run_pipeline(user_query, history_dicts)
 
         # Persist the turn (best-effort: never let DB issues break the answer)
         conversation_id = None
@@ -414,54 +426,99 @@ async def chat_endpoint(
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat/stream")
-@limiter.limit(CHAT_LIMIT)
 async def chat_stream_endpoint(
     request: Request,
     payload: QueryRequest,
     user: Optional[User] = Depends(get_current_user_optional),
 ):
+    """SSE streaming endpoint with manual rate limiting.
+    
+    NOTE: @limiter.limit decorator doesn't work with StreamingResponse,
+    so we check rate limits manually here (L11 fix).
+    """
     user_query = payload.query.strip()
     if not user_query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    
+    # Manual rate limiting for streaming (L11 fix)
+    if limiter.enabled:
+        from src.api.ratelimit import _rate_key
+        key = _rate_key(request, limiter._key_func.__closure__[0].cell_contents if hasattr(limiter._key_func, '__closure__') else False)
+        # Check if rate limited by making a test request
+        # If the limiter would reject, we return 429
+        try:
+            # Use slowapi's internal check
+            from slowapi.util import get_remote_address
+            rate_key = get_remote_address(request)
+            # Simple in-memory check: count requests in current window
+            import time
+            now = time.time()
+            window_key = f"stream:{rate_key}"
+            if not hasattr(app.state, '_stream_counts'):
+                app.state._stream_counts = {}
+            counts = app.state._stream_counts
+            # Clean old entries
+            counts[window_key] = [t for t in counts.get(window_key, []) if now - t < 60]
+            if len(counts.get(window_key, [])) >= 10:  # 10/minute limit for streaming
+                raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
+            counts.setdefault(window_key, []).append(now)
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # Don't let rate limiting errors break the stream
 
     history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
     parsed_cid = _parse_conversation_id(payload.conversation_id)
 
     async def event_generator():
-        async with AsyncSessionLocal() as session:
-            conversation_id: Optional[uuid.UUID] = None
-            # Resolve/create the conversation up-front; if the DB is unavailable,
-            # stream anyway without persistence.
-            try:
-                conversation_id = await _resolve_conversation(session, parsed_cid, user)
-            except HTTPException as e:
-                yield _sse({"type": "error", "message": e.detail})
-                return
-            except Exception as e:
-                logger.exception("Conversation resolution skipped: %s", e)
+        # L14 Fix: Use concurrency limiter to prevent pool exhaustion
+        async with _concurrency_semaphore:
+            async with AsyncSessionLocal() as session:
+                conversation_id: Optional[uuid.UUID] = None
+                # Resolve/create the conversation up-front; if the DB is unavailable,
+                # stream anyway without persistence.
+                try:
+                    conversation_id = await _resolve_conversation(session, parsed_cid, user)
+                except HTTPException as e:
+                    yield _sse({"type": "error", "message": e.detail})
+                    return
+                except Exception as e:
+                    logger.exception("Conversation resolution skipped: %s", e)
 
-            try:
-                async for event in stream_pipeline(user_query, history_dicts):
-                    if event["type"] == "done":
-                        event["conversation_id"] = str(conversation_id) if conversation_id else None
-                        if conversation_id is not None:
-                            try:
-                                await service.persist_chat_turn(
-                                    session,
-                                    conversation_id,
-                                    user_query,
-                                    event["answer"],
-                                    event["sources"],
-                                )
-                            except Exception as e:
-                                logger.exception("Chat persistence skipped: %s", e)
+                try:
+                    async for event in stream_pipeline(user_query, history_dicts):
+                        if event["type"] == "done":
+                            event["conversation_id"] = str(conversation_id) if conversation_id else None
+                            if conversation_id is not None:
+                                try:
+                                    await service.persist_chat_turn(
+                                        session,
+                                        conversation_id,
+                                        user_query,
+                                        event["answer"],
+                                        event["sources"],
+                                    )
+                                except Exception as e:
+                                    logger.exception("Chat persistence skipped: %s", e)
+                        yield _sse(event)
+                except Exception as e:
+                    logger.exception("Stream pipeline failed: %s", e)
+                    yield _sse({"type": "error", "message": "An internal error occurred during processing."})
+
+    # L12 FIX: Add 120 second timeout
+    async def event_generator_with_timeout():
+        try:
+            async with asyncio.timeout(120):  # 2 minutes max
+                async for event in event_generator():
                     yield _sse(event)
-            except Exception as e:
-                logger.exception("Stream pipeline failed: %s", e)
-                yield _sse({"type": "error", "message": "An internal error occurred during processing."})
+        except asyncio.TimeoutError:
+            yield _sse({"type": "error", "message": "Request timed out. Please try a simpler query."})
+        except Exception as e:
+            logger.exception("Stream timeout/error: %s", e)
+            yield _sse({"type": "error", "message": "An error occurred during processing."})
 
     return StreamingResponse(
-        event_generator(),
+        event_generator_with_timeout(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -491,10 +548,21 @@ async def create_conversation(
 
 
 @app.get("/api/conversations/{conversation_id}", response_model=ConversationDetailOut)
-async def get_conversation(conversation_id: uuid.UUID, session=Depends(get_db_dependency)):
+async def get_conversation(
+    conversation_id: uuid.UUID,
+    session=Depends(get_db_dependency),
+    user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Get a conversation by ID with owner validation (L4 IDOR fix)."""
     conversation = await service.get_conversation(session, conversation_id)
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found.")
+    
+    # CRITICAL: Owner validation — prevent IDOR (field is user_id, not owner_id)
+    owner = user if user is not None else await service.get_or_create_demo_user(session)
+    if conversation.user_id != owner.id:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    
     return ConversationDetailOut(
         id=conversation.id,
         title=conversation.title,
