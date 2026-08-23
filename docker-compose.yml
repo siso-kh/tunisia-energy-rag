@@ -47,9 +47,8 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie
-      # Behind the nginx proxy every request arrives from the proxy socket, so
-      # key rate limits on the real client IP via X-Forwarded-For.
-      TRUST_PROXY_HEADERS: "true"
+      # Security: Disable proxy header trust to prevent XFF spoofing (L14 fix)
+      TRUST_PROXY_HEADERS: "false"
       # Frontend is served same-origin through nginx, but allow cross-origin
       # access for the ngrok tunnel / direct backend calls.
       CORS_ORIGINS: "*"
