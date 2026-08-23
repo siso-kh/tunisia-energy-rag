@@ -1,0 +1,533 @@
+\documentclass[12pt,a4paper,oneside]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{lmodern,geometry,setspace,graphicx,float,array,booktabs,caption,subcaption,hyperref,fancyhdr,titlesec,tocloft,lastpage,titling,enumitem,longtable,listings,tabularx}
+\geometry{top=2.5cm,bottom=2.5cm,left=2.7cm,right=2.5cm}
+\onehalfspacing
+\hypersetup{colorlinks=true,linkcolor=MidnightBlue,urlcolor=MidnightBlue,citecolor=MidnightBlue,pdftitle={Rapport de stage - Koussay Laifi},pdfauthor={Koussay Laifi}}
+\definecolor{mainblue}{RGB}{11,61,145}
+\definecolor{codebg}{RGB}{245,245,245}
+\setlength{\headheight}{15pt}
+\pagestyle{fancy}\fancyhf{}\fancyhead[L]{\small\textit{Rapport de stage -- Délice}}\fancyhead[R]{\small\nouppercase{\leftmark}}\fancyfoot[C]{\thepage\ / \pageref{LastPage}}\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[L]{\small\textit{Rapport de stage -- Délice}}\fancyhead[R]{\small\nouppercase{\leftmark}}\fancyfoot[C]{\thepage\ / \pageref{LastPage}}\renewcommand{\headrulewidth}{0.4pt}}
+\titleformat{\chapter}[display]{\bfseries\Huge\color{mainblue}}{\filleft\fontsize{55}{55}\selectfont\textcolor{mainblue!25}{\thechapter}}{1ex}{\titlerule[1pt]\vspace{1ex}\filright}[\vspace{1ex}\titlerule]
+\titleformat{\section}{\Large\bfseries\color{mainblue}}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\large\bfseries\color{mainblue}}{\thesubsection}{0.8em}{}
+\captionsetup{font=small,labelfont=bf}
+
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{mainblue}\bfseries,
+    commentstyle=\color{gray}\itshape
+}
+\lstset{style=codestyle}
+
+\begin{document}
+\begin{titlepage}\thispagestyle{empty}\begin{center}
+\begin{minipage}{0.42\textwidth}\centering\includegraphics[width=1\textwidth]{image/essths.png}\end{minipage}\hfill\begin{minipage}{0.22\textwidth}\centering\includegraphics[width=0.95\textwidth]{image/delice.png}\end{minipage}\\[1.2cm]
+{\Large\textbf{ÉCOLE SUPÉRIEURE SCIENCE ET TECHNOLOGIR HAMMAM SOUSSE}}\\[0.2cm]
+\rule{0.92\textwidth}{1.2pt}\\[0.7cm]
+{\Huge\bfseries\color{mainblue} RAPPORT DE STAGE}\\[0.35cm]
+{\Large\textbf{Stage d'immersion en entreprise}}\\[0.25cm]
+{\large Réalisé au sein du Groupe Délice -- Centrale Laitière de Sidi Bouzid}\\[0.8cm]
+\rule{0.92\textwidth}{1.2pt}\\[1.1cm]
+\begin{minipage}{0.47\textwidth}\raggedright\textbf{Réalisé par :}\\[0.2cm] Mohamed Arsalen Kharrat\end{minipage}\hfill\begin{minipage}{0.47\textwidth}\raggedleft\textbf{Année universitaire :}\\[0.2cm]2025--2026\\[0.35cm]\textbf{Période du stage :}\\[0.2cm]Du 1 juillet 2026 au 31 juillet 2026\end{minipage}\\[0.9cm]
+\begin{center}\fbox{\begin{minipage}{0.84\textwidth}\vspace{0.3cm}\centering\textbf{Encadrants professionnels}\\[0.3cm]M. Omri Foued\\M. Saidi Nizar\\M. Bennaji Haythem\vspace{0.3cm}\end{minipage}}\end{center}
+\vfill{\large Tunis, Sidi bouzid, 2026}\end{center}\end{titlepage}
+
+\pagenumbering{roman}
+\chapter*{Remerciements}\addcontentsline{toc}{chapter}{Remerciements}
+Au terme de ce stage effectué au sein du Groupe Délice, il est important d'exprimer une sincère reconnaissance à toutes les personnes ayant contribué au bon déroulement de cette expérience professionnelle, tant sur le plan humain que technique.
+
+Des remerciements particuliers sont adressés à M. Omri Foued, M. Saidi Nizar et M. Bennaji Haythem pour leur accueil chaleureux, leur disponibilité constante, leurs conseils avisés et leur accompagnement tout au long de la période de stage. Leur encadrement a permis de transformer chaque intervention technique en une véritable opportunité d'apprentissage.
+
+Des remerciements sont également adressés à l'ensemble du personnel de la Centrale Laitière de Sidi Bouzid pour la qualité de l'accueil, ESSTHS de collaboration et l'aide précieuse apportée durant l'intégration au sein du service informatique. Enfin, une pensée reconnaissante est adressée au corps professoral de ESSTHS pour la formation théorique et méthodologique ayant permis d'aborder ce stage avec les bases nécessaires.
+
+\clearpage\tableofcontents\clearpage\listoffigures\listoftables\clearpage
+\chapter*{Liste des abréviations}\addcontentsline{toc}{chapter}{Liste des abréviations}
+\begin{itemize}[leftmargin=1.2cm]
+\item CLSB : Centrale Laitière de Sidi Bouzid.
+\item HSE : Hygiène, Sécurité, Environnement.
+\item UHT : Upérisation à Haute Température.
+\item ERP : Enterprise Resource Planning.
+\item IP : Internet Protocol.
+\item PC : Personal Computer.
+\item RJ45 : Connecteur utilisé dans les réseaux Ethernet.
+\item LIMS : Laboratory Information Management System.
+\item QR Code : Quick Response Code.
+\item RBAC : Role-Based Access Control.
+\item JWT : JSON Web Token.
+\item API : Application Programming Interface.
+\item CRUD : Create, Read, Update, Delete.
+\item ORM : Object-Relational Mapping.
+\item CORS : Cross-Origin Resource Sharing.
+\item HTTPS : HyperText Transfer Protocol Secure.
+\item CI/CD : Continuous Integration / Continuous Deployment.
+\item UML : Unified Modeling Language.
+\end{itemize}
+\clearpage
+\pagenumbering{arabic}
+
+\chapter*{Introduction générale}\addcontentsline{toc}{chapter}{Introduction générale}
+Le stage constitue une étape essentielle dans la formation d'un étudiant ingénieur. Il permet de confronter les connaissances théoriques acquises dans le cadre académique à la réalité du terrain, de découvrir le fonctionnement concret d'une entreprise industrielle et de développer des compétences techniques et humaines complémentaires au cursus universitaire.
+
+Du 2 juillet 2026 au 16 août 2026, un stage d'initiation a été effectué au sein du département informatique de la Centrale Laitière de Sidi Bouzid (CLSB), société appartenant au Groupe Délice, l'un des leaders tunisiens de l'agroalimentaire. Cette expérience a offert l'opportunité de découvrir l'organisation interne de l'entreprise, d'observer les différentes activités du service informatique et de participer activement à des missions de support technique, de maintenance réseau et de gestion du parc informatique.
+
+Au-delà des tâches d'assistance, ce stage a également été l'occasion d'identifier une problématique concrète rencontrée par le laboratoire de contrôle qualité de la CLSB : l'absence de digitalisation dans le suivi des échantillons. Cette observation a conduit à la conception d'une proposition d'application, \textbf{Délice LIMS}, modélisée à l'aide du langage UML et détaillée dans le dernier chapitre de ce rapport.
+
+Ce rapport s'articule autour de quatre chapitres : une présentation de l'entreprise et du cadre du stage, un descriptif détaillé des activités et missions réalisées, un bilan des compétences développées, et enfin une proposition technique d'application pour le laboratoire de la CLSB, accompagnée de diagrammes UML et d'extraits de code illustrant son architecture.
+
+\chapter{Présentation de l'entreprise et cadre du stage}
+
+\section{Présentation générale du Groupe Délice}
+Le Groupe Délice est un acteur majeur du secteur agroalimentaire tunisien, fondé en 1988, spécialisé notamment dans la production et la distribution de produits laitiers, de boissons et de produits dérivés. Présent sur l'ensemble du territoire tunisien et à l'international, le groupe s'appuie sur plusieurs unités de production réparties selon les régions et les activités.
+
+\begin{figure}[H]\centering\includegraphics[width=0.82\textwidth]{image/site.png}\caption{Vue générale du site de l'entreprise Délice.}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=0.35\textwidth]{image/logog.png}\caption{Logo du Groupe Délice.}\end{figure}
+
+\section{Organisation du groupe}
+Délice regroupe plusieurs branches d'activités complémentaires liées aux produits frais, à la distribution, aux boissons, aux produits laitiers et à d'autres filières agroalimentaires. Cette diversification permet au groupe de couvrir une large part du marché tunisien tout en développant des synergies industrielles entre ses différentes filiales.
+
+\begin{figure}[H]\centering\includegraphics[width=0.9\textwidth]{image/GRP.png}\caption{Présentation schématique du Groupe Délice et de ses branches d'activité.}\end{figure}
+
+\begin{table}[H]\centering
+\begin{tabular}{|l|p{9cm}|}
+\hline
+\textbf{Filiale / Activité} & \textbf{Domaine} \\
+\hline
+Centrale Laitière de Sidi Bouzid & Production de lait UHT, beurre, dérivés laitiers \\
+\hline
+Délice Boissons & Jus, eaux et boissons gazeuses \\
+\hline
+Délice Distribution & Logistique et distribution des produits du groupe \\
+\hline
+Autres filiales & Diversification agroalimentaire et industrielle \\
+\hline
+\end{tabular}
+\caption{Principales branches d'activité du Groupe Délice.}
+\end{table}
+
+\section{Services de l'entreprise}
+La CLSB comprend plusieurs services fonctionnant en interaction constante : les services administratifs, la production, la qualité, la performance, le HSE, le service technique et le service informatique.
+
+\begin{itemize}[leftmargin=1.2cm]
+\item Le service administratif prend en charge les achats, les finances, les ressources humaines, la logistique et une partie de la gestion courante de l'usine.
+\item Le service de production couvre les ateliers de traitement du lait, de fabrication du beurre et de production du lait UHT, selon des process industriels normalisés.
+\item Le service qualité veille à l'application rigoureuse des procédures de contrôle et à la conformité des produits aux normes nationales et internationales (ISO, HACCP).
+\item Le service technique et le service informatique participent conjointement à la maintenance, à l'administration des équipements industriels et informatiques et au bon fonctionnement des outils numériques de l'entreprise.
+\end{itemize}
+
+\section{Le département informatique : rôle et organisation}
+Le département informatique de la CLSB assure un rôle transversal essentiel au fonctionnement de l'usine. Il gère le parc informatique (postes de travail, imprimantes, serveurs), le réseau local (câblage, switchs, adressage IP), le support aux utilisateurs et la maintenance préventive et corrective du matériel.
+
+\begin{table}[H]\centering
+\begin{tabular}{|l|p{8.5cm}|}
+\hline
+\textbf{Mission} & \textbf{Description} \\
+\hline
+Support utilisateur & Assistance quotidienne aux employés pour les incidents matériels et logiciels \\
+\hline
+Gestion réseau & Maintenance de l'infrastructure Ethernet, diagnostic des pannes de connectivité \\
+\hline
+Gestion du parc & Inventaire, distribution et suivi du matériel informatique \\
+\hline
+Sécurité informatique & Application des règles de base de sécurité des postes et du réseau \\
+\hline
+\end{tabular}
+\caption{Missions principales du département informatique de la CLSB.}
+\end{table}
+
+\chapter{Activités et missions réalisées durant le stage}
+
+\section*{Département d'accueil}
+Le stage a été réalisé au sein du département informatique de la Centrale Laitière de Sidi Bouzid, sous la supervision de M. Omri Foued, M. Saidi Nizar et M. Bennaji Haythem. Ce département joue un rôle central dans la gestion du parc informatique, le support aux utilisateurs, la maintenance de certains équipements ainsi que l'assistance lors des incidents liés au réseau et aux postes de travail.
+
+\section{Nature du stage}
+Le stage réalisé au sein du département informatique de la CLSB a été orienté vers l'assistance directe au travail de l'ingénieur informatique dans un environnement industriel structuré et exigeant. L'implication dans ce cadre a consisté à accompagner des tâches techniques et organisationnelles liées au support informatique, à la maintenance réseau ainsi qu'au fonctionnement du matériel utilisé quotidiennement par les employés de l'usine.
+
+Les activités réalisées ont principalement concerné l'assistance en cas de panne de réseau, l'aide à la préparation et à la distribution du matériel informatique, le suivi de certains équipements, ainsi qu'une réflexion approfondie sur la digitalisation des processus du laboratoire de contrôle qualité, aboutissant à la conception du projet \textbf{Délice LIMS}.
+
+\section{Missions effectuées}
+
+\subsection{Support technique et maintenance réseau}
+\begin{itemize}[leftmargin=1.2cm]
+\item Aide à l'ingénieur informatique lors des interventions liées aux pannes de réseau, incluant le diagnostic de connectivité et la vérification des connexions RJ45.
+\item Participation à la vérification et au diagnostic de postes de travail et de périphériques (imprimantes, scanners) présentant des dysfonctionnements.
+\item Assistance dans la configuration de base des adresses IP et des paramètres réseau des postes utilisateurs.
+\item Contrôle du bon fonctionnement des équipements réseau (switchs, câblage) au niveau des différents ateliers.
+\end{itemize}
+
+\subsection{Gestion et distribution du matériel informatique}
+\begin{itemize}[leftmargin=1.2cm]
+\item Assistance dans la distribution de PC, d'imprimantes et de matériel informatique aux travailleurs selon les besoins exprimés par les différents services.
+\item Observation et participation à la gestion du parc informatique, incluant l'inventaire et le suivi des équipements en circulation.
+\item Contribution à des tâches de préparation, de configuration initiale et d'organisation du matériel avant sa mise en service.
+\item Aide au classement et à la mise à jour de la documentation technique relative aux équipements du parc.
+\end{itemize}
+
+\subsection{Observation des processus du laboratoire qualité}
+\begin{itemize}[leftmargin=1.2cm]
+\item Observation directe du fonctionnement du laboratoire de contrôle qualité de la CLSB, notamment la manipulation quotidienne d'un grand nombre d'échantillons de lait et de produits dérivés.
+\item Identification des limites du suivi manuel des échantillons : registres papier, étiquetage manuscrit, risque d'erreur et perte de traçabilité.
+\item Échanges avec les techniciens de laboratoire pour comprendre le cycle de vie complet d'un échantillon (réception, stockage, analyse, archivage, destruction).
+\item Analyse des besoins fonctionnels pouvant être couverts par une solution numérique adaptée à un environnement industriel agroalimentaire.
+\end{itemize}
+
+\subsection{Conception d'une solution de digitalisation}
+\begin{itemize}[leftmargin=1.2cm]
+\item Élaboration d'un cahier des charges détaillé pour une application de gestion des échantillons de laboratoire (Délice LIMS).
+\item Modélisation UML complète du système (cas d'utilisation, classes, séquence, déploiement).
+\item Proposition d'une architecture technique moderne basée sur React, FastAPI et PostgreSQL.
+\item Conception d'un système de génération et de lecture de QR codes permettant un suivi mobile et instantané des échantillons.
+\item Définition d'un modèle de rôles et de permissions (RBAC) adapté aux différents intervenants du laboratoire.
+\end{itemize}
+
+\section{Apports techniques du stage}
+Cette expérience a permis de mieux comprendre l'importance du support informatique dans le bon déroulement des activités d'une entreprise industrielle de grande envergure. Elle a également permis d'observer la manière dont les incidents réseau peuvent impacter directement le travail quotidien, la nécessité d'intervenir rapidement pour rétablir le fonctionnement normal des équipements, ainsi que l'importance stratégique de la digitalisation des processus manuels, en particulier au sein d'un laboratoire de contrôle qualité où la traçabilité constitue un enjeu majeur.
+
+\chapter{Bilan et apports du stage}
+
+\section{Compétences développées}
+Le stage a permis de développer plusieurs compétences transversales et techniques, parmi lesquelles l'organisation, le sens de la responsabilité, la communication professionnelle, la compréhension du support informatique en entreprise et l'analyse de besoins fonctionnels dans un contexte industriel réel.
+
+\begin{itemize}[leftmargin=1.2cm]
+\item Développement du sens de l'organisation et du respect des consignes de sécurité industrielle.
+\item Amélioration de ESSTHS d'équipe et de la communication professionnelle avec des interlocuteurs variés (techniciens, ingénieurs, opérateurs).
+\item Découverte approfondie des bases du support informatique, de l'assistance réseau et de la gestion de parc.
+\item Meilleure compréhension de la gestion des équipements informatiques dans un cadre industriel agroalimentaire.
+\item Renforcement des compétences en analyse de besoins et en conception de solutions logicielles adaptées à un contexte métier concret.
+\item Consolidation des connaissances en architecture logicielle et en modélisation UML (cas d'utilisation, classes, séquence).
+\end{itemize}
+
+\section{Apports personnels et professionnels}
+Sur le plan personnel, cette expérience a contribué à renforcer la discipline, l'autonomie et la capacité d'adaptation face à un environnement professionnel exigeant. Sur le plan professionnel, elle a permis d'acquérir une première expérience concrète liée à l'assistance technique, au support utilisateur et à l'environnement informatique d'une entreprise industrielle, tout en développant une véritable démarche d'ingénieur à travers la proposition d'une solution digitale innovante pour le laboratoire de la CLSB.
+
+\chapter{Proposition d'application : Délice LIMS}
+
+\section{Contexte et problématique}
+Les laboratoires manipulent quotidiennement un grand nombre d'échantillons (tubes, prélèvements, réactifs) dont le suivi est aujourd'hui souvent réalisé de manière manuelle ou semi-manuelle (registres papier, fichiers Excel, étiquettes écrites à la main). Cette approche est source d'erreurs, de perte de traçabilité et de risques pour la confidentialité des données sensibles.
+
+La problématique identifiée est la suivante : \textit{comment automatiser l'identification, le suivi et la gestion des échantillons de laboratoire tout en garantissant la sécurité, l'intégrité et la traçabilité des données associées, avec un accès mobile sécurisé ?}
+
+\section{Objectifs du projet}
+\begin{itemize}
+\item Digitaliser le travail des professionnels de laboratoire de la CLSB.
+\item Faciliter l'extraction et la consultation rapide des données d'un échantillon via un QR code, y compris depuis un smartphone.
+\item Protéger les informations critiques et sensibles liées aux échantillons.
+\item Centraliser les données dans une base de données relationnelle fiable.
+\item Fournir un tableau de bord pour visualiser et piloter l'ensemble des échantillons en temps réel.
+\item Permettre un flux de travail industriel mobile : scan QR échantillon $\rightarrow$ scan QR emplacement $\rightarrow$ relocalisation instantanée.
+\end{itemize}
+
+\section{Acteurs et rôles}
+\begin{longtable}{|p{3.5cm}|p{4cm}|p{6.5cm}|}
+\hline
+\textbf{Acteur} & \textbf{Permissions} & \textbf{Rôle} \\
+\hline
+\endhead
+Administrateur & Toutes & Gère les comptes, les droits d'accès, les échantillons, les emplacements et la configuration globale. \\
+\hline
+Technicien de laboratoire & Création, lecture, modification échantillons & Crée les échantillons, scanne les QR codes, effectue les relocalisations. \\
+\hline
+Chercheur / Responsable scientifique & Lecture échantillons + emplacements & Consulte les données, exploite le dashboard, exporte des rapports CSV. \\
+\hline
+Auditeur qualité & Lecture échantillons + audit logs & Consulte l'historique et la traçabilité sans pouvoir modifier les données. \\
+\hline
+\end{longtable}
+
+\section{Diagrammes de conception UML}
+
+\subsection{Diagramme de cas d'utilisation}
+La figure ci-dessous présente les principales interactions entre les acteurs du système et les fonctionnalités offertes par Délice LIMS.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.85\textwidth]{image/Diagramme de cas d'utilisation.png}
+\caption{Diagramme de cas d'utilisation de l'application Délice LIMS.}
+\end{figure}
+
+\subsection{Diagramme de classes}
+Le diagramme de classes ci-après illustre le modèle de données central de l'application, incluant les entités Utilisateur, Rôle, Échantillon, Emplacement et AuditLog.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.9\textwidth]{image/Diagramme de classes.png}
+\caption{Diagramme de classes de l'application Délice LIMS.}
+\end{figure}
+
+\subsection{Diagramme de séquence -- flux mobile}
+Ce diagramme décrit le scénario principal d'utilisation mobile : le scan d'un échantillon suivi d'une relocalisation en deux étapes.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\textwidth]{image/Diagramme de séquence.png}
+\caption{Diagramme de séquence du flux mobile de relocalisation.}
+\end{figure}
+
+\subsection{Diagramme de déploiement}
+Le diagramme de déploiement présente l'architecture d'infrastructure retenue pour l'application, incluant le tunnel HTTPS ngrok pour l'accès mobile sécurisé.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.85\textwidth]{image/Diagramme de déploiement.png}
+\caption{Diagramme de déploiement de l'application Délice LIMS.}
+\end{figure}
+
+\section{Architecture technique}
+La solution repose sur une architecture 3-tiers moderne : une couche présentation en React 18, une couche métier exposée via une API REST FastAPI, et une couche de données gérée par PostgreSQL via l'ORM SQLAlchemy.
+
+\begin{table}[H]\centering
+\begin{tabular}{|l|p{8.5cm}|}
+\hline
+\textbf{Composant} & \textbf{Technologie retenue} \\
+\hline
+Backend / API & FastAPI (Python 3.11) \\
+\hline
+Frontend & React 18 + Vite + Tailwind CSS \\
+\hline
+Base de données & PostgreSQL (production) / SQLite (développement) \\
+\hline
+Authentification & JWT (HS256) + bcrypt \\
+\hline
+QR codes & qrcode.react (génération) + html5-qrcode (lecture) \\
+\hline
+Accès mobile sécurisé & Tunnel HTTPS via ngrok \\
+\hline
+\end{tabular}
+\caption{Stack technique de l'application Délice LIMS.}
+\end{table}
+
+\section{Extraits de code -- Backend (FastAPI)}
+
+\subsection{Modèle de données de l'échantillon}
+\begin{lstlisting}[language=Python,caption={Modele SQLAlchemy de l'entite Sample}]
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from database import Base
+
+class Sample(Base):
+    __tablename__ = "samples"
+    id = Column(Integer, primary_key=True, index=True)
+    qr_code = Column(String, unique=True, index=True, nullable=False)
+    type = Column(String, nullable=False)
+    status = Column(String, default="reception")
+    location_id = Column(Integer, ForeignKey("locations.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    location = relationship("Location", back_populates="samples")
+\end{lstlisting}
+
+\subsection{Endpoint de recherche et relocalisation par QR code}
+\begin{lstlisting}[language=Python,caption={Endpoints API pour le flux mobile industriel}]
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from database import get_db
+import models, schemas, uuid
+
+router = APIRouter(prefix="/api/v1/samples", tags=["samples"])
+
+@router.get("/by-qr/{qr_code}", response_model=schemas.SampleOut)
+def get_sample_by_qr(qr_code: str, db: Session = Depends(get_db)):
+    sample = db.query(models.Sample).filter(
+        models.Sample.qr_code == qr_code).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Echantillon introuvable")
+    return sample
+
+@router.put("/by-qr/{qr_code}/relocate")
+def relocate_sample(qr_code: str, new_location_id: int,
+                     db: Session = Depends(get_db)):
+    sample = db.query(models.Sample).filter(
+        models.Sample.qr_code == qr_code).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Echantillon introuvable")
+
+    old_location = sample.location_id
+    sample.location_id = new_location_id
+    db.commit()
+
+    audit = models.AuditLog(
+        sample_id=sample.id,
+        action="LOCATION_CHANGED",
+        value_before={"location_id": old_location},
+        value_after={"location_id": new_location_id},
+    )
+    db.add(audit)
+    db.commit()
+    return {"success": True, "sample_id": sample.id}
+
+@router.post("/", response_model=schemas.SampleOut)
+def create_sample(sample: schemas.SampleCreate, db: Session = Depends(get_db)):
+    qr = f"SGEL-{uuid.uuid4().hex[:12].upper()}"
+    new_sample = models.Sample(qr_code=qr, type=sample.type,
+                                location_id=sample.location_id)
+    db.add(new_sample)
+    db.commit()
+    db.refresh(new_sample)
+    return new_sample
+\end{lstlisting}
+
+\section{Extraits de code -- Frontend (React)}
+
+\subsection{Composant de génération de QR code}
+\begin{lstlisting}[language=JavaScript,caption={Affichage et telechargement du QR code d'un echantillon}]
+import { QRCodeCanvas } from "qrcode.react";
+
+export default function QRCodeDisplayModal({ sample, onClose }) {
+  const qrUrl = `${window.location.origin}/m/scan/${sample.qr_code}`;
+
+  const handleDownload = () => {
+    const canvas = document.getElementById("qr-canvas");
+    const link = document.createElement("a");
+    link.download = `${sample.qr_code}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  return (
+    <div className="modal">
+      <h2>Echantillon {sample.qr_code}</h2>
+      <QRCodeCanvas id="qr-canvas" value={qrUrl} size={220} />
+      <button onClick={handleDownload}>Telecharger le QR code</button>
+      <button onClick={onClose}>Fermer</button>
+    </div>
+  );
+}
+\end{lstlisting}
+
+\subsection{Composant de scan mobile}
+\begin{lstlisting}[language=JavaScript,caption={Scan du QR code via camera mobile}]
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect } from "react";
+
+export default function MobileScanPage() {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    scanner.render(async (decodedText) => {
+      const code = decodedText.split("/").pop();
+      const res = await fetch(`/api/v1/samples/by-qr/${code}`);
+      const data = await res.json();
+      console.log("Echantillon trouve :", data);
+      scanner.clear();
+    });
+    return () => scanner.clear();
+  }, []);
+
+  return <div id="reader" style={{ width: "300px" }} />;
+}
+\end{lstlisting}
+
+\section{Fonctionnalités clés implémentées dans la proposition}
+\begin{itemize}[leftmargin=1.2cm]
+\item Génération d'un QR code unique au format \texttt{SGEL-XXXXXXXXXXXX} pour chaque échantillon.
+\item Cycle de vie complet en 5 statuts : réception $\rightarrow$ stockage $\rightarrow$ analyse $\rightarrow$ archivage $\rightarrow$ destruction.
+\item Authentification JWT et gestion de 4 rôles distincts (RBAC).
+\item Tunnel HTTPS ngrok garantissant un accès mobile sécurisé sans avertissement de certificat.
+\item Tableau de bord avec statistiques en temps réel et export CSV des données.
+\item Traçabilité intégrale de toutes les actions via un système d'audit log horodaté.
+\end{itemize}
+
+\section{Interfaces de l'application}
+Afin de mieux illustrer les fonctionnalités développées, cette section présente les principales interfaces utilisateurs de la solution \textbf{Délice LIMS}, conçues pour être intuitives et adaptées aux environnements industriels.
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.30.jpeg"}
+\caption{Vue d'ensemble du tableau de bord affichant les statistiques en temps réel.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.31 (1).jpeg"}
+\caption{Registre central des échantillons permettant le suivi et la recherche rapide.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.31 (2).jpeg"}
+\caption{Moniteur de stockage illustrant la capacité et l'état des différents emplacements.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.31.jpeg"}
+\caption{Journal d'audit garantissant la traçabilité complète des actions.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[width=\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.32.jpeg"}
+\caption{Gestion des utilisateurs}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[width=\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.32 (1).jpeg"}
+\caption{Gestion des emplacements}
+\end{subfigure}
+\caption{Interfaces d'administration de la plateforme.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[width=0.85\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.32 (2).jpeg"}
+\caption{QR Code d'un échantillon}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[width=0.85\textwidth]{"WhatsApp Image 2026-07-30 at 09.33.18.jpeg"}
+\caption{QR Code d'un emplacement}
+\end{subfigure}
+\caption{Génération de codes QR uniques assurant la traçabilité.}
+\end{figure}
+
+\begin{figure}[H]\centering
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[height=7.5cm, keepaspectratio]{"WhatsApp Image 2026-07-30 at 09.32.49.jpeg"}
+\caption{Vue mobile de scan et relocalisation}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}\centering
+\includegraphics[width=\textwidth]{"WhatsApp Image 2026-07-30 at 09.32.32 (3).jpeg"}
+\caption{Modale d'exportation au format CSV}
+\end{subfigure}
+\caption{Fonctionnalités avancées pour la flexibilité et l'analyse de données.}
+\end{figure}
+
+\section{Bénéfices attendus pour la CLSB}
+\begin{table}[H]\centering
+\begin{tabular}{|p{5cm}|p{8cm}|}
+\hline
+\textbf{Problème actuel} & \textbf{Bénéfice apporté par Délice LIMS} \\
+\hline
+Registres papier et étiquettes manuscrites & Traçabilité numérique fiable et instantanée \\
+\hline
+Erreurs de saisie et pertes de données & Centralisation dans une base de données relationnelle sécurisée \\
+\hline
+Recherche manuelle chronophage & Accès instantané via scan QR code (moins de 2 secondes) \\
+\hline
+Absence de suivi en temps réel & Tableau de bord avec statistiques et alertes \\
+\hline
+Manque de contrôle d'accès & Système de rôles RBAC (Admin, Technicien, Chercheur, Auditeur) \\
+\hline
+\end{tabular}
+\caption{Bénéfices de la digitalisation proposée pour le laboratoire de la CLSB.}
+\end{table}
+
+\chapter*{Conclusion générale}\addcontentsline{toc}{chapter}{Conclusion générale}
+Le stage effectué au sein du Groupe Délice a constitué une expérience enrichissante à plusieurs niveaux. Il a permis de découvrir le fonctionnement d'une entreprise industrielle d'envergure nationale, d'observer différentes activités professionnelles et de participer à des tâches concrètes liées au support informatique et réseau.
+
+Au-delà de l'aspect opérationnel, ce stage a également permis de mettre en pratique une véritable démarche d'ingénieur, à travers l'identification d'une problématique réelle au sein du laboratoire de contrôle qualité et la conception d'une solution technique adaptée, Délice LIMS, modélisée selon les standards UML et accompagnée d'une architecture technique complète. Cette proposition illustre la capacité à transformer une observation de terrain en une solution logicielle structurée, sécurisée et évolutive, conforme aux standards actuels du développement d'applications professionnelles.
+
+
+\chapter*{Bibliographie et webographie}\addcontentsline{toc}{chapter}{Bibliographie et webographie}
+\begin{itemize}
+\item Rapports de stage de référence fournis sur Délice et la CLSB.
+\item Documentation officielle FastAPI, React et SQLAlchemy.
+\item Documents académiques et supports de cours de ESSTHS.
+\item Cahier des charges v2.0 -- Délice LIMS (document interne du projet).
+\item Documents internes autorisés par l'entreprise.
+\end{itemize}
+
+\end{document}
+
+```
