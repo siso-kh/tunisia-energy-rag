@@ -31,7 +31,7 @@ if [[ ! -f "${APP_DIR}/data/chroma_db/chroma.sqlite3" && -n "${CHROMA_URL:-}" ]]
     echo "[entrypoint] ChromaDB index missing — downloading from CHROMA_URL..."
     curl -fsSL "${CHROMA_URL}" -o /tmp/chroma.tar.gz
     mkdir -p "${APP_DIR}/data"
-    tar -xzf /tmp/chroma.tar.gz -C "${APP_DIR}/data"
+    tar --no-same-owner -xzf /tmp/chroma.tar.gz -C "${APP_DIR}/data"
     rm -f /tmp/chroma.tar.gz
 fi
 

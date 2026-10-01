@@ -120,7 +120,7 @@ RUN if [ -f /app/data/chroma_db/chroma.sqlite3 ]; then \
       echo "[build] fetching ChromaDB index from CHROMA_URL"; \
       curl -fsSL "$CHROMA_URL" -o /tmp/chroma.tar.gz && \
       mkdir -p /app/data && \
-      tar -xzf /tmp/chroma.tar.gz -C /app/data && \
+      tar --no-same-owner -xzf /tmp/chroma.tar.gz -C /app/data && \
       rm -f /tmp/chroma.tar.gz && \
       du -sh /app/data/chroma_db; \
     else \
