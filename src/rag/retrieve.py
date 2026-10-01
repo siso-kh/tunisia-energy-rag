@@ -72,6 +72,7 @@ import time as _time
 from openai import APITimeoutError, APIStatusError
 
 _DEFAULT_MODELS = [
+    "combo/freemodels",
     "deepseek-v4-flash",
     "qwen3.8-27b",
     "agnes-2.5-flash",

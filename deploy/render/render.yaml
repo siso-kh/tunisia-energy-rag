@@ -58,6 +58,7 @@ services:
       - key: CORS_ORIGINS
         sync: false              # https://<your-service>.onrender.com
       - key: LLM_MODEL
+        value: "combo/freemodels"
         sync: false
       - key: OUTAGE_TTL_HOURS
         value: "5"
