@@ -31,6 +31,16 @@ def build_engine(database_url: str | None = None, **kwargs) -> AsyncEngine:
     production defaults.
     """
     url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+
+    # PostgreSQL (Neon) via asyncpg: the Neon pooler runs pgbouncer in
+    # transaction mode, which is incompatible with asyncpg's server-side
+    # prepared-statement cache under concurrency ("prepared statement already
+    # exists"). Disable the cache for asyncpg URLs; sqlite is untouched.
+    if url.startswith("postgresql+asyncpg"):
+        connect_args = dict(kwargs.pop("connect_args", {}))
+        connect_args.setdefault("statement_cache_size", 0)
+        kwargs["connect_args"] = connect_args
+
     return create_async_engine(url, **kwargs)
 
 
@@ -45,9 +55,12 @@ def build_session_factory(engine: AsyncEngine) -> "async_sessionmaker[AsyncSessi
 
 engine = build_engine(
     echo=False,  # Set to True for SQL query debugging in development
-    pool_size=30,          # Increased from 10 to handle more concurrent requests (L13 fix)
-    max_overflow=20,       # Keep overflow for burst handling
-    pool_recycle=3600,     # Recycle connections every hour (prevents stale connections)
+    # Keep the pool small: managed Postgres (Neon free) caps connections, and the
+    # Space runs a single instance. Neon also autosuspends, so pre-ping + recycle
+    # matter more than a large pool.
+    pool_size=5,
+    max_overflow=5,
+    pool_recycle=1800,     # Recycle connections every 30 min (Neon autosuspend)
     pool_pre_ping=True,    # Detect stale connections before use
 )
 

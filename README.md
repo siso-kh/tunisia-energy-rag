@@ -1,9 +1,22 @@
+---
+title: Tunisia Energy RAG
+emoji: ⚡
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Tunisia Energy RAG
 
 RAG pipeline for the Tunisian energy sector: PDF collection, Arabic/OCR ingestion,
 LLM-based triage, ChromaDB vector retrieval, an async FastAPI backend, a React
 frontend (Vite build served by Nginx), and an async SQLAlchemy/PostgreSQL layer for
 conversations and the crowdsourced outage map.
+
+> **Deployment:** [`DEPLOY_HF_SPACE.md`](DEPLOY_HF_SPACE.md) is the runbook for the
+> Hugging Face Docker Space (secrets, push commands, post-deploy verification).
 
 ## Quick start (Docker Compose)
 
@@ -39,9 +52,11 @@ npm run dev        # http://localhost:5173, proxies /api to localhost:8000
 - Connection string: `postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie`
   (the `DATABASE_URL` env var is set automatically for `backend` and `db-seed`).
 - The schema is owned by **Alembic migrations** (`alembic/versions/`); the seeder only
-  inserts data. In docker, `db-seed` applies migrations (`ensure_schema` →
-  `alembic upgrade head`) then seeds, and the backend starts only after `db-seed`
-  completes successfully. Data is persisted in the `postgres_data` named volume.
+  inserts data. In docker, `db-seed` runs `alembic upgrade head` (async engine) then
+  seeds, and the backend starts only after `db-seed` completes successfully. This
+  mirrors the HF Space entrypoint; `src.database.seed`'s `ensure_schema` uses a *sync*
+  engine (needs `psycopg2`) and cannot create the schema itself. Data is persisted in
+  the `postgres_data` named volume.
 - Local dev uses the **same Postgres** (`start_dev.bat` targets `localhost:5433`) —
   one dialect everywhere. The in-memory SQLite inside `pytest` is the disposable
   test lab and never holds real data.

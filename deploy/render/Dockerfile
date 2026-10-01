@@ -1,0 +1,132 @@
+# syntax=docker/dockerfile:1
+#
+# =====================================================================
+# MINIMISED single-container image for Render (and any PaaS that builds
+# a Dockerfile from the repo).
+#
+# This is an ADDITIVE deployment artefact: it does not replace, import or
+# modify the root Dockerfile, docker-compose.yml or requirements.txt. The
+# original app keeps working exactly as before.
+#
+# Build context MUST be the repository root:
+#   docker build -f deploy/render/Dockerfile -t tunisia-energy-rag .
+#
+# Port: Render injects PORT (default 10000) and expects the public server to
+# bind it. The entrypoint renders nginx.conf.template with that value.
+# =====================================================================
+
+# ---------- Stage 1: build the React SPA ----------
+FROM node:22-alpine AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+
+# ---------- Stage 2: Python builder (needs compilers, never shipped) ----------
+FROM python:3.10-slim AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HF_HOME=/opt/hf
+
+# build-essential lives ONLY here. The runtime stage copies the finished
+# site-packages instead, so ~300 MB of compiler toolchain never reaches
+# the final image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# CPU-only torch FIRST: PyPI's default Linux torch wheel is the CUDA build
+# (~2.5 GB + nvidia-*) which is useless on a CPU instance. Installing it up
+# front means requirements.runtime.txt sees torch already satisfied.
+COPY deploy/render/requirements.runtime.txt ./
+RUN pip install --upgrade pip && \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install -r requirements.runtime.txt
+
+# Pre-download the embedding model so cold starts don't fetch weights.
+# (Needed by chromadb's SentenceTransformerEmbeddingFunction at runtime.)
+RUN python -c "\
+from chromadb.utils import embedding_functions; \
+embedding_functions.SentenceTransformerEmbeddingFunction( \
+model_name='paraphrase-multilingual-MiniLM-L12-v2')"
+
+# Cross-encoder reranker (~470 MB). Off by default: on a small instance it
+# both inflates the image and is the first thing to push you into OOM.
+ARG RERANK_ENABLED=false
+RUN if [ "$RERANK_ENABLED" = "true" ]; then \
+      python -c "from sentence_transformers import CrossEncoder; \
+CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1')" \
+        || echo "[build] cross-encoder pre-download skipped (fetched at runtime if enabled)"; \
+    else \
+      echo "[build] RERANK_ENABLED=$RERANK_ENABLED -> skipping cross-encoder download"; \
+    fi
+
+
+# ---------- Stage 3: runtime ----------
+FROM python:3.10-slim AS runtime
+
+# nginx serves the SPA and reverse-proxies /api, /health, /ready.
+# ONLY the packages the app actually needs at runtime: tesseract, poppler,
+# the sqlite3 CLI and the compiler toolchain are all gone (see README.md).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nginx \
+        curl \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/opt/hf \
+    HF_HUB_DISABLE_TELEMETRY=1
+
+# Finished Python environment from the builder (same base image -> ABI safe).
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /opt/hf /opt/hf
+
+WORKDIR /app
+
+# Application code. The repository-root .dockerignore applies here: it keeps
+# data/chroma_db (when present) and excludes the corpus, .env and reports.
+# When the build context has no index (e.g. a git-based build, because
+# data/chroma_db is gitignored and chroma.sqlite3 exceeds GitHub's 100 MB
+# per-file limit), pass CHROMA_URL to fetch it instead.
+COPY . /app
+
+# The compiled SPA from stage 1.
+COPY --from=frontend /frontend/dist /app/frontend/dist
+
+# ChromaDB index: use the one in the build context, else download CHROMA_URL.
+# The archive must unpack to chroma_db/ at its top level.
+ARG CHROMA_URL=""
+RUN if [ -f /app/data/chroma_db/chroma.sqlite3 ]; then \
+      echo "[build] using bundled ChromaDB index"; \
+      du -sh /app/data/chroma_db; \
+    elif [ -n "$CHROMA_URL" ]; then \
+      echo "[build] fetching ChromaDB index from CHROMA_URL"; \
+      curl -fsSL "$CHROMA_URL" -o /tmp/chroma.tar.gz && \
+      mkdir -p /app/data && \
+      tar -xzf /tmp/chroma.tar.gz -C /app/data && \
+      rm -f /tmp/chroma.tar.gz && \
+      du -sh /app/data/chroma_db; \
+    else \
+      echo "ERROR: no ChromaDB index in the build context and CHROMA_URL is unset."; \
+      echo "ERROR: src/rag/retrieve.py opens the collection at import time, so the"; \
+      echo "ERROR: backend cannot boot without it. See deploy/render/README.md §3."; \
+      exit 1; \
+    fi
+
+RUN chmod +x /app/deploy/render/entrypoint.sh
+
+EXPOSE 10000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${PORT:-10000}/health" || exit 1
+
+CMD ["/app/deploy/render/entrypoint.sh"]

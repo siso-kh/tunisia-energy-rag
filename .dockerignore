@@ -1,38 +1,65 @@
-# Local Database & Large Data Files
-data/
-*.sqlite3
-*.db
+# =====================================================================
+# Docker build context for the Hugging Face Space image.
+#
+# IMPORTANT: this file must NOT exclude data/chroma_db/** — src/rag/retrieve.py
+# opens the ChromaDB collection at import time, so the index has to be in the
+# image or the backend crashes on boot. Only the ingestion corpus is dropped.
+# =====================================================================
 
-# Git
+# --- Ingestion corpus (large, never served) ---
+data/raw/
+data/filtered/
+data/blacklisted/
+data/processed/
+data/backups/
+data/*.db
+data/*.sqlite3
+
+# --- Python / Node cruft ---
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+ENV/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/*.tsbuildinfo
+
+# --- VCS + AI/agent files ---
 .git/
 .gitignore
+.claude/
+.agents/
+.ai_instructions/
+ai_activity.log
 
-# Python Cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Virtual Environments
-env/
-venv/
-.venv/
-env-*
-
-# Environment Variables / Secrets
+# --- Secrets + local env ---
 .env
 
-# Local Database & Large Data Files
-# Exclude ChromaDB files from the image; they will be loaded via the volume mount instead
-data/chroma_db/
-*.sqlite3
-*.db
+# --- Local dev DB / test artifacts ---
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.json
 
-# IDEs and OS Files
+# --- Reports / notebooks / reference material (not needed at runtime) ---
+*.pdf
+*.tex
+*.aux
+*.toc
+*.out
+rapport_*
+notebooks/
+image/
+docs/
+
+# --- OS / editor noise ---
 .vscode/
 .idea/
 .DS_Store
-# AI Agent Configurations and Logs
-.ai_instructions/
-ai_activity.log
+
+# --- Safety net: the shipped vector index must always stay in the image ---
+!data/chroma_db
+!data/chroma_db/**

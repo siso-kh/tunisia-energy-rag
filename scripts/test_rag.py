@@ -14,6 +14,7 @@ load_dotenv()
 
 API_KEY = os.getenv("CUSTOM_API_KEY")
 BASE_URL = os.getenv("OPENAI_BASE_URL")
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-v4-flash")
 
 client = OpenAI(
     api_key=API_KEY,
@@ -136,7 +137,7 @@ def run_test_suite(output_file="test_results.json", n_results=20):
 
         try:
             response = client.chat.completions.create(
-                model="mistral-large",
+                model=LLM_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": query}

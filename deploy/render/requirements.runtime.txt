@@ -1,0 +1,55 @@
+# =====================================================================
+# Runtime-only dependency set for the minimised deployment image.
+#
+# This file does NOT replace requirements.txt — the original stays
+# authoritative for local dev, tests and the ingestion pipeline. It is
+# consumed only by deploy/render/Dockerfile.
+#
+# Derived by walking the real import graph from src/api/main.py and
+# separating module-level imports (must be installed) from function-level
+# ones (only needed when that feature actually runs).
+#
+# See README.md for the full drop list with file:line evidence.
+# =====================================================================
+
+# --- Imported at API import time -------------------------------------
+fastapi
+uvicorn
+pydantic
+python-multipart          # FastAPI UploadFile / multipart form parsing
+slowapi                   # rate limiting (src/api/ratelimit.py)
+python-json-logger        # src/api/logging_config.py:15
+prometheus-client         # src/api/metrics.py:16
+
+# --- Database: async SQLAlchemy + Alembic ----------------------------
+sqlalchemy
+asyncpg                   # loaded BY NAME from the URL, not imported
+greenlet                  # required by SQLAlchemy's async engine
+alembic
+python-dotenv
+psycopg2-binary           # REQUIRED: src/database/schema.py:ensure_schema()
+                          # inspects via a *sync* engine. Without it the
+                          # container's seed step fails silently and the
+                          # outage map boots empty.
+
+# --- Auth ------------------------------------------------------------
+pyjwt
+bcrypt
+email-validator           # pydantic EmailStr validation
+
+# --- RAG: retrieval + LLM --------------------------------------------
+chromadb                  # src/rag/retrieve.py:6-7, and the collection is
+                          # opened AT IMPORT TIME (retrieve.py:263-264)
+sentence-transformers     # chromadb embedding fn + src/rag/hybrid.py:199
+rank-bm25                 # src/rag/hybrid.py:58 (sparse half of hybrid search)
+openai                    # src/rag/retrieve.py:8, src/utils/triage.py:10
+tiktoken                  # src/utils/token_manager.py:10
+
+# --- HTTP + PDF triage ----------------------------------------------
+requests
+httpx                     # openai's transport
+pdfplumber                # src/utils/triage.py:6 (MODULE level — must stay)
+
+# torch is intentionally NOT listed here: the Dockerfile installs the
+# CPU-only wheel first so this file resolves against it instead of
+# pulling the ~2.5 GB CUDA build from PyPI.

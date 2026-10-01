@@ -1,0 +1,68 @@
+# Render Blueprint for the minimised deployment.
+#
+# Deploy with:  Render Dashboard -> New -> Blueprint -> pick this repo
+# (Render reads render.yaml from the repo root, so either move/copy this file
+#  there, or create the service manually with the settings below.)
+#
+# Every value marked `sync: false` is a secret you fill in the dashboard —
+# none of them are committed here.
+
+services:
+  - type: web
+    name: tunisia-energy-rag
+    runtime: docker
+
+    # dockerfilePath is relative to the REPO ROOT, and the build context must
+    # be the repo root (the image needs frontend/, src/, alembic/, data/).
+    dockerfilePath: ./deploy/render/Dockerfile
+    dockerContext: .
+
+    region: frankfurt          # closest to Tunisia (eu-central-1)
+    branch: main
+
+    # ------------------------------------------------------------------
+    # PLAN: "free" and "starter" are BOTH 512 MB RAM and will OOM.
+    # torch + sentence-transformers + ChromaDB need roughly 1.0-1.4 GB RSS.
+    # "standard" (2 GB) is the first plan that reliably fits.
+    # ------------------------------------------------------------------
+    plan: standard
+
+    healthCheckPath: /health
+
+    # Runs once per deploy, before traffic shifts. The entrypoint also runs
+    # migrations as a fallback, so this is belt-and-braces (and idempotent).
+    preDeployCommand: alembic upgrade head
+
+    envVars:
+      # --- Required ---------------------------------------------------
+      - key: DATABASE_URL        # postgresql+asyncpg://...?ssl=require
+        sync: false
+      - key: CUSTOM_API_KEY      # Mistral / OpenAI-compatible key
+        sync: false
+      - key: JWT_SECRET          # without it, auth endpoints return 503
+        generateValue: true
+      - key: ADMIN_API_KEY       # protects /api/admin/*
+        generateValue: true
+
+      # --- ChromaDB index ---------------------------------------------
+      # Only needed if the image is built from git (no data/chroma_db in the
+      # context). See README.md §3.
+      - key: CHROMA_URL
+        sync: false
+
+      # --- Recommended / optional -------------------------------------
+      - key: OPENAI_BASE_URL
+        value: https://api.mistral.ai/v1
+      - key: RERANK_ENABLED
+        value: "false"           # skips the ~470 MB cross-encoder
+      - key: CORS_ORIGINS
+        sync: false              # https://<your-service>.onrender.com
+      - key: LLM_MODEL
+        sync: false
+      - key: OUTAGE_TTL_HOURS
+        value: "5"
+      - key: RATE_LIMIT_STORAGE_URI
+        value: memory://
+
+      # Do NOT set TRUST_PROXY_HEADERS=true: nginx already forwards the real
+      # client IP and spoofing protection should stay on.

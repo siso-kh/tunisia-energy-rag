@@ -1,0 +1,7 @@
+# Build artifacts for the minimised deployment.
+#
+# .artifacts/ holds the packed ChromaDB index (~73 MB). It is uploaded to a
+# release asset or dataset and downloaded at image build time via CHROMA_URL;
+# it must never be committed — it would bloat the repo for no benefit and the
+# uncompressed chroma.sqlite3 exceeds GitHub's 100 MB per-file limit anyway.
+.artifacts/

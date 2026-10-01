@@ -116,7 +116,7 @@ def index_pdf_into_chroma(pdf_path: Path) -> int:
     semantics per document), so re-uploading a file replaces its old
     embeddings instead of accumulating duplicates.
     """
-    from src.rag.retrieve import chroma_client, collection, emb_fn
+    from src.rag.retrieve import chroma_client, collection, _get_emb_fn
 
     chunks = chunk_pdf(pdf_path)
     if not chunks:
@@ -138,7 +138,7 @@ def index_pdf_into_chroma(pdf_path: Path) -> int:
 
     # The collection stores explicit vectors (the app queries with explicit
     # query_embeddings), so compute them here with the shared embedding fn.
-    raw_vectors = emb_fn(documents)
+    raw_vectors = _get_emb_fn()(documents)
     embeddings = [
         v.tolist() if hasattr(v, "tolist") else list(v) for v in raw_vectors
     ]

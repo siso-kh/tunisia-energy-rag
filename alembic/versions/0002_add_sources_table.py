@@ -17,13 +17,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the sourcestatus enum type.
+    # The enum type is created implicitly by create_table below (Postgres emits
+    # CREATE TYPE before CREATE TABLE). Do NOT also call .create() here: doing
+    # both raises DuplicateObjectError ("type sourcestatus already exists") on a
+    # fresh database. 0001_initial creates its enums the same way (inline).
     source_status = sa.Enum(
         "pending", "downloading", "downloaded", "failed",
         "ingesting", "indexed", "triage_rejected",
         name="sourcestatus",
     )
-    source_status.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "sources",

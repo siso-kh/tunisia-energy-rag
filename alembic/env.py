@@ -70,10 +70,23 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
+    url = _resolve_url()
+
+    # Neon's `-pooler` endpoint runs pgbouncer in transaction mode, which is
+    # incompatible with asyncpg's server-side prepared-statement cache
+    # ("prepared statement ... already exists"). Mirror src/database/connection.py
+    # and disable the cache for asyncpg URLs. The container entrypoint runs
+    # `alembic upgrade head` against DATABASE_URL on every boot, so this engine
+    # hits the pooler just as the app does; sqlite is left untouched.
+    connect_args = {}
+    if url.startswith("postgresql+asyncpg"):
+        connect_args["statement_cache_size"] = 0
+
     connectable = async_engine_from_config(
-        {"sqlalchemy.url": _resolve_url()},
+        {"sqlalchemy.url": url},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

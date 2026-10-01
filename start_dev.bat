@@ -27,11 +27,11 @@ if not exist "frontend\node_modules" (
     exit /b 1
 )
 
-REM --- Backend DB: prefer .env, else the docker-compose Postgres (:5433) ---
-REM The dev runtime uses the SAME Postgres as production (one dialect, no drift).
-REM Start it with:  docker compose up -d postgres
+REM --- Backend DB: prefer .env, else the local Postgres (:5432) ---
+REM If DATABASE_URL is defined in .env it is used as-is.
+REM Otherwise fall back to the standard local Postgres on port 5432.
 findstr /B "DATABASE_URL=" .env >nul 2>&1
-if errorlevel 1 set "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/energie_tunisie"
+if errorlevel 1 set "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/energie_tunisie"
 
 REM --- Dev-only auth/admin fallbacks (set real values in .env) -----------
 findstr /B "JWT_SECRET=" .env >nul 2>&1
@@ -43,12 +43,12 @@ REM --- Apply schema migrations, then launch backend ----------------------
 REM The schema is owned by Alembic; upgrade head is idempotent (no-op when
 REM already migrated, stamps create_all-era DBs).
 echo Applying schema migrations (alembic upgrade head) ...
-call .venv\Scripts\activate.bat && python -m alembic upgrade head
+.venv\Scripts\python.exe -m alembic upgrade head
 if errorlevel 1 (
     echo [WARNING] Migration step failed - the backend may not have its tables.
 )
 echo Starting backend (FastAPI) on http://localhost:8000 ...
-start "TunisiaEnergy-Backend" cmd /k "call .venv\Scripts\activate.bat && python -m uvicorn src.api.main:app --port 8000"
+start "TunisiaEnergy-Backend" cmd /k ".venv\Scripts\python.exe -m uvicorn src.api.main:app --port 8000"
 
 REM --- Launch frontend (Vite dev server) ---------------------------------
 echo Starting frontend (Vite) on http://localhost:5173 ...

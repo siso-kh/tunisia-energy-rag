@@ -58,21 +58,208 @@ BASE_URL = os.getenv("OPENAI_BASE_URL")
 
 CHROMA_PATH = "data/chroma_db"
 
-_client: Optional[AsyncOpenAI] = None
+# ---------------------------------------------------------------------------
+# Model Fallback Pool — round-robin with automatic dead-model detection
+# ---------------------------------------------------------------------------
+# When a model times out or returns an error it is marked "dead" for
+# DEAD_TTL seconds.  On the next LLM call the pool skips dead models and
+# tries the next one.  After DEAD_TTL the model is retried once.
+#
+# The primary model is configurable via LLM_MODEL env var (or the first
+# entry in FALLBACK_MODELS).  The fallback list is ordered by tested
+# speed on router.bynara.id.
+import time as _time
+from openai import APITimeoutError, APIStatusError
 
+_DEFAULT_MODELS = [
+    "deepseek-v4-flash",
+    "qwen3.8-27b",
+    "agnes-2.5-flash",
+    "glm-5.3-flash-free",
+    "laguna-s-2.1",
+    "stepfun-3.7-flash",
+    "nemotron-3-ultra",
+]
 
-def get_client() -> AsyncOpenAI:
-    """Returns the shared AsyncOpenAI client, transparently recreating it if it
-    was closed by an event-loop shutdown (prevents "client has been closed"
-    errors when the app runs across multiple event loops, e.g. in tests)."""
-    global _client
-    if _client is None or _client.is_closed:
-        _client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
-    return _client
-
-emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="paraphrase-multilingual-MiniLM-L12-v2"
+# Allow override via env: comma-separated list.
+_env_models = os.getenv("LLM_MODELS", "")
+_primary = os.getenv("LLM_MODEL", "")
+FALLBACK_MODELS: List[str] = (
+    [m.strip() for m in _env_models.split(",") if m.strip()]
+    if _env_models
+    else ([_primary] + [m for m in _DEFAULT_MODELS if m != _primary] if _primary else _DEFAULT_MODELS)
 )
+
+DEAD_TTL: float = float(os.getenv("LLM_DEAD_TTL", "120"))  # seconds before retrying a dead model
+
+
+class ModelFallbackPool:
+    """Thread-safe (asyncio-safe) model pool with automatic failover.
+
+    Usage::
+
+        pool = ModelFallbackPool(API_KEY, BASE_URL, FALLBACK_MODELS)
+        resp = await pool.chat(model="deepseek-v4-flash", messages=[...])
+        async for chunk in pool.chat_stream(model="deepseek-v4-flash", messages=[...]):
+            ...
+    """
+
+    def __init__(self, api_key: str, base_url: str, models: List[str]):
+        self._api_key = api_key
+        self._base_url = base_url
+        self._models = list(models)
+        self._client: Optional[AsyncOpenAI] = None
+        self._dead: Dict[str, float] = {}  # model -> timestamp when it died
+        self._current_idx = 0  # round-robin pointer
+
+    # -- client management ---------------------------------------------------
+
+    def _get_client(self) -> AsyncOpenAI:
+        if self._client is None or self._client.is_closed:
+            self._client = AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
+        return self._client
+
+    # -- model selection ------------------------------------------------------
+
+    def _is_alive(self, model: str) -> bool:
+        died_at = self._dead.get(model)
+        if died_at is None:
+            return True
+        if _time.time() - died_at > DEAD_TTL:
+            # Cooldown expired → allow one retry
+            del self._dead[model]
+            return True
+        return False
+
+    def _mark_dead(self, model: str) -> None:
+        self._dead[model] = _time.time()
+        logger.warning("Model %s marked dead for %.0fs", model, DEAD_TTL)
+
+    def _pick_model(self, preferred: Optional[str] = None) -> str:
+        """Return the best available model, preferring *preferred* if alive."""
+        if preferred and self._is_alive(preferred):
+            return preferred
+        # Round-robin through the list
+        for _ in range(len(self._models)):
+            candidate = self._models[self._current_idx]
+            self._current_idx = (self._current_idx + 1) % len(self._models)
+            if self._is_alive(candidate):
+                return candidate
+        # All dead — reset and try the first one anyway (worst case)
+        self._dead.clear()
+        return self._models[0]
+
+    # -- public API -----------------------------------------------------------
+
+    async def _call_with_hard_timeout(self, coro, timeout: float):
+        """Run *coro* with a hard asyncio task timeout.
+
+        httpx's read-timeout does not cancel connections that the server
+        keeps open (the socket stays alive but idle). ``asyncio.wait_for``
+        raises ``TimeoutError`` and lets us move on to the next model.
+        """
+        try:
+            return await asyncio.wait_for(coro, timeout=timeout)
+        except asyncio.TimeoutError:
+            raise APITimeoutError(request=None)  # type: ignore[call-arg]
+
+    async def chat(
+        self,
+        messages: List[Dict[str, str]],
+        preferred: Optional[str] = None,
+        timeout: float = 15,
+        **kwargs,
+    ) -> Tuple[Any, str]:
+        """Non-streaming chat with automatic failover.
+
+        Returns (response, model_used).
+        """
+        last_exc: Optional[Exception] = None
+        tried: set = set()
+        for _ in range(len(self._models)):
+            model = self._pick_model(preferred)
+            if model in tried:
+                break  # avoid infinite loop
+            tried.add(model)
+            try:
+                coro = self._get_client().chat.completions.create(
+                    model=model, messages=messages,
+                    timeout=timeout,
+                    **kwargs,
+                )
+                resp = await self._call_with_hard_timeout(coro, timeout)
+                return resp, model
+            except (APITimeoutError, APIStatusError, Exception) as exc:
+                last_exc = exc
+                self._mark_dead(model)
+                logger.warning("Model %s failed: %s — trying next", model, exc)
+        # Every model failed
+        raise last_exc  # type: ignore[misc]
+
+    async def chat_stream(
+        self,
+        messages: List[Dict[str, str]],
+        preferred: Optional[str] = None,
+        timeout: float = 15,
+        **kwargs,
+    ) -> Tuple[Any, str]:
+        """Streaming chat with automatic failover.
+
+        Returns (stream, model_used).  Caller must iterate the stream.
+        """
+        last_exc: Optional[Exception] = None
+        tried: set = set()
+        for _ in range(len(self._models)):
+            model = self._pick_model(preferred)
+            if model in tried:
+                break
+            tried.add(model)
+            try:
+                coro = self._get_client().chat.completions.create(
+                    model=model, messages=messages, stream=True,
+                    timeout=timeout,
+                    **kwargs,
+                )
+                stream = await self._call_with_hard_timeout(coro, timeout)
+                return stream, model
+            except (APITimeoutError, APIStatusError, Exception) as exc:
+                last_exc = exc
+                self._mark_dead(model)
+                logger.warning("Model %s failed (stream): %s — trying next", model, exc)
+        raise last_exc  # type: ignore[misc]
+
+    @property
+    def alive_models(self) -> List[str]:
+        """Models that are currently marked alive."""
+        return [m for m in self._models if self._is_alive(m)]
+
+
+# Singleton pool instance
+_llm_pool: Optional[ModelFallbackPool] = None
+
+
+def get_llm_pool() -> ModelFallbackPool:
+    global _llm_pool
+    if _llm_pool is None:
+        _llm_pool = ModelFallbackPool(API_KEY, BASE_URL, FALLBACK_MODELS)
+    return _llm_pool
+
+# Lazy initialization — avoids blocking the event loop at import time.
+# SentenceTransformerEmbeddingFunction downloads / loads model weights
+# which can take 10-15 s; deferring it lets uvicorn start immediately.
+_emb_fn = None
+
+
+def _get_emb_fn():
+    global _emb_fn
+    if _emb_fn is None:
+        _emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="paraphrase-multilingual-MiniLM-L12-v2"
+        )
+    return _emb_fn
+
+
+# ChromaDB client + collection are fast to initialise (<1 s) so keep them eager.
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 collection = chroma_client.get_collection(name="tunisia_energy_rag")
 
@@ -104,9 +291,9 @@ History:
 Follow-up Question: {user_query}
 Standalone Query:"""
 
-    # Direct LLM call to contextualize the prompt
-    response = await get_client().chat.completions.create(
-        model="mistral-large",
+    # LLM call with automatic failover across models
+    pool = get_llm_pool()
+    response, model_used = await pool.chat(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1
     )
@@ -115,9 +302,9 @@ Standalone Query:"""
     try:
         tokens, requests_ctr = _get_llm_metrics()
         if response.usage:
-            tokens.labels(model="mistral-large", type="prompt").inc(response.usage.prompt_tokens)
-            tokens.labels(model="mistral-large", type="completion").inc(response.usage.completion_tokens)
-        requests_ctr.labels(model="mistral-large", endpoint="rewrite").inc()
+            tokens.labels(model=model_used, type="prompt").inc(response.usage.prompt_tokens)
+            tokens.labels(model=model_used, type="completion").inc(response.usage.completion_tokens)
+        requests_ctr.labels(model=model_used, endpoint="rewrite").inc()
     except Exception:
         pass  # never let metrics break the pipeline
 
@@ -126,7 +313,7 @@ Standalone Query:"""
 
 def retrieve_context(user_query: str, n_results: int = 5) -> str:
     """Fetches chunks from ChromaDB and formats them into a single string."""
-    raw_query_vectors = emb_fn([user_query])
+    raw_query_vectors = _get_emb_fn()([user_query])
     
     formatted_query_vectors = [
         vector.tolist() if hasattr(vector, 'tolist') else list(vector) 
@@ -185,7 +372,7 @@ def extract_document_date(source_file: str) -> Optional[str]:
 
 def retrieve_context_structured(user_query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     """Fetches chunks from ChromaDB along with metadata (source, page, etc.)."""
-    raw_query_vectors = emb_fn([user_query])
+    raw_query_vectors = _get_emb_fn()([user_query])
     
     formatted_query_vectors = [
         vector.tolist() if hasattr(vector, 'tolist') else list(vector) 
@@ -257,11 +444,11 @@ async def generate_answer_stream(
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": user_query})
 
-    stream = await get_client().chat.completions.create(
-        model="mistral-large",
+    # Streaming LLM call with automatic failover
+    pool = get_llm_pool()
+    stream, model_used = await pool.chat_stream(
         messages=messages,
         temperature=0.1,
-        stream=True,
     )
     async for chunk in stream:
         if not chunk.choices:
@@ -269,9 +456,9 @@ async def generate_answer_stream(
             if hasattr(chunk, "usage") and chunk.usage:
                 try:
                     tokens, requests_ctr = _get_llm_metrics()
-                    tokens.labels(model="mistral-large", type="prompt").inc(chunk.usage.prompt_tokens)
-                    tokens.labels(model="mistral-large", type="completion").inc(chunk.usage.completion_tokens)
-                    requests_ctr.labels(model="mistral-large", endpoint="generate").inc()
+                    tokens.labels(model=model_used, type="prompt").inc(chunk.usage.prompt_tokens)
+                    tokens.labels(model=model_used, type="completion").inc(chunk.usage.completion_tokens)
+                    requests_ctr.labels(model=model_used, endpoint="generate").inc()
                 except Exception:
                     pass
             continue
@@ -300,8 +487,9 @@ async def generate_answer(user_query: str, context: str, chat_history: Optional[
             
     messages.append({"role": "user", "content": user_query})
 
-    response = await get_client().chat.completions.create(
-        model="mistral-large",
+    # LLM call with automatic failover across models
+    pool = get_llm_pool()
+    response, model_used = await pool.chat(
         messages=messages,
         temperature=0.1
     )
@@ -310,9 +498,9 @@ async def generate_answer(user_query: str, context: str, chat_history: Optional[
     try:
         tokens, requests_ctr = _get_llm_metrics()
         if response.usage:
-            tokens.labels(model="mistral-large", type="prompt").inc(response.usage.prompt_tokens)
-            tokens.labels(model="mistral-large", type="completion").inc(response.usage.completion_tokens)
-        requests_ctr.labels(model="mistral-large", endpoint="generate").inc()
+            tokens.labels(model=model_used, type="prompt").inc(response.usage.prompt_tokens)
+            tokens.labels(model=model_used, type="completion").inc(response.usage.completion_tokens)
+        requests_ctr.labels(model=model_used, endpoint="generate").inc()
     except Exception:
         pass
 

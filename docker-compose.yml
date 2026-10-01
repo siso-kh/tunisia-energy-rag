@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    command: python -m src.database.seed
+    command: sh -c "alembic upgrade head && python -m src.database.seed"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/energie_tunisie
     depends_on:
