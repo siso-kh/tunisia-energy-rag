@@ -40,6 +40,14 @@ def _sync_url(url: str) -> str:
     """Convert an async driver URL to its sync driver for inspection."""
     # Strip the async driver segment (e.g. +asyncpg, +aiosqlite).
     url = url.replace("+asyncpg", "").replace("+aiosqlite", "")
+    # Force the sync psycopg2 dialect. PSYCOPG/PSYCOPG2 INCOMPATIBILITY:
+    # The app's DATABASE_URL is a POSTGRESQL+ASYNCPG URL, and psycopg2 is the
+    # ONLY sync driver available (psycopg is async-only). When the URL keeps
+    # '+asyncpg', SQLAlchemy resolves the dialect as 'postgresql+asyncpg' and
+    # tries to import the async 'psycopg' module (which isn't in the image)
+    # -> 'No module named psycopg'. Force the dialect to psycopg2 so the sync
+    # engine uses psycopg2-binary (already in requirements.runtime.txt).
+    url = url.replace("postgresql+asyncpg", "postgresql+psycopg2")
     # Remove the asyncpg-only query param (asyncpg accepts only 'ssl=require');
     # psycopg2 needs 'sslmode'. PRESERVE the DB name and credentials.
     url = re.sub(r"[?&]ssl(?:mode)?=require", "sslmode=require", url)
