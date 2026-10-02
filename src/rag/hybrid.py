@@ -94,12 +94,17 @@ def rrf_fuse(
 # Chroma-coupled corpus access (lazy, cached)
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=1)
 def _get_corpus():
     """Fetch all Chroma documents + metadata once, cached for the process.
 
     Returns ``(ids, texts, meta_by_id)`` where meta_by_id maps each doc id to
     its metadata dict ({} when missing). Deliberately imported inside the
     function so importing this module never touches ChromaDB.
+
+    The cache is essential: this pulls the *entire* corpus (~15k documents plus
+    metadata) out of SQLite. Called without caching, every chat request re-read
+    the whole index from disk before the query could even be embedded.
     """
     from src.rag.retrieve import collection
 

@@ -69,17 +69,21 @@ CHROMA_PATH = "data/chroma_db"
 # entry in FALLBACK_MODELS).  The fallback list is ordered by tested
 # speed on router.bynara.id.
 import time as _time
-from openai import APITimeoutError, APIStatusError
+from openai import APITimeoutError, APIStatusError, APIError
 
+# Ordered by measured reliability against the live provider (6 streaming calls
+# each, same payload the pipeline sends):
+#   agnes-2.5-flash  6/6     laguna-s-2.1   6/6     combo/freemodels 5/6
+#   deepseek-v4-flash, qwen3.8-27b, stepfun-3.7-flash -> 429 per-model quota
+#   glm-5.3-flash-free, nemotron-3-ultra             -> 404 not served
+#
+# The five unusable entries were previously first in the list, so most requests
+# spent their time walking dead models and then failing over. They are gone;
+# override with LLM_MODELS if your provider changes.
 _DEFAULT_MODELS = [
-    "combo/freemodels",
-    "deepseek-v4-flash",
-    "qwen3.8-27b",
     "agnes-2.5-flash",
-    "glm-5.3-flash-free",
     "laguna-s-2.1",
-    "stepfun-3.7-flash",
-    "nemotron-3-ultra",
+    "combo/freemodels",
 ]
 
 # Allow override via env: comma-separated list.
@@ -92,6 +96,15 @@ FALLBACK_MODELS: List[str] = (
 )
 
 DEAD_TTL: float = float(os.getenv("LLM_DEAD_TTL", "120"))  # seconds before retrying a dead model
+# Quota/rate-limit failures are not fixed by waiting two minutes, so they get a
+# much longer cooldown than ordinary transient errors.
+QUOTA_TTL: float = float(os.getenv("LLM_QUOTA_TTL", "900"))
+
+# Some router endpoints reject a fraction of otherwise valid requests (measured
+# at ~17% for combo/freemodels, with no HTTP status attached). Retrying the
+# same model once converts those hard failures into successes; persistent
+# errors are still quarantined and failed over as before.
+SAME_MODEL_RETRIES: int = int(os.getenv("LLM_SAME_MODEL_RETRIES", "1"))
 
 # Per-model timeouts (seconds). LLM_CALL_TIMEOUT bounds non-streaming calls
 # (e.g. query rewriting); LLM_STREAM_TIMEOUT bounds the time-to-first-token
@@ -118,6 +131,7 @@ class ModelFallbackPool:
         self._models = list(models)
         self._client: Optional[AsyncOpenAI] = None
         self._dead: Dict[str, float] = {}  # model -> timestamp when it died
+        self._disabled: set = set()  # models the provider does not serve at all
         self._current_idx = 0  # round-robin pointer
 
     # -- client management ---------------------------------------------------
@@ -127,24 +141,81 @@ class ModelFallbackPool:
             # 60s timeout: without this the client can hang indefinitely on a slow
             # or unresponsive provider, which is what caused the 5-minute
             # streaming deadlock observed in production.
+            #
+            # max_retries=1: the SDK otherwise retries internally with
+            # exponential backoff. Multiplied across a failover pool of dead
+            # models, those hidden retries dominated the end-to-end latency.
             self._client = AsyncOpenAI(
                 api_key=self._api_key,
                 base_url=self._base_url,
                 timeout=60,
+                max_retries=int(os.getenv("LLM_MAX_RETRIES", "1")),
             )
         return self._client
 
     # -- model selection ------------------------------------------------------
 
     def _is_alive(self, model: str) -> bool:
+        if model in self._disabled:
+            return False
         died_at = self._dead.get(model)
         if died_at is None:
             return True
         if _time.time() - died_at > DEAD_TTL:
-            # Cooldown expired → allow one retry
+            # Cooldown expired -> allow one retry
             del self._dead[model]
             return True
         return False
+
+    @staticmethod
+    def _is_retryable(exc: BaseException) -> bool:
+        """Is this failure worth retrying on the *same* model?
+
+        True for timeouts, 5xx, and status-less ``APIError`` rejections from a
+        router that intermittently refuses otherwise valid requests. False for
+        anything that will not change on a second identical attempt (401/402/
+        404/429), which must go straight to failover/quarantine.
+        """
+        if isinstance(exc, (APITimeoutError, asyncio.TimeoutError, ConnectionError)):
+            return True
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status is not None:
+            return status >= 500 or status == 408
+        # No status: a generic APIError such as the router's
+        # "The model rejected this request."
+        return isinstance(exc, APIError)
+
+    def _quarantine(self, model: str, exc: BaseException) -> None:
+        """React to a failure according to its cause.
+
+        A single flat cooldown treated every error as equally transient, so a
+        model the provider does not serve at all (HTTP 404) was retried every
+        120 s forever, and a route with an exhausted per-model quota (402/429)
+        came back after two minutes and failed again. Measured against the live
+        provider, six of the eight configured models were in one of those two
+        states, so most requests spent their time walking dead entries.
+        """
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        text = f"{type(exc).__name__} {exc}".lower()
+
+        if status == 404 or "model does not exist" in text or "not_found" in text:
+            self._disabled.add(model)
+            self._dead.pop(model, None)
+            logger.warning("Model %s disabled: provider does not serve it.", model)
+            return
+
+        if status in (402, 429) or "payment required" in text or (
+            "rate_limit" in text or "insufficient" in text or "quota" in text
+        ):
+            self._dead[model] = _time.time()
+            logger.warning(
+                "Model %s quota/rate limited; pausing for %.0fs",
+                model, QUOTA_TTL,
+            )
+            return
+
+        self._dead[model] = _time.time()
+        logger.warning("Model %s marked dead for %.0fs", model, DEAD_TTL)
 
     def _mark_dead(self, model: str) -> None:
         self._dead[model] = _time.time()
@@ -152,17 +223,28 @@ class ModelFallbackPool:
 
     def _pick_model(self, preferred: Optional[str] = None) -> str:
         """Return the best available model, preferring *preferred* if alive."""
-        if preferred and self._is_alive(preferred):
+        usable = [m for m in self._models if m not in self._disabled]
+        if not usable:
+            # Every configured model was reported missing. Allow a full retry
+            # rather than serving nothing, and surface it loudly.
+            logger.warning("All models disabled by 404; resetting the pool.")
+            self._disabled.clear()
+            self._dead.clear()
+            usable = list(self._models)
+
+        if preferred and preferred in usable and self._is_alive(preferred):
             return preferred
-        # Round-robin through the list
-        for _ in range(len(self._models)):
-            candidate = self._models[self._current_idx]
-            self._current_idx = (self._current_idx + 1) % len(self._models)
+
+        for _ in range(len(usable)):
+            candidate = usable[self._current_idx % len(usable)]
+            self._current_idx = (self._current_idx + 1) % len(usable)
             if self._is_alive(candidate):
                 return candidate
-        # All dead — reset and try the first one anyway (worst case)
+
+        # Every remaining model is cooling down. Forget the cooldowns and use
+        # the first one rather than failing the request outright.
         self._dead.clear()
-        return self._models[0]
+        return usable[0]
 
     # -- public API -----------------------------------------------------------
 
@@ -196,18 +278,26 @@ class ModelFallbackPool:
             if model in tried:
                 break  # avoid infinite loop
             tried.add(model)
-            try:
-                coro = self._get_client().chat.completions.create(
-                    model=model, messages=messages,
-                    timeout=timeout,
-                    **kwargs,
-                )
-                resp = await self._call_with_hard_timeout(coro, timeout)
-                return resp, model
-            except (APITimeoutError, APIStatusError, Exception) as exc:
-                last_exc = exc
-                self._mark_dead(model)
-                logger.warning("Model %s failed: %s — trying next", model, exc)
+            for attempt in range(SAME_MODEL_RETRIES + 1):
+                try:
+                    coro = self._get_client().chat.completions.create(
+                        model=model, messages=messages,
+                        timeout=timeout,
+                        **kwargs,
+                    )
+                    resp = await self._call_with_hard_timeout(coro, timeout)
+                    return resp, model
+                except (APITimeoutError, APIStatusError, Exception) as exc:
+                    last_exc = exc
+                    if attempt < SAME_MODEL_RETRIES and self._is_retryable(exc):
+                        logger.warning(
+                            "Model %s transient failure (attempt %d/%d): %s — retrying",
+                            model, attempt + 1, SAME_MODEL_RETRIES + 1, exc,
+                        )
+                        continue
+                    self._quarantine(model, exc)
+                    logger.warning("Model %s failed: %s — trying next", model, exc)
+                    break
         # Every model failed
         raise last_exc  # type: ignore[misc]
 
@@ -233,18 +323,26 @@ class ModelFallbackPool:
             if model in tried:
                 break
             tried.add(model)
-            try:
-                coro = self._get_client().chat.completions.create(
-                    model=model, messages=messages, stream=True,
-                    timeout=timeout,
-                    **kwargs,
-                )
-                stream = await self._call_with_hard_timeout(coro, timeout)
-                return stream, model
-            except (APITimeoutError, APIStatusError, Exception) as exc:
-                last_exc = exc
-                self._mark_dead(model)
-                logger.warning("Model %s failed (stream): %s — trying next", model, exc)
+            for attempt in range(SAME_MODEL_RETRIES + 1):
+                try:
+                    coro = self._get_client().chat.completions.create(
+                        model=model, messages=messages, stream=True,
+                        timeout=timeout,
+                        **kwargs,
+                    )
+                    stream = await self._call_with_hard_timeout(coro, timeout)
+                    return stream, model
+                except (APITimeoutError, APIStatusError, Exception) as exc:
+                    last_exc = exc
+                    if attempt < SAME_MODEL_RETRIES and self._is_retryable(exc):
+                        logger.warning(
+                            "Model %s transient failure (attempt %d/%d): %s — retrying",
+                            model, attempt + 1, SAME_MODEL_RETRIES + 1, exc,
+                        )
+                        continue
+                    self._quarantine(model, exc)
+                    logger.warning("Model %s failed (stream): %s — trying next", model, exc)
+                    break
         raise last_exc  # type: ignore[misc]
 
     # this prevents the event loop from blocking for minutes without returning.
@@ -252,8 +350,13 @@ class ModelFallbackPool:
 
     @property
     def alive_models(self) -> List[str]:
-        """Models that are currently marked alive."""
+        """Models that are currently usable (not disabled, not cooling down)."""
         return [m for m in self._models if self._is_alive(m)]
+
+    @property
+    def disabled_models(self) -> List[str]:
+        """Models the provider reported as non-existent; never retried again."""
+        return sorted(self._disabled)
 
 
 # Singleton pool instance

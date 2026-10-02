@@ -76,7 +76,8 @@ def get_client() -> OpenAI:
 # always talk to a model the provider actually serves.
 TRIAGE_TIMEOUT = float(os.getenv("TRIAGE_TIMEOUT", "30"))
 
-_TRIAGE_DEFAULT_MODELS = ["combo/freemodels", "agnes-2.5-flash", "deepseek-v4-flash"]
+# Matches the chat pool: only models measured as usable on this provider.
+_TRIAGE_DEFAULT_MODELS = ["agnes-2.5-flash", "laguna-s-2.1", "combo/freemodels"]
 
 
 def _triage_models() -> list:

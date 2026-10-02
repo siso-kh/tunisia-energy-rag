@@ -52,7 +52,6 @@ from src.ingestion.admin_ingest import (
 )
 from src.ingestion.research import crawl_website_for_pdfs, download_pdf_from_source, ingest_downloaded_pdf
 from src.rag.retrieve import collection, run_pipeline, stream_pipeline
-from src.rag.hybrid import warm_cross_encoder
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -151,19 +150,13 @@ async def _outage_cleanup_loop() -> None:
 async def lifespan(app: FastAPI):
     # The schema is owned by Alembic migrations (see src/database/schema.py);
     # the app no longer creates or alters tables at startup.
-
-    # Warm the cross-encoder reranker off the request path. When
-    # RERANK_ENABLED is left unset it defaults to true, so the ~470 MB
-    # multilingual model would otherwise be downloaded inside the first
-    # chat query and make it appear to hang for minutes. Failure is cached
-    # and retrieval degrades to the fused ranking order.
-    if os.getenv("WARM_RERANKER_ON_STARTUP", "true").lower() in ("1", "true", "yes"):
-        try:
-            await run_in_threadpool(warm_cross_encoder)
-        except Exception:  # noqa: BLE001 - never block boot on an optional feature
-            logger.warning("Reranker warm-up failed; retrieval will use fused order.",
-                           exc_info=True)
-
+    #
+    # The cross-encoder reranker is deliberately NOT preloaded here. Loading a
+    # torch model from a threadpool worker races with the embedding function's
+    # own native calls and crashed the interpreter with an access violation,
+    # and awaiting it inline would block boot on a ~470 MB download. Instead
+    # hybrid._load_cross_encoder() memoizes its attempt, so the model is loaded
+    # at most once, lazily, and a failure degrades to the fused ranking order.
     task = asyncio.create_task(_outage_cleanup_loop())
     try:
         yield
@@ -175,6 +168,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Tunisia Energy RAG API", lifespan=lifespan)
 app.include_router(auth_router)
+
+
+def _describe_error(exc: BaseException) -> str:
+    """Render a stream failure for the client.
+
+    Previously every failure collapsed into "An internal error occurred during
+    processing.", which made provider outages, model-not-found, quota errors
+    and retrieval bugs indistinguishable from the outside. Report the specific
+    cause; the full traceback is still logged server-side.
+    """
+    name = type(exc).__name__
+    detail = str(exc).strip()
+    if not detail:
+        return f"Request failed ({name})."
+    # Keep it short: this is rendered in the chat bubble.
+    return f"Request failed ({name}): {detail[:300]}"
 
 # CORS (env-driven origins) + security headers + rate limiting.
 add_security_middlewares(app)
@@ -511,7 +520,7 @@ async def chat_stream_endpoint(
                         yield _sse(event)
                 except Exception as e:
                     logger.exception("Stream pipeline failed: %s", e)
-                    yield _sse({"type": "error", "message": "An internal error occurred during processing."})
+                    yield _sse({"type": "error", "message": _describe_error(e)})
 
     # Increase timeout to 5 minutes: without a provider-side timeout, LLM\r
     # streams can take several minutes, especially with the fallback pool.\r
@@ -528,7 +537,7 @@ async def chat_stream_endpoint(
             yield _sse({"type": "error", "message": "Request timed out. Please try a simpler query."})
         except Exception as e:
             logger.exception("Stream timeout/error: %s", e)
-            yield _sse({"type": "error", "message": "An error occurred during processing."})
+            yield _sse({"type": "error", "message": _describe_error(e)})
 
     return StreamingResponse(
         event_generator_with_timeout(),
