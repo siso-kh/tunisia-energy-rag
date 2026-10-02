@@ -103,7 +103,15 @@ def test_cache_info_reports_hits(stub_collection):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def reset_reranker():
+def reset_reranker(monkeypatch):
+    """Pin RERANK_ENABLED on for the load tests and clear cached state.
+
+    The module reads RERANK_ENABLED at import time, so these tests must not
+    inherit it from the ambient environment: with it off, warm_cross_encoder()
+    short-circuits before attempting a load and the retry assertions would be
+    vacuous.
+    """
+    monkeypatch.setattr(hybrid, "RERANK_ENABLED", True)
     hybrid._cross_encoder = None
     hybrid._cross_encoder_loaded = False
     hybrid._cross_encoder_attempted = False
@@ -184,3 +192,60 @@ def test_warm_cross_encoder_respects_the_kill_switch(monkeypatch, reset_reranker
     monkeypatch.setattr(hybrid, "RERANK_ENABLED", False)
     assert hybrid.warm_cross_encoder() is False
     assert attempts == []
+
+
+# ---------------------------------------------------------------------------
+# Reranking is off by default, and never downloads at request time
+# ---------------------------------------------------------------------------
+
+def test_rerank_is_disabled_by_default():
+    """The deployment image has no cross-encoder, so the default must be off.
+
+    Defaulting to enabled meant a live query tried to pull ~470 MB from the
+    Hugging Face Hub inside the request: the stream emitted "searching", hung,
+    and died with no sources, no tokens and no error frame.
+    """
+    assert hybrid.RERANK_ENABLED is False
+
+
+def test_cross_encoder_is_never_downloaded_at_request_time(monkeypatch, reset_reranker):
+    """Loading must use the local cache only unless a download is opted in."""
+    seen = {}
+
+    class Recorder:
+        def __init__(self, model, **kwargs):
+            seen["model"] = model
+            seen["kwargs"] = kwargs
+
+    import sys
+    import types
+
+    module = types.ModuleType("sentence_transformers")
+    module.CrossEncoder = Recorder
+    monkeypatch.setitem(sys.modules, "sentence_transformers", module)
+
+    hybrid.warm_cross_encoder()
+
+    assert seen["kwargs"].get("local_files_only") is True, (
+        "the reranker may download ~470 MB while serving a request"
+    )
+
+
+def test_download_requires_an_explicit_opt_in(monkeypatch, reset_reranker):
+    seen = {}
+
+    class Recorder:
+        def __init__(self, model, **kwargs):
+            seen["kwargs"] = kwargs
+
+    import sys
+    import types
+
+    module = types.ModuleType("sentence_transformers")
+    module.CrossEncoder = Recorder
+    monkeypatch.setitem(sys.modules, "sentence_transformers", module)
+
+    monkeypatch.setattr(hybrid, "RERANK_ALLOW_DOWNLOAD", True)
+    hybrid.warm_cross_encoder()
+
+    assert seen["kwargs"].get("local_files_only") is False

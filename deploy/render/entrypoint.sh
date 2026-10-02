@@ -48,13 +48,24 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
     echo "[entrypoint] WARNING: DATABASE_URL is not set — DB-backed features will fail."
 fi
 
+# Migrations are NOT fatal. Chat, retrieval and /health do not touch Postgres,
+# so an unreachable or misconfigured DATABASE_URL must not stop the container
+# from serving them. Exiting here previously turned one bad secret into a total
+# outage: the container died, Render had no live deploy, and every route
+# answered 502 with `x-render-routing: no-deploy`.
 echo "[entrypoint] applying database migrations (alembic upgrade head)..."
-alembic upgrade head || { echo "[entrypoint] FATAL: migrations failed — container cannot boot without a working DB."; exit 1; }
+if ! alembic upgrade head; then
+    echo "[entrypoint] WARNING: migrations failed — continuing."
+    echo "[entrypoint]   DB-backed features (history, admin) will be degraded,"
+    echo "[entrypoint]   but chat and retrieval do not require the database."
+fi
 
 # psycopg2-binary is in requirements.runtime.txt specifically so this step can
 # run: ensure_schema() inspects the DB through a *sync* SQLAlchemy engine.
 echo "[entrypoint] seeding demo data (idempotent)..."
-python -m src.database.seed || echo "[entrypoint] WARNING: seeding skipped/failed — continuing anyway"# --- 4. Processes -----------------------------------------------------
+python -m src.database.seed || echo "[entrypoint] WARNING: seeding skipped/failed — continuing anyway"
+
+# --- 4. Processes -----------------------------------------------------
 echo "[entrypoint] launching uvicorn on 127.0.0.1:8000..."
 uvicorn src.api.main:app --host 127.0.0.1 --port 8000 &
 UVI_PID=$!

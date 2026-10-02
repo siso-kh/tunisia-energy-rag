@@ -34,7 +34,19 @@ RRF_CONSTANT = 60
 # Cross-encoder used for reranking (multilingual MARCO: ~13 languages incl.
 # French and Arabic). Lazy-loaded on first rerank; override via RERANK_MODEL.
 DEFAULT_RERANK_MODEL = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
-RERANK_ENABLED = os.getenv("RERANK_ENABLED", "true").lower() in ("1", "true", "yes")
+# Defaults to OFF. The deployment image deliberately does not bake the ~470 MB
+# cross-encoder (Dockerfile ARG RERANK_ENABLED=false), so defaulting to "true"
+# meant a live query tried to download it from the Hugging Face Hub inside a
+# request thread. Observed in production: the stream emitted "searching", hung
+# ~48s, then died with no sources, no tokens and no error frame. Enabling this
+# requires baking the model into the image, not just setting the flag.
+RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() in ("1", "true", "yes")
+# Even when reranking is enabled, only load the model from the local cache.
+# Downloading ~470 MB while serving a request is what produced the silent hang;
+# opt in explicitly with RERANK_ALLOW_DOWNLOAD=true once the image ships it.
+RERANK_ALLOW_DOWNLOAD = os.getenv("RERANK_ALLOW_DOWNLOAD", "false").lower() in (
+    "1", "true", "yes",
+)
 RERANK_MODEL = os.getenv("RERANK_MODEL", DEFAULT_RERANK_MODEL)
 RERANK_TOP_K = int(os.getenv("RERANK_TOP_K", "10"))
 
@@ -227,7 +239,10 @@ def _load_cross_encoder():
 
         logger.info("Loading cross-encoder reranker %s (first use only)...", RERANK_MODEL)
         _cross_encoder_attempted = True
-        _cross_encoder = CrossEncoder(RERANK_MODEL)
+        _cross_encoder = CrossEncoder(
+            RERANK_MODEL,
+            local_files_only=not RERANK_ALLOW_DOWNLOAD,
+        )
         _cross_encoder_loaded = True
     if not _cross_encoder_loaded:
         raise RuntimeError("cross-encoder previously failed to load")
