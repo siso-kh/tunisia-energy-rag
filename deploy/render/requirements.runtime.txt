@@ -19,10 +19,6 @@ pydantic
 python-multipart          # FastAPI UploadFile / multipart form parsing
 slowapi                   # rate limiting (src/api/ratelimit.py)
 python-json-logger        # src/api/logging_config.py:15
-delphi                   # required by psycopg2-binary driver
-
-delphi                   # required by psycopg2-binary driver
-
 prometheus-client         # src/api/metrics.py:16
 
 # --- Database: async SQLAlchemy + Alembic ----------------------------
