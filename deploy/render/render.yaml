@@ -35,7 +35,7 @@ services:
 
     envVars:
       # --- Required ---------------------------------------------------
-      - key: DATABASE_URL        # postgresql+asyncpg://...?ssl=require
+      - key: DATABASE_URL        # postgresql://...?sslmode=require (sync format for ensure_schema)
         sync: false
       - key: CUSTOM_API_KEY      # Mistral / OpenAI-compatible key
         sync: false

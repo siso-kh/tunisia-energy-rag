@@ -13,6 +13,7 @@ re-created. Both paths are idempotent.
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -37,7 +38,12 @@ APP_TABLES = {"users", "conversations", "messages", "settings", "outage_reports"
 
 def _sync_url(url: str) -> str:
     """Convert an async driver URL to its sync driver for inspection."""
-    return url.replace("+asyncpg", "").replace("+aiosqlite", "")
+    # Strip the async driver segment (e.g. +asyncpg, +aiosqlite).
+    url = url.replace("+asyncpg", "").replace("+aiosqlite", "")
+    # Remove the asyncpg-only query param (asyncpg accepts only 'ssl=require');
+    # psycopg2 needs 'sslmode'. PRESERVE the DB name and credentials.
+    url = re.sub(r"[?&]ssl(?:mode)?=require", "sslmode=require", url)
+    return url
 
 
 def _alembic_config(database_url: str) -> Config:

@@ -10,7 +10,8 @@
 #    container exits so the platform restarts it.
 #
 # Requires DATABASE_URL (Render secret), e.g.
-#   postgresql+asyncpg://user:pass@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?ssl=require
+#   postgresql://user:pass@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+#   (sync format: psycopg2 in ensure_schema can't parse '+asyncpg' or 'ssl=require')
 
 set -euo pipefail
 
@@ -48,7 +49,7 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
 fi
 
 echo "[entrypoint] applying database migrations (alembic upgrade head)..."
-alembic upgrade head || echo "[entrypoint] WARNING: migrations failed — continuing anyway"
+alembic upgrade head || { echo "[entrypoint] FATAL: migrations failed — container cannot boot without a working DB."; exit 1; }
 
 # psycopg2-binary is in requirements.runtime.txt specifically so this step can
 # run: ensure_schema() inspects the DB through a *sync* SQLAlchemy engine.
