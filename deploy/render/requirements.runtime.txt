@@ -50,6 +50,18 @@ requests
 httpx                     # openai's transport
 pdfplumber                # src/utils/triage.py:6 (MODULE level — must stay)
 
+# --- Chunking + indexing -------------------------------------------
+# Pure-python, pulls no heavy transitive deps. Required by
+# src/ingestion/indexer.py:89 (RecursiveCharacterTextSplitter); without it
+# every admin ingest ends in "No module named 'langchain_text_splitters'"
+# and the document is triaged but never indexed.
+langchain-text-splitters
+
+# NOTE: OCR is deliberately NOT installed here. src/ingestion/indexer.py
+# imports easyocr/pdf2image lazily and degrades to skipping Arabic pages when
+# they are absent, so text-based PDFs still index in the deployed image.
+# Add easyocr + poppler-utils to the image if OCR of Arabic PDFs is needed.
+
 # torch is intentionally NOT listed here: the Dockerfile installs the
 # CPU-only wheel first so this file resolves against it instead of
 # pulling the ~2.5 GB CUDA build from PyPI.

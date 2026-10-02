@@ -191,16 +191,41 @@ def retrieve_hybrid(query: str, n_results: int = DEFAULT_FINAL_K) -> List[Dict[s
 
 _cross_encoder = None
 _cross_encoder_loaded = False
+# Set once a load has been attempted, successfully or not. Without this the
+# loader retried the ~470 MB download on *every* request whenever the attempt
+# failed (offline container, HF rate limit, missing weight files), turning a
+# one-off problem into a multi-minute stall on all subsequent queries.
+_cross_encoder_attempted = False
+
+
+def warm_cross_encoder() -> bool:
+    """Load the cross-encoder ahead of the first request.
+
+    Returns True if the reranker is available. Safe to call repeatedly: the
+    download is attempted at most once per process, and a failure is cached so
+    later calls degrade instantly to the fused ranking order.
+    """
+    if not RERANK_ENABLED:
+        return False
+    try:
+        _load_cross_encoder()
+        return True
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Cross-encoder unavailable (%s) — reranking disabled.", e)
+        return False
 
 
 def _load_cross_encoder():
-    global _cross_encoder, _cross_encoder_loaded
-    if not _cross_encoder_loaded:
+    global _cross_encoder, _cross_encoder_loaded, _cross_encoder_attempted
+    if not _cross_encoder_loaded and not _cross_encoder_attempted:
         from sentence_transformers import CrossEncoder
 
         logger.info("Loading cross-encoder reranker %s (first use only)...", RERANK_MODEL)
+        _cross_encoder_attempted = True
         _cross_encoder = CrossEncoder(RERANK_MODEL)
         _cross_encoder_loaded = True
+    if not _cross_encoder_loaded:
+        raise RuntimeError("cross-encoder previously failed to load")
     return _cross_encoder
 
 

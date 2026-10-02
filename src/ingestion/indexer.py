@@ -79,6 +79,69 @@ def _ocr_page(pdf_path: Path, page_number: int) -> str:
         return ""
 
 
+def _extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
+    """Extract per-page text, OCRing only the pages that need it.
+
+    This mirrors ``src.ingestion.ingest_chunks.process_pdf`` but is written out
+    here so the deployed image does not need that module's module-level
+    easyocr/pdf2image/torch imports. Those are absent from
+    ``deploy/render/requirements.runtime.txt``, so importing it made every
+    admin ingest fail after triage succeeded.
+
+    Uses the same splitting settings and the same Arabic-presentation-form
+    detection as the batch pipeline.
+    """
+    import pdfplumber
+
+    filename = pdf_path.name
+    low = filename.lower()
+    is_tunisia = "tunisia" in low or "tunisie" in low or "tn" in low
+
+    pages_data: List[Dict[str, Any]] = []
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_idx, page in enumerate(pdf.pages, start=1):
+                raw_text = ""
+                needs_ocr = False
+                try:
+                    raw_text = page.extract_text() or ""
+                    needs_ocr = _detects_presentation_forms(raw_text, threshold=1)
+                except Exception as e:  # noqa: BLE001 - malformed page, try OCR
+                    logger.warning(
+                        "PDF structure error on %s (page %d): %s. Forcing OCR.",
+                        filename, page_idx, e,
+                    )
+                    needs_ocr = True
+
+                if needs_ocr:
+                    logger.info("Running OCR on %s (page %d)...", filename, page_idx)
+                    clean_text = _ocr_page(pdf_path, page_idx)
+                    if not clean_text and raw_text.strip():
+                        # OCR is unavailable in the deployed image (no easyocr /
+                        # pdf2image). Indexing the imperfect embedded text beats
+                        # dropping the page: previously an Arabic PDF produced
+                        # zero chunks and was reported as "indexed nothing".
+                        logger.info(
+                            "OCR unavailable for %s (page %d); "
+                            "falling back to embedded text.", filename, page_idx,
+                        )
+                        clean_text = raw_text.strip()
+                else:
+                    clean_text = raw_text.strip()
+
+                if clean_text:
+                    pages_data.append({
+                        "text": clean_text,
+                        "source": filename,
+                        "page": page_idx,
+                        "is_tunisia_specific": is_tunisia,
+                    })
+    except Exception as e:  # noqa: BLE001
+        logger.error("Fatal error opening %s: %s. Skipping entirely.", filename, e)
+
+    return pages_data
+
+
 def chunk_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
     """Split a PDF into overlapping text chunks (same settings as the batch pipeline).
 
@@ -88,15 +151,13 @@ def chunk_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
     """
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    from src.ingestion.ingest_chunks import process_pdf
-
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
         separators=SEPARATORS,
     )
     chunks: List[Dict[str, Any]] = []
-    for record in process_pdf(pdf_path):
+    for record in _extract_pages(pdf_path):
         for chunk_text in splitter.split_text(record["text"]):
             chunks.append(
                 {

@@ -52,6 +52,7 @@ from src.ingestion.admin_ingest import (
 )
 from src.ingestion.research import crawl_website_for_pdfs, download_pdf_from_source, ingest_downloaded_pdf
 from src.rag.retrieve import collection, run_pipeline, stream_pipeline
+from src.rag.hybrid import warm_cross_encoder
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -150,6 +151,19 @@ async def _outage_cleanup_loop() -> None:
 async def lifespan(app: FastAPI):
     # The schema is owned by Alembic migrations (see src/database/schema.py);
     # the app no longer creates or alters tables at startup.
+
+    # Warm the cross-encoder reranker off the request path. When
+    # RERANK_ENABLED is left unset it defaults to true, so the ~470 MB
+    # multilingual model would otherwise be downloaded inside the first
+    # chat query and make it appear to hang for minutes. Failure is cached
+    # and retrieval degrades to the fused ranking order.
+    if os.getenv("WARM_RERANKER_ON_STARTUP", "true").lower() in ("1", "true", "yes"):
+        try:
+            await run_in_threadpool(warm_cross_encoder)
+        except Exception:  # noqa: BLE001 - never block boot on an optional feature
+            logger.warning("Reranker warm-up failed; retrieval will use fused order.",
+                           exc_info=True)
+
     task = asyncio.create_task(_outage_cleanup_loop())
     try:
         yield
