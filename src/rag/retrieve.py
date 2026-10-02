@@ -117,7 +117,14 @@ class ModelFallbackPool:
 
     def _get_client(self) -> AsyncOpenAI:
         if self._client is None or self._client.is_closed:
-            self._client = AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
+            # 60s timeout: without this the client can hang indefinitely on a slow\r
+            # or unresponsive provider, which is what caused the 5-minute\r
+            # streaming deadlock observed in production.\r
+            self._client = AsyncOpenAI(\r
+                api_key=self._api_key,\r
+                base_url=self._base_url,\r
+                timeout=60,\r
+            )\r
         return self._client
 
     # -- model selection ------------------------------------------------------
@@ -229,8 +236,7 @@ class ModelFallbackPool:
                 logger.warning("Model %s failed (stream): %s — trying next", model, exc)
         raise last_exc  # type: ignore[misc]
 
-    @property
-    def alive_models(self) -> List[str]:
+    # Hard per-request timeout: 60s. If the LLM endpoint is slow or hung,\n    # this prevents the event loop from blocking for minutes without returning.\n    TIMEOUT: float = 60.0\n\n    @property\n    def alive_models(self) -> List[str]:
         """Models that are currently marked alive."""
         return [m for m in self._models if self._is_alive(m)]
 

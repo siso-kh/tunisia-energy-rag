@@ -499,10 +499,13 @@ async def chat_stream_endpoint(
                     logger.exception("Stream pipeline failed: %s", e)
                     yield _sse({"type": "error", "message": "An internal error occurred during processing."})
 
-    # L12 FIX: Add 120 second timeout
+    # Increase timeout to 5 minutes: without a provider-side timeout, LLM\r
+    # streams can take several minutes, especially with the fallback pool.\r
+    # The per-model timeout is 60s in retrieve.py, and with 8 fallback models,\r
+    # a full cascade can exceed 2 minutes.\r
     async def event_generator_with_timeout():
         try:
-            async with asyncio.timeout(120):  # 2 minutes max
+            async with asyncio.timeout(300):  # 5 minutes max
                 async for sse_frame in event_generator():
                     # event_generator() already yields SSE-formatted strings,
                     # so yield them directly — do NOT wrap in _sse() again.
