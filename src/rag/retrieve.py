@@ -93,6 +93,13 @@ FALLBACK_MODELS: List[str] = (
 
 DEAD_TTL: float = float(os.getenv("LLM_DEAD_TTL", "120"))  # seconds before retrying a dead model
 
+# Per-model timeouts (seconds). LLM_CALL_TIMEOUT bounds non-streaming calls
+# (e.g. query rewriting); LLM_STREAM_TIMEOUT bounds the time-to-first-token
+# for streaming calls, so it can stay tight while long answers still stream.
+# Tunable via env so a slow provider can be accommodated without a rebuild.
+LLM_CALL_TIMEOUT: float = float(os.getenv("LLM_CALL_TIMEOUT", "20"))
+LLM_STREAM_TIMEOUT: float = float(os.getenv("LLM_STREAM_TIMEOUT", "60"))
+
 
 class ModelFallbackPool:
     """Thread-safe (asyncio-safe) model pool with automatic failover.
@@ -175,7 +182,7 @@ class ModelFallbackPool:
         self,
         messages: List[Dict[str, str]],
         preferred: Optional[str] = None,
-        timeout: float = 15,
+        timeout: float = LLM_CALL_TIMEOUT,
         **kwargs,
     ) -> Tuple[Any, str]:
         """Non-streaming chat with automatic failover.
@@ -208,12 +215,16 @@ class ModelFallbackPool:
         self,
         messages: List[Dict[str, str]],
         preferred: Optional[str] = None,
-        timeout: float = 15,
+        timeout: float = LLM_STREAM_TIMEOUT,
         **kwargs,
     ) -> Tuple[Any, str]:
         """Streaming chat with automatic failover.
 
         Returns (stream, model_used).  Caller must iterate the stream.
+
+        ``timeout`` is the time-to-first-token budget: the hard wrapper only
+        covers establishing the stream, so a long answer is not cut off once
+        tokens start arriving.
         """
         last_exc: Optional[Exception] = None
         tried: set = set()
@@ -236,7 +247,11 @@ class ModelFallbackPool:
                 logger.warning("Model %s failed (stream): %s — trying next", model, exc)
         raise last_exc  # type: ignore[misc]
 
-    # Hard per-request timeout: 60s. If the LLM endpoint is slow or hung,\n    # this prevents the event loop from blocking for minutes without returning.\n    TIMEOUT: float = 60.0\n\n    @property\n    def alive_models(self) -> List[str]:
+    # this prevents the event loop from blocking for minutes without returning.
+    TIMEOUT: float = 60.0
+
+    @property
+    def alive_models(self) -> List[str]:
         """Models that are currently marked alive."""
         return [m for m in self._models if self._is_alive(m)]
 
@@ -274,11 +289,67 @@ collection = chroma_client.get_collection(name="tunisia_energy_rag")
 # 2. Modular Pipeline Functions
 # ==========================================
 
+# Query rewriting costs one LLM round-trip before generation can start. It is
+# only useful for follow-up questions that reference earlier context, so it is
+# gated on a cheap pronoun/ellipsis check plus an env kill-switch.
+REWRITE_ENABLED: bool = os.getenv("REWRITE_ENABLED", "true").strip().lower() not in (
+    "0", "false", "no", "off",
+)
+
+# Standalone pronouns / deictics that only make sense with earlier context.
+# Each alternative is anchored to word boundaries on both sides so it cannot
+# fire inside an unrelated word ("il" inside "solaire", "on" inside "conso").
+_FOLLOWUP_MARKERS = re.compile(
+    r"\b(?:"
+    # Pronouns and deictics
+    r"leurs?|elles|ils|il|elle|on|celles?|ceux?|lui|"
+    r"who|its?|they|them|this|that|these|those|"
+    # Possessives: "son budget", "sa consommation", "my report"
+    r"sa|son|ses|leurs|ma|mon|mes|ta|ton|tes|"
+    r"my|your|its|our|their|"
+    # Arabic pronouns / connectives
+    r"\u0645\u0627|\u0647\u0645|\u0647\u0630\u0647\u0645|\u0639\u0646\u0647\u0627|\u0647\u0630\u0647|\u0648\u0647\u0645"
+    r")\b"
+    # Ellipsis shorthand: "et lui ?", "why ?"
+    # NOTE: neither alternative may be left empty. An empty alternative makes
+    # the whole group matchable at zero width, so re.search() succeeds on every
+    # query and every question gets treated as a follow-up.
+    r"|\.\.\.",
+    flags=re.IGNORECASE,
+)
+
+# A question made of one or two words ("Why ?", "Et lui ?") cannot stand alone.
+_TINY_QUESTION = re.compile(r"^\S+(?:\s+\S+)?\s*[?؟]\s*$")
+
+
+def _needs_rewrite(user_query: str) -> bool:
+    """Heuristic: does this query reference earlier conversation context?
+
+    Returns True only when the query looks like a follow-up (pronoun,
+    possessive, or deictic reference) or is too short to stand alone.
+    Deliberately conservative in the *cheap* direction: a false positive costs
+    one rewrite call, a false negative costs some retrieval recall.
+    """
+    q = (user_query or "").strip()
+    if not q:
+        return False
+    if _FOLLOWUP_MARKERS.search(q):
+        return True
+    return bool(_TINY_QUESTION.match(q))
+
 async def rewrite_query_with_history(user_query: str, chat_history: List[Dict[str, str]]) -> str:
     """
     Reformulates a follow-up user query into a standalone search query using chat context.
+
+    This is a full LLM round-trip and runs *before* generation, so it directly
+    adds to time-to-first-token. Most turns are not follow-ups ("What is the
+    ANME?" needs no rewriting), so the rewrite is skipped when the query is
+    already self-contained. Set REWRITE_ENABLED=false to disable it entirely.
     """
     if not chat_history:
+        return user_query
+
+    if not REWRITE_ENABLED or not _needs_rewrite(user_query):
         return user_query
 
     # Format recent history into a compact string (bounded by token budget).

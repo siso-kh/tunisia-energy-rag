@@ -756,13 +756,16 @@ class DocumentUrlIn(BaseModel):
 class DocumentIngestOut(BaseModel):
     filename: str
     status: str
-    dest: str
-    gate1_score: float
+    # Optional: a triage run that could not reach a model returns status
+    # "ERROR" with no verdict, so these stay nullable.
+    dest: Optional[str] = None
+    gate1_score: Optional[float] = None
     gate2_score: Optional[float] = None
-    master_score: float
-    total_pages: int
+    master_score: Optional[float] = None
+    total_pages: Optional[int] = None
     chunks_indexed: int = 0
     index_error: Optional[str] = None
+    error: Optional[str] = None
 
 
 @app.post("/api/admin/documents/upload", response_model=DocumentIngestOut)

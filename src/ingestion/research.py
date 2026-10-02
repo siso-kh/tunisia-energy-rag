@@ -259,6 +259,8 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
     Returns a dict with keys: ``status`` (indexed/triage_rejected/failed),
     ``total_pages``, ``gate1_score``, ``master_score``, ``chunks_indexed``,
     ``error``.
+    ``triage_rejected`` is only ever returned for a real relevance verdict;
+    an unreachable LLM yields ``failed`` with the reason in ``error``.
     Does **not** touch any database — the caller handles Source updates.
     """
     pdf_path = RAW_DIR / filename
@@ -301,6 +303,22 @@ def ingest_downloaded_pdf(filename: str) -> Dict[str, Any]:
             "master_score": decision.get("master_score"),
             "chunks_indexed": decision.get("chunks_indexed", 0),
             "error": f"Index error: {decision['index_error']}",
+        }
+
+    # Triage could not reach a model. Report it as "failed" with the reason,
+    # never as "triage_rejected" -- a transport error is not a relevance verdict.
+    if decision.get("status") == "ERROR":
+        try:
+            _get_ingestions().labels(result="failed").inc()
+        except Exception:
+            pass
+        return {
+            "status": "failed",
+            "total_pages": decision.get("total_pages"),
+            "gate1_score": decision.get("gate1_score"),
+            "master_score": decision.get("master_score"),
+            "chunks_indexed": 0,
+            "error": f"Triage evaluation failed: {decision.get('error', 'unknown error')}",
         }
 
     if decision["status"] == "PASSED":

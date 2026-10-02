@@ -112,6 +112,15 @@ def ingest_pdf(pdf_path: Path, triage_fn=None, index_fn=None) -> Dict:
     index_fn = index_fn or index_pdf_into_chroma
 
     decision = dict(triage_fn(pdf_path))
+
+    # An ERROR verdict means the LLM never produced a usable score (provider
+    # outage, auth failure, unparseable response). Leave the file in data/raw
+    # so it can be re-triaged later -- moving it to blacklisted/ would record a
+    # transport failure as "this document is not pertinent".
+    if decision.get("status") == "ERROR" or decision.get("dest") is None:
+        decision["chunks_indexed"] = 0
+        return decision
+
     dest_dir = FILTERED_DIR if decision["dest"] == "filtered" else BLACKLISTED_DIR
     _move_pdf(pdf_path, dest_dir)
 

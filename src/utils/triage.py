@@ -3,12 +3,15 @@ import re
 import json
 import random
 import shutil
+import logging
 import pdfplumber
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Resolve repository root: file is in src/utils, repo root is two parents up
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -56,8 +59,68 @@ def get_client() -> OpenAI:
         BASE_URL = os.environ.get("OPENAI_BASE_URL", "YOUR_THIRD_PARTY_API_ENDPOINT")
         if not API_KEY:
             print(f"Warning: no CUSTOM_API_KEY found in {ENV_PATH}. Fill it before running the pipeline.")
-        _client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+        _client = OpenAI(api_key=API_KEY, base_url=BASE_URL, timeout=TRIAGE_TIMEOUT)
     return _client
+
+
+# ---------------------------------------------------------------------------
+# Model resolution for triage
+# ---------------------------------------------------------------------------
+# Triage used to hardcode "agnes-2.0-flash". That model is no longer served by
+# the provider, so every gate call raised, the `except` branches returned the
+# 0.0/50.0 fallbacks, and the weighted master score collapsed below
+# `gate2.master_pass_threshold` -- flagging *every* document as non-pertinent.
+#
+# Triage now resolves models from the same env vars as the chat pipeline
+# (LLM_MODELS / LLM_MODEL) and walks the list on failure, so triage and chat
+# always talk to a model the provider actually serves.
+TRIAGE_TIMEOUT = float(os.getenv("TRIAGE_TIMEOUT", "30"))
+
+_TRIAGE_DEFAULT_MODELS = ["combo/freemodels", "agnes-2.5-flash", "deepseek-v4-flash"]
+
+
+def _triage_models() -> list:
+    """Ordered list of models to try for triage, most preferred first."""
+    raw = os.getenv("TRIAGE_MODELS") or os.getenv("LLM_MODELS") or ""
+    models = [m.strip() for m in raw.split(",") if m.strip()]
+    if models:
+        return models
+    primary = os.getenv("TRIAGE_MODEL") or os.getenv("LLM_MODEL") or ""
+    if primary:
+        return [primary] + [m for m in _TRIAGE_DEFAULT_MODELS if m != primary]
+    return list(_TRIAGE_DEFAULT_MODELS)
+
+
+class TriageModelError(RuntimeError):
+    """Raised when no triage model could produce a score.
+
+    Surfaced instead of being swallowed, so a provider outage shows up as an
+    error rather than as a silent "this document is not pertinent" verdict.
+    """
+
+
+def _score_from_response(res) -> float:
+    """Extract the 0-100 score from a triage completion.
+
+    Providers wrap JSON differently (bare object, markdown fence, or prose), so
+    parse defensively rather than letting json.loads raise on a stray character.
+    """
+    content = (res.choices[0].message.content or "").strip()
+    if content.startswith("```"):
+        content = content.split("```")[1] if "```" in content[3:] else content[3:]
+        if content.lstrip().lower().startswith("json"):
+            content = content.lstrip()[4:]
+        content = content.rsplit("```", 1)[0]
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", content, flags=re.DOTALL)
+        if not match:
+            raise TriageModelError(f"triage model returned non-JSON output: {content[:200]!r}")
+        data = json.loads(match.group(0))
+    if "score" not in data:
+        raise TriageModelError(f"triage model returned JSON without a 'score' key: {data!r}")
+    return max(0.0, min(100.0, float(data["score"])))
 
 
 DOMAIN_KEYWORDS = ["énergie", "efficacité", "photovoltaïque", "steg", "anme", "consommation", "طاقة", "نجاعة", "استهلاك"]
@@ -126,19 +189,30 @@ def extract_metadata(pdf_path: Path) -> dict:
 
 
 def evaluate_gate1_metadata(meta: dict, client: Optional[OpenAI] = None) -> float:
-    """Gate 1: Fast evaluation based purely on metadata."""
+    """Gate 1: Fast evaluation based purely on metadata.
+
+    Tries each configured triage model in order. Raises TriageModelError if
+    none of them answers, so callers never mistake a provider failure for a
+    low-relevance verdict.
+    """
     combined_meta_text = f"Filename: {meta['filename']}\nTitle: {meta['title']}\nSubtitles: {' | '.join(meta['subtitles'])}"
     prompt = PROMPT_TEMPLATE.format(text_sample=combined_meta_text)
-    try:
-        res = (client or get_client()).chat.completions.create(
-            model="agnes-2.0-flash",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        data = json.loads(res.choices[0].message.content)
-        return float(data.get("score", 0))
-    except Exception:
-        return 50.0  # Fallback to middle value if API fails
+    client = client or get_client()
+
+    last_exc: Optional[Exception] = None
+    for model in _triage_models():
+        try:
+            res = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                timeout=TRIAGE_TIMEOUT,
+            )
+            return _score_from_response(res)
+        except Exception as exc:  # noqa: BLE001 - try the next model
+            last_exc = exc
+            logger.warning("Triage gate 1: model %s failed: %s", model, exc)
+    raise TriageModelError(f"all triage models failed for gate 1: {last_exc}")
 
 
 def sample_proportional_pages(pdf_path: Path, total_pages: int, gate1_score: float) -> str:
@@ -189,18 +263,29 @@ def sample_proportional_pages(pdf_path: Path, total_pages: int, gate1_score: flo
     return extracted_text
 
 def evaluate_gate2_deep(pdf_path: Path, sample_text: str, client: Optional[OpenAI] = None) -> float:
-    """Gate 2: Deep evaluation of extracted page text."""
+    """Gate 2: Deep evaluation of extracted page text.
+
+    Tries each configured triage model in order. Raises TriageModelError if
+    none of them answers, so callers never mistake a provider failure for a
+    zero relevance score.
+    """
     prompt = PROMPT_TEMPLATE.format(text_sample=sample_text[:3500])
-    try:
-        res = (client or get_client()).chat.completions.create(
-            model="agnes-2.0-flash",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        data = json.loads(res.choices[0].message.content)
-        return float(data.get("score", 0))
-    except Exception:
-        return 0.0
+    client = client or get_client()
+
+    last_exc: Optional[Exception] = None
+    for model in _triage_models():
+        try:
+            res = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                timeout=TRIAGE_TIMEOUT,
+            )
+            return _score_from_response(res)
+        except Exception as exc:  # noqa: BLE001 - try the next model
+            last_exc = exc
+            logger.warning("Triage gate 2: model %s failed: %s", model, exc)
+    raise TriageModelError(f"all triage models failed for gate 2: {last_exc}")
 
 
 def triage_file(pdf_path: Path, client: Optional[OpenAI] = None) -> Dict:
@@ -210,14 +295,34 @@ def triage_file(pdf_path: Path, client: Optional[OpenAI] = None) -> Dict:
     scores so callers (CLI pipeline or the admin upload API) can route the
     file to ``data/filtered/`` or ``data/blacklisted/`` themselves.
 
-    Returns a dict with: filename, status ("PASSED"/"BLACKLISTED"), the gate
-    scores, the master score, total pages, whether gate 1 short-circuited,
-    and the destination directory name ("filtered"/"blacklisted").
+    Returns a dict with: filename, status ("PASSED"/"BLACKLISTED"/"ERROR"),
+    the gate scores, the master score, total pages, whether gate 1
+    short-circuited, and the destination directory name
+    ("filtered"/"blacklisted").
+
+    A status of "ERROR" means the LLM could not be reached or returned
+    unusable output. That is deliberately distinct from "BLACKLISTED": a
+    provider outage must never be recorded as "this document is not
+    pertinent", which is what previously rejected every upload.
     """
     meta = extract_metadata(pdf_path)
 
     # GATE 1
-    g1_score = evaluate_gate1_metadata(meta, client)
+    try:
+        g1_score = evaluate_gate1_metadata(meta, client)
+    except TriageModelError as exc:
+        logger.error("Triage evaluation failed for %s: %s", pdf_path.name, exc)
+        return {
+            "filename": pdf_path.name,
+            "status": "ERROR",
+            "gate1_score": None,
+            "gate2_score": None,
+            "master_score": None,
+            "total_pages": meta["total_pages"],
+            "shortcircuited": False,
+            "dest": None,
+            "error": str(exc),
+        }
     shortcircuited = False
 
     if g1_score < CONFIG["gate1"]["instant_reject_threshold"]:
@@ -231,7 +336,21 @@ def triage_file(pdf_path: Path, client: Optional[OpenAI] = None) -> Dict:
     else:
         # GATE 2 DEEP ANALYSIS
         sample_text = sample_proportional_pages(pdf_path, meta["total_pages"], g1_score)
-        g2_score = evaluate_gate2_deep(pdf_path, sample_text, client)
+        try:
+            g2_score = evaluate_gate2_deep(pdf_path, sample_text, client)
+        except TriageModelError as exc:
+            logger.error("Triage gate 2 failed for %s: %s", pdf_path.name, exc)
+            return {
+                "filename": pdf_path.name,
+                "status": "ERROR",
+                "gate1_score": g1_score,
+                "gate2_score": None,
+                "master_score": None,
+                "total_pages": meta["total_pages"],
+                "shortcircuited": False,
+                "dest": None,
+                "error": str(exc),
+            }
 
         master_score = (g1_score * CONFIG["gate2"]["weight_algo"]) + (g2_score * CONFIG["gate2"]["weight_ai"])
         status = "PASSED" if master_score >= CONFIG["gate2"]["master_pass_threshold"] else "BLACKLISTED"
