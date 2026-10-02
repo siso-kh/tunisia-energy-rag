@@ -787,6 +787,24 @@ async def run_pipeline(
     return answer, structured_sources
 
 
+# Last retrieval outcome, surfaced by /health. There is no shell on the Render
+# instance, so this is the only way to tell "retrieval is slow" apart from
+# "the process died during retrieval".
+_LAST_RETRIEVAL: Dict[str, Any] = {
+    "count": 0,
+    "last_seconds": None,
+    "last_rewrite_seconds": None,
+    "last_sources": None,
+    "last_error": None,
+    "last_error_seconds": None,
+}
+
+
+def retrieval_stats() -> Dict[str, Any]:
+    """Snapshot of the most recent retrieval (see ``_LAST_RETRIEVAL``)."""
+    return dict(_LAST_RETRIEVAL)
+
+
 async def stream_pipeline(
     user_query: str,
     chat_history: Optional[List[Dict[str, str]]] = None,
@@ -846,14 +864,20 @@ async def stream_pipeline(
         structured_sources = await run_in_threadpool(
             retrieve_context_hybrid, standalone_query, n_results=5
         )
-    except BaseException:
+    except BaseException as exc:
         # Without this the client sees "searching" and then a bare stream end,
         # with the reason visible only in a traceback nobody reads.
+        _LAST_RETRIEVAL["last_error"] = f"{type(exc).__name__}: {exc}"[:300]
+        _LAST_RETRIEVAL["last_error_seconds"] = round(time.monotonic() - _t1, 1)
         logger.exception(
             "Retrieval failed after %.1fs for query=%r", time.monotonic() - _t1,
             standalone_query[:120],
         )
         raise
+    _LAST_RETRIEVAL["count"] += 1
+    _LAST_RETRIEVAL["last_seconds"] = round(time.monotonic() - _t1, 1)
+    _LAST_RETRIEVAL["last_rewrite_seconds"] = round(_t1 - _t0, 2)
+    _LAST_RETRIEVAL["last_sources"] = len(structured_sources or [])
     logger.info(
         "Retrieval took %.1fs (rewrite %.2fs) -> %d sources",
         time.monotonic() - _t1, _t1 - _t0, len(structured_sources or []),

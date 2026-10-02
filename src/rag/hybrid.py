@@ -131,6 +131,19 @@ def _get_corpus():
     return ids, texts, meta_by_id
 
 
+def corpus_size() -> Optional[int]:
+    """Number of documents in the Chroma corpus, or None if not loaded yet.
+
+    Only meaningful once ``_get_corpus()`` is cached: calling it cold would
+    pull the whole index out of SQLite, which is exactly what diagnostics
+    must not do.
+    """
+    if _get_corpus.cache_info().currsize == 0:
+        return None
+    ids, _texts, _metas = _get_corpus()
+    return len(ids)
+
+
 @lru_cache(maxsize=1)
 def _get_bm25():
     """BM25 index over the whole corpus, built once and cached."""

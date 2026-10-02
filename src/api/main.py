@@ -453,7 +453,12 @@ async def _with_heartbeats(source):
             async for frame in source:
                 queue.put_nowait(frame)
         except asyncio.CancelledError:
-            raise
+            # Distinguish *our* cleanup from a cancellation of the pipeline
+            # itself. Swallowing the latter would make a cancelled request look
+            # like a clean, truncated stream.
+            if asyncio.current_task().cancelling():
+                raise
+            queue.put_nowait(asyncio.CancelledError())
         except BaseException as exc:  # noqa: BLE001 - forwarded to the consumer
             queue.put_nowait(exc)
         finally:
@@ -606,6 +611,7 @@ async def chat_stream_endpoint(
 
     history_dicts = [{"role": m.role, "content": m.content} for m in payload.chat_history]
     parsed_cid = _parse_conversation_id(payload.conversation_id)
+    _stream_started = time.time()
 
     async def event_generator():
         # L14 Fix: Use concurrency limiter to prevent pool exhaustion
@@ -647,15 +653,32 @@ async def chat_stream_endpoint(
     # The per-model timeout is 60s in retrieve.py, and with 8 fallback models,\r
     # a full cascade can exceed 2 minutes.\r
     async def event_generator_with_timeout():
+        _STREAM_STATS["started"] += 1
+        saw_done = False
         try:
             async with asyncio.timeout(300):  # 5 minutes max
                 async for sse_frame in _with_heartbeats(event_generator()):
                     # event_generator() already yields SSE-formatted strings,
                     # so yield them directly — do NOT wrap in _sse() again.
+                    if sse_frame.startswith('data: {"type": "done"'):
+                        saw_done = True
                     yield sse_frame
+            # The response ended without a "done" frame: the pipeline returned
+            # early. This is the signature of the silent failure, so it is
+            # counted rather than passed off as a success.
+            _STREAM_STATS["done" if saw_done else "truncated"] += 1
         except asyncio.TimeoutError:
+            _STREAM_STATS["timeout"] += 1
             yield _sse({"type": "error", "message": "Request timed out. Please try a simpler query."})
+        except asyncio.CancelledError:
+            # The client or an intermediary went away. Not an application bug,
+            # but it must be distinguishable from a clean finish.
+            _STREAM_STATS["cancelled"] += 1
+            logger.warning("Stream cancelled by the client after %.1fs",
+                           time.time() - _stream_started)
+            raise
         except Exception as e:
+            _STREAM_STATS["error"] += 1
             logger.exception("Stream timeout/error: %s", e)
             yield _sse({"type": "error", "message": _describe_error(e)})
 
@@ -1422,6 +1445,70 @@ def metrics_endpoint(request: Request):
     )
 
 
+# ---------------------------------------------------------------------------
+# Diagnostics
+#
+# The Render instance has no shell, so the only channel out of a production
+# failure is the app itself. /health therefore carries process facts, and the
+# chat endpoint records how each stream ended. Without this, "the stream died
+# silently" and "the process was OOM-killed" look identical from outside.
+# ---------------------------------------------------------------------------
+
+_BOOT_ID = uuid.uuid4().hex[:8]
+_BOOTED_AT = time.time()
+
+# started / done / truncated / timeout / cancelled / error
+_STREAM_STATS: Dict[str, int] = {
+    "started": 0, "done": 0, "truncated": 0,
+    "timeout": 0, "cancelled": 0, "error": 0,
+}
+
+
+def _proc_status_kb(field: str) -> Optional[int]:
+    """Read a kB-valued field out of /proc/self/status (Linux only)."""
+    try:
+        with open("/proc/self/status", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if line.startswith(field):
+                    return int(line.split()[1])
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
+def _process_diagnostics() -> Dict[str, Any]:
+    """Non-secret process state, safe to expose on a public probe."""
+    rss = _proc_status_kb("VmRSS:")
+    peak = _proc_status_kb("VmHWM:")
+    info: Dict[str, Any] = {
+        "boot_id": _BOOT_ID,
+        "uptime_s": int(time.time() - _BOOTED_AT),
+        "rss_mb": round(rss / 1024, 1) if rss else None,
+        "peak_rss_mb": round(peak / 1024, 1) if peak else None,
+        "threads": None,
+        "streams": dict(_STREAM_STATS),
+    }
+    try:
+        info["threads"] = len(os.listdir("/proc/self/task"))
+    except OSError:
+        pass
+    try:
+        from src.rag import retrieve as _retrieve
+
+        info["retrieval"] = _retrieve.retrieval_stats()
+        pool = getattr(_retrieve, "_llm_pool", None)
+        info["models"] = list(getattr(pool, "_models", None) or _retrieve.FALLBACK_MODELS)
+    except Exception:  # noqa: BLE001 - diagnostics must never break the probe
+        info["retrieval"] = "unavailable"
+    try:
+        from src.rag import hybrid as _hybrid
+
+        info["corpus_docs"] = _hybrid.corpus_size()
+    except Exception:  # noqa: BLE001
+        pass
+    return info
+
+
 @app.get("/health")
 @limiter.exempt
 def health_check(request: Request):
@@ -1429,8 +1516,14 @@ def health_check(request: Request):
 
     Orchestrators and healthchecks use /ready (which also checks Postgres and
     ChromaDB) before sending traffic; /health only proves the process runs.
+
+    It also reports the process facts needed to debug a production-only
+    failure from outside (there is no shell on the instance): how long this
+    process has been up, its peak RSS, and how the last few chat streams
+    ended. ``status`` stays "healthy" as long as the process answers, so this
+    never turns the probe red.
     """
-    return {"status": "healthy", "api": "online"}
+    return {"status": "healthy", "api": "online", **_process_diagnostics()}
 
 
 @app.get("/ready")
