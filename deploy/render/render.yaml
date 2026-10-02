@@ -51,15 +51,35 @@ services:
         sync: false
 
       # --- Recommended / optional -------------------------------------
+      # Provider endpoint. Must match the provider that serves the models in
+      # LLM_MODELS below (router.bynara.id serves combo/freemodels).
       - key: OPENAI_BASE_URL
-        value: https://api.mistral.ai/v1
+        value: https://router.bynara.id/v1
       - key: RERANK_ENABLED
-        value: "false"           # skips the ~470 MB cross-encoder
+        # Must be set explicitly. The image deliberately omits the ~470 MB
+        # cross-encoder, and hybrid.py defaults this to "true" when unset, so a
+        # missing value makes the app try to download it inside live requests.
+        value: "false"
       - key: CORS_ORIGINS
         sync: false              # https://<your-service>.onrender.com
+      # Only models verified against this provider. Each entry that 404s is
+      # disabled automatically at runtime, but starting from a clean list keeps
+      # failover fast. deepseek-v4-flash / qwen3.8-27b / stepfun-3.7-flash
+      # returned 429 (per-model quota) and glm-5.3-flash-free / nemotron-3-ultra
+      # returned 404, so they are deliberately excluded.
+      - key: LLM_MODELS
+        value: "agnes-2.5-flash,laguna-s-2.1,combo/freemodels"
       - key: LLM_MODEL
         value: "combo/freemodels"
         sync: false
+      # Latency tuning. REWRITE_ENABLED=false skips the extra pre-generation
+      # round-trip entirely; see retrieve.py for the full list.
+      - key: REWRITE_ENABLED
+        value: "true"
+      - key: LLM_SAME_MODEL_RETRIES
+        value: "1"
+      - key: LLM_QUOTA_TTL
+        value: "900"
       - key: OUTAGE_TTL_HOURS
         value: "5"
       - key: RATE_LIMIT_STORAGE_URI

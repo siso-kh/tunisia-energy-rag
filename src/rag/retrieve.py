@@ -120,8 +120,8 @@ class ModelFallbackPool:
     Usage::
 
         pool = ModelFallbackPool(API_KEY, BASE_URL, FALLBACK_MODELS)
-        resp = await pool.chat(model="deepseek-v4-flash", messages=[...])
-        async for chunk in pool.chat_stream(model="deepseek-v4-flash", messages=[...]):
+        resp = await pool.chat(messages=[...])
+        async for chunk in pool.chat_stream(messages=[...]):
             ...
     """
 
