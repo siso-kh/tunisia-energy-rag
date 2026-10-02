@@ -519,7 +519,19 @@ async def chat_stream_endpoint(
     return StreamingResponse(
         event_generator_with_timeout(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache",
+            # Disable nginx buffering: these headers tell any nginx proxy in
+            # front to stream the SSE frames as they arrive instead of
+            # buffering the entire response and sending it at the end.
+            # Render's proxy needs 'proxy_no_cache' because it ignores
+            # 'X-Accel-Buffering' on proxied responses.
+            "X-Accel-No-Cache": "1",
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Surrogate-Control": "no-store",
+        },
     )
 
 
@@ -1054,7 +1066,14 @@ async def research_sources_stream(
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-No-Cache": "1",
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Surrogate-Control": "no-store",
+        },
     )
 
 
@@ -1134,7 +1153,14 @@ async def ingest_sources_stream(
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-No-Cache": "1",
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Surrogate-Control": "no-store",
+        },
     )
 
 
