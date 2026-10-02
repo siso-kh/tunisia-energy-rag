@@ -32,7 +32,7 @@ RUN npm run build
 
 
 # ---------- Stage 2: Python builder (needs compilers, never shipped) ----------
-FROM python:3.10-slim AS builder
+FROM python:3.11-slim AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -77,7 +77,7 @@ CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1')" \
 
 
 # ---------- Stage 3: runtime ----------
-FROM python:3.10-slim AS runtime
+FROM python:3.11-slim AS runtime
 
 # nginx serves the SPA and reverse-proxies /api, /health, /ready.
 # ONLY the packages the app actually needs at runtime: tesseract, poppler,
