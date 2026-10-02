@@ -385,6 +385,22 @@ def _get_emb_fn():
 
 
 # ChromaDB client + collection are fast to initialise (<1 s) so keep them eager.
+#
+# The embedding function MUST be passed explicitly. Without it Chroma installs
+# its own DefaultEmbeddingFunction (ONNX all-MiniLM-L6-v2, English-only) and
+# downloads it at runtime. Two consequences, both observed in production:
+#
+#   * Memory: the collection's ONNX model and the app's multilingual model are
+#     two separate instances. Retrieval peaked at ~1.3 GB, and a 2 GB container
+#     was OOM-killed mid-request -- no traceback, no SSE error frame, and the
+#     next request answered 502 while the instance restarted.
+#   * Correctness: hybrid.retrieve_hybrid() calls collection.query(query_texts=...)
+#     so the query was embedded by ONNX MiniLM while every stored vector came
+#     from paraphrase-multilingual-MiniLM-L12-v2 -- comparing two unrelated
+#     embedding spaces.
+#
+# Passing the shared instance means one model in memory and one consistent
+# space for both retrieval and indexing.
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 collection = chroma_client.get_collection(name="tunisia_energy_rag")
 

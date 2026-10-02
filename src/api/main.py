@@ -151,12 +151,24 @@ async def lifespan(app: FastAPI):
     # The schema is owned by Alembic migrations (see src/database/schema.py);
     # the app no longer creates or alters tables at startup.
     #
-    # The cross-encoder reranker is deliberately NOT preloaded here. Loading a
-    # torch model from a threadpool worker races with the embedding function's
-    # own native calls and crashed the interpreter with an access violation,
-    # and awaiting it inline would block boot on a ~470 MB download. Instead
-    # hybrid._load_cross_encoder() memoizes its attempt, so the model is loaded
-    # at most once, lazily, and a failure degrades to the fused ranking order.
+    # Warm the retrieval stack BEFORE serving. Measured on the real 15k-document
+    # index: the first query costs ~15s and pushes RSS from ~390 MB to ~1.3 GB,
+    # because the sentence-transformer and the BM25 index are built inside the
+    # request. On a 2 GB container that in-request allocation is what got the
+    # process OOM-killed: the stream emitted "searching" and then died with no
+    # traceback, no SSE error frame, and the next request answered 502.
+    #
+    # Warming is done inline (not in a threadpool worker) because nothing else
+    # is running yet, so there is no concurrent torch use to race with. The
+    # cross-encoder reranker is deliberately NOT warmed: it is disabled by
+    # default and hybrid._load_cross_encoder() memoizes its attempt.
+    if os.getenv("WARM_RETRIEVAL_ON_STARTUP", "true").lower() in ("1", "true", "yes"):
+        try:
+            await _warm_retrieval()
+        except Exception:  # noqa: BLE001 - never block boot on an optional warm-up
+            logger.warning("Retrieval warm-up failed; first query will be slower.",
+                           exc_info=True)
+
     task = asyncio.create_task(_outage_cleanup_loop())
     try:
         yield
@@ -164,6 +176,19 @@ async def lifespan(app: FastAPI):
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
+
+
+async def _warm_retrieval() -> None:
+    """Load the embedding model and BM25 index before the first request."""
+    started = time.monotonic()
+    from src.rag.hybrid import _get_bm25
+    from src.rag.retrieve import _get_emb_fn
+
+    # Build both inside the threadpool (blocking CPU work), sequentially so
+    # their peaks do not overlap.
+    await run_in_threadpool(_get_emb_fn)
+    await run_in_threadpool(_get_bm25)
+    logger.info("Retrieval warmed in %.1fs", time.monotonic() - started)
 
 
 app = FastAPI(title="Tunisia Energy RAG API", lifespan=lifespan)
