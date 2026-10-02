@@ -117,14 +117,14 @@ class ModelFallbackPool:
 
     def _get_client(self) -> AsyncOpenAI:
         if self._client is None or self._client.is_closed:
-            # 60s timeout: without this the client can hang indefinitely on a slow\r
-            # or unresponsive provider, which is what caused the 5-minute\r
-            # streaming deadlock observed in production.\r
-            self._client = AsyncOpenAI(\r
-                api_key=self._api_key,\r
-                base_url=self._base_url,\r
-                timeout=60,\r
-            )\r
+            # 60s timeout: without this the client can hang indefinitely on a slow
+            # or unresponsive provider, which is what caused the 5-minute
+            # streaming deadlock observed in production.
+            self._client = AsyncOpenAI(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                timeout=60,
+            )
         return self._client
 
     # -- model selection ------------------------------------------------------
