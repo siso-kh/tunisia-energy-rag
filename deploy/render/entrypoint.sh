@@ -54,12 +54,13 @@ alembic upgrade head || { echo "[entrypoint] FATAL: migrations failed — contai
 # psycopg2-binary is in requirements.runtime.txt specifically so this step can
 # run: ensure_schema() inspects the DB through a *sync* SQLAlchemy engine.
 echo "[entrypoint] seeding demo data (idempotent)..."
-python -m src.database.seed || echo "[entrypoint] WARNING: seeding skipped/failed — continuing anyway"
-
-# --- 4. Processes -----------------------------------------------------
+python -m src.database.seed || echo "[entrypoint] WARNING: seeding skipped/failed — continuing anyway"# --- 4. Processes -----------------------------------------------------
 echo "[entrypoint] launching uvicorn on 127.0.0.1:8000..."
 uvicorn src.api.main:app --host 127.0.0.1 --port 8000 &
 UVI_PID=$!
+
+# Give uvicorn a moment to bind the port before nginx starts.
+sleep 2
 
 echo "[entrypoint] launching nginx on :${PORT}..."
 nginx -g 'daemon off;' &

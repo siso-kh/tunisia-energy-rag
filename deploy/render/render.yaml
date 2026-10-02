@@ -32,6 +32,11 @@ services:
     # Runs once per deploy, before traffic shifts. The entrypoint also runs
     # migrations as a fallback, so this is belt-and-braces (and idempotent).
     preDeployCommand: alembic upgrade head
+    # Give the container 15s to start uvicorn before the first health probe.
+    # Uvicorn is launched in the entrypoint as a background process, so Render
+    # must wait a few seconds before probing /health, otherwise it sees a
+    # connection refused and reports 502 Bad Gateway.
+    startSeconds: 15
 
     envVars:
       # --- Required ---------------------------------------------------
