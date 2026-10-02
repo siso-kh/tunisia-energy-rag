@@ -80,6 +80,11 @@ services:
         value: "1"
       - key: LLM_QUOTA_TTL
         value: "900"
+      # Keep-alive comment interval on /api/chat/stream. Retrieval runs in a
+      # threadpool and can block for tens of seconds; without bytes on the wire
+      # during that gap the edge drops the response and the client just spins.
+      - key: SSE_HEARTBEAT_SECONDS
+        value: "10"
       - key: OUTAGE_TTL_HOURS
         value: "5"
       - key: RATE_LIMIT_STORAGE_URI

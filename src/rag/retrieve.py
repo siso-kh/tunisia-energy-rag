@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import time
 import chromadb
 from chromadb.utils import embedding_functions
 from openai import AsyncOpenAI
@@ -836,11 +837,26 @@ async def stream_pipeline(
     optimized_history = get_optimized_history(chat_history, max_tokens=HISTORY_TOKEN_BUDGET)
 
     yield {"type": "status", "message": "contextualizing"}
+    _t0 = time.monotonic()
     standalone_query = await rewrite_query_with_history(user_query, optimized_history)
 
     yield {"type": "status", "message": "searching"}
-    structured_sources = await run_in_threadpool(
-        retrieve_context_hybrid, standalone_query, n_results=5
+    _t1 = time.monotonic()
+    try:
+        structured_sources = await run_in_threadpool(
+            retrieve_context_hybrid, standalone_query, n_results=5
+        )
+    except BaseException:
+        # Without this the client sees "searching" and then a bare stream end,
+        # with the reason visible only in a traceback nobody reads.
+        logger.exception(
+            "Retrieval failed after %.1fs for query=%r", time.monotonic() - _t1,
+            standalone_query[:120],
+        )
+        raise
+    logger.info(
+        "Retrieval took %.1fs (rewrite %.2fs) -> %d sources",
+        time.monotonic() - _t1, _t1 - _t0, len(structured_sources or []),
     )
     context_str = format_sources_for_prompt(structured_sources)
 

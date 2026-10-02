@@ -169,6 +169,11 @@ async def lifespan(app: FastAPI):
             logger.warning("Retrieval warm-up failed; first query will be slower.",
                            exc_info=True)
 
+    try:
+        _log_startup_diagnostics()
+    except Exception:  # noqa: BLE001 - diagnostics must never block boot
+        logger.warning("Startup diagnostics failed", exc_info=True)
+
     task = asyncio.create_task(_outage_cleanup_loop())
     try:
         yield
@@ -189,6 +194,30 @@ async def _warm_retrieval() -> None:
     await run_in_threadpool(_get_emb_fn)
     await run_in_threadpool(_get_bm25)
     logger.info("Retrieval warmed in %.1fs", time.monotonic() - started)
+
+
+def _log_startup_diagnostics() -> None:
+    """Log the knobs that decide whether a live query can succeed at all.
+
+    Render gives us no shell in production, so these have to be visible in the
+    deploy log: a wrong provider, an empty model pool or a re-enabled reranker
+    all look identical from the outside (a stream that dies after "searching").
+    """
+    from src.rag import retrieve as _retrieve
+
+    pool = getattr(_retrieve, "_llm_pool", None)
+    models = list(getattr(pool, "_models", None) or _retrieve.FALLBACK_MODELS)
+    logger.info(
+        "Startup diagnostics: base_url=%s models=%s disabled=%s rerank=%s "
+        "rewrite=%s heartbeat=%.0fs warm=%s",
+        _retrieve.BASE_URL or "<default>",
+        models,
+        pool.disabled_models if pool is not None else [],
+        os.getenv("RERANK_ENABLED", "false"),
+        os.getenv("REWRITE_ENABLED", "true"),
+        HEARTBEAT_INTERVAL,
+        os.getenv("WARM_RETRIEVAL_ON_STARTUP", "true"),
+    )
 
 
 app = FastAPI(title="Tunisia Energy RAG API", lifespan=lifespan)
@@ -389,8 +418,74 @@ def _parse_conversation_id(raw: Optional[str]) -> Optional[uuid.UUID]:
 
 
 def _sse(event: dict) -> str:
-    """Serialize a pipeline event dict to one SSE data frame."""
+    """Serialize a pipeline event dict to one SSE frame.
+
+    Heartbeats are emitted as SSE *comments* rather than data frames: a comment
+    keeps the connection warm without being interpreted as a payload by the
+    client's SSE parser. Render's edge and Cloudflare both drop a response that
+    goes silent, which is what produced a stream that emitted "searching" and
+    then vanished with no error frame -- the upstream was still healthy.
+    """
+    if event.get("type") == "heartbeat":
+        return ": keep-alive\n\n"
     return f"data: {json.dumps(event, ensure_ascii=False, default=str)}\n\n"
+
+
+# How long the chat stream may stay silent before a keep-alive comment is sent.
+# Retrieval runs in a threadpool and can block for tens of seconds, which is
+# long enough for Render's edge to drop the response.
+HEARTBEAT_INTERVAL = float(os.getenv("SSE_HEARTBEAT_SECONDS", "10") or 10)
+
+_SENTINEL = object()
+
+
+async def _with_heartbeats(source):
+    """Yield frames from `source`, emitting a keep-alive when it goes quiet.
+
+    The pipeline is pumped by its own task into a queue, so the consumer can
+    time out on the queue without ever cancelling a suspended ``__anext__``
+    (cancelling mid-generator would kill the pipeline instead of nudging it).
+    """
+    queue: "asyncio.Queue[Any]" = asyncio.Queue()
+
+    async def pump() -> None:
+        try:
+            async for frame in source:
+                queue.put_nowait(frame)
+        except asyncio.CancelledError:
+            raise
+        except BaseException as exc:  # noqa: BLE001 - forwarded to the consumer
+            queue.put_nowait(exc)
+        finally:
+            # Close the pipeline explicitly: a client that walks away mid-stream
+            # would otherwise leave it running (holding a concurrency slot and
+            # the whole retrieval stack) until the GC gets around to it.
+            with suppress(Exception, asyncio.CancelledError):
+                await source.aclose()
+            queue.put_nowait(_SENTINEL)
+
+    async def ticker() -> None:
+        while True:
+            await asyncio.sleep(HEARTBEAT_INTERVAL)
+            queue.put_nowait(_sse({"type": "heartbeat"}))
+
+    pump_task = asyncio.create_task(pump())
+    ticker_task = asyncio.create_task(ticker())
+    try:
+        while True:
+            item = await queue.get()
+            if item is _SENTINEL:
+                return
+            if isinstance(item, BaseException):
+                raise item
+            yield item
+    finally:
+        for task in (ticker_task, pump_task):
+            task.cancel()
+        with suppress(asyncio.CancelledError):
+            await pump_task
+        with suppress(asyncio.CancelledError):
+            await ticker_task
 
 
 async def _resolve_conversation(session, conversation_id: Optional[uuid.UUID], user: Optional[User] = None):
@@ -554,7 +649,7 @@ async def chat_stream_endpoint(
     async def event_generator_with_timeout():
         try:
             async with asyncio.timeout(300):  # 5 minutes max
-                async for sse_frame in event_generator():
+                async for sse_frame in _with_heartbeats(event_generator()):
                     # event_generator() already yields SSE-formatted strings,
                     # so yield them directly — do NOT wrap in _sse() again.
                     yield sse_frame
