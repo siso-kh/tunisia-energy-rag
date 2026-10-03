@@ -59,6 +59,18 @@ BASE_URL = os.getenv("OPENAI_BASE_URL")
 
 CHROMA_PATH = "data/chroma_db"
 
+# The vectors in this collection are un-normalised (measured L2 norms
+# 1.26-6.61) and Chroma ranks by squared L2, which is magnitude-sensitive. So
+# the query must be embedded by the same convention that wrote the index --
+# chromadb's SentenceTransformerEmbeddingFunction, via hybrid._dense_query's
+# query_texts branch. That is what ONNX_EMBEDDER_ENABLED=false restores;
+# querying this collection with the ONNX embedder's unit-length vectors ranks
+# by vector magnitude instead of meaning.
+#
+# Kept overridable so a normalised cosine collection (see
+# scripts/rebuild_index_onnx.py) can be selected without a code change.
+CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "tunisia_energy_rag")
+
 # ---------------------------------------------------------------------------
 # Model Fallback Pool — round-robin with automatic dead-model detection
 # ---------------------------------------------------------------------------
@@ -403,7 +415,7 @@ def _get_emb_fn():
 # Passing the shared instance means one model in memory and one consistent
 # space for both retrieval and indexing.
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-collection = chroma_client.get_collection(name="tunisia_energy_rag")
+collection = chroma_client.get_collection(name=CHROMA_COLLECTION)
 
 # ==========================================
 # 2. Modular Pipeline Functions

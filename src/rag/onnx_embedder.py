@@ -43,6 +43,25 @@ logger = logging.getLogger(__name__)
 # at a downloaded copy.
 ONNX_MODEL_DIR = os.getenv("ONNX_EMBEDDER_DIR", "/opt/models/onnx")
 
+# Escape hatch: set ONNX_EMBEDDER_ENABLED=false to fall back to the in-process
+# sentence-transformer.
+#
+# Needed because the Chroma index was written *un-normalised* (stored L2 norms
+# span 1.26-6.61) and is ranked by squared L2, which is magnitude-sensitive.
+# Feeding it the unit-length vectors this module produces made ||d||^2 -- which
+# spans 1.6-43.7 -- dominate the q.d term, which cannot exceed 1.0. Retrieval
+# then ranked by vector magnitude rather than meaning, and top-5 agreement with
+# true cosine fell to 0-1 of 5. Turning the ONNX path off restores the original
+# behaviour, where chromadb embeds the query with the same
+# SentenceTransformerEmbeddingFunction that wrote the index, so both sides of
+# the comparison share one convention.
+#
+# This costs ~830 MB of resident memory (torch plus the fp32 weights), which is
+# fine on a workstation but is exactly what OOM-killed the 512 MB container.
+ONNX_ENABLED = os.getenv("ONNX_EMBEDDER_ENABLED", "true").strip().lower() not in (
+    "0", "false", "no", "off",
+)
+
 DEFAULT_MAX_LENGTH = 128
 
 _lock = threading.Lock()
@@ -55,8 +74,11 @@ def _resolve_model_dir() -> Optional[Path]:
     """Locate the baked model, if it is there.
 
     Checks ONNX_EMBEDDER_DIR first, then a repo-local ``models/onnx`` so a
-    developer can exercise the same path without a container.
+    developer can exercise the same path without a container. Returns None when
+    ONNX_EMBEDDER_ENABLED is off, which is what restores the fp32 query path.
     """
+    if not ONNX_ENABLED:
+        return None
     project_root = Path(__file__).resolve().parent.parent.parent
     for candidate in (Path(ONNX_MODEL_DIR), project_root / "models" / "onnx"):
         if (candidate / "model.onnx").exists() and (candidate / "tokenizer.json").exists():

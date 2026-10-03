@@ -26,6 +26,24 @@ This script runs at image build time only, where torch is available so the
 download can be verified against the fp32 model it replaces. A mismatch
 fails the build rather than shipping silently degraded retrieval.
 
+Two properties are checked, and the second one exists because of a bug:
+
+1. *Direction* -- cosine between the ONNX and fp32 vectors. ``embed_texts``
+   L2-normalises, and the fp32 reference is compared with
+   ``normalize_embeddings=True``, so this measures agreement of direction.
+2. *Magnitude* -- whether the query vector is on the same scale as the vectors
+   already stored in the index. A direction-only check passes at 1.0000 even
+   when the two sides are incompatible, because squared L2
+
+       ||q - d||^2 = ||q||^2 - 2 q.d + ||d||^2
+
+   is magnitude-sensitive. That is exactly how this project shipped a
+   regression: the index was written un-normalised (norms 1.26-6.61) while the
+   new query vectors were unit length, so ``||d||^2`` spanning 1.6-43.7
+   swamped a ``q.d`` term that could not exceed 1.0. Retrieval then ranked by
+   vector norm rather than meaning -- top-5 agreement with true cosine fell to
+   0-1 of 5. See ``scripts/rebuild_index_onnx.py``.
+
     python scripts/fetch_onnx_embedder.py --out /opt/models/onnx
 """
 
@@ -80,6 +98,9 @@ SAMPLE_TEXTS = (
 
 # A drifted model would silently degrade every answer, so hold the line high.
 MIN_COSINE = 0.95
+
+# Tolerance for calling a vector "unit length".
+UNIT_NORM_TOL = 1e-2
 
 
 def download(out_dir: Path) -> Path:
@@ -151,6 +172,73 @@ def verify(out_dir: Path) -> None:
     print(f"[onnx] OK, worst cosine {worst:.4f} (threshold {MIN_COSINE})")
 
 
+def verify_index_compatibility(out_dir: Path) -> None:
+    """Check the query vector is on the same scale as the stored vectors.
+
+    The cosine check above is direction-only and cannot see a magnitude
+    mismatch, but squared L2 can. So compare the norm of a query vector this
+    embedder produces against the norms actually persisted in the index, and
+    check them against the collection's own metric.
+
+    Skips (without failing) when no index is present, so an image built without
+    a bundled corpus still builds.
+    """
+    import numpy as np
+
+    chroma_path = PROJECT_ROOT / "data" / "chroma_db"
+    if not chroma_path.exists():
+        print("[onnx] no local index to check; skipping magnitude verification")
+        return
+
+    try:
+        import chromadb
+
+        from src.rag.retrieve import CHROMA_COLLECTION
+
+        client = chromadb.PersistentClient(path=str(chroma_path))
+        col = client.get_collection(name=CHROMA_COLLECTION)
+        sample = col.get(limit=500, include=["embeddings"])
+    except Exception as exc:  # noqa: BLE001 - absent index must not fail a build
+        print(f"[onnx] could not open index for magnitude check ({exc}); skipping")
+        return
+
+    stored = np.asarray(sample["embeddings"], dtype=np.float64)
+    if stored.size == 0:
+        print("[onnx] index holds no vectors; skipping magnitude verification")
+        return
+
+    space = ((col.metadata or {}).get("hnsw:space") or "l2").lower()
+    norms = np.linalg.norm(stored, axis=1)
+    lo, hi = float(norms.min()), float(norms.max())
+
+    from src.rag.onnx_embedder import embed_texts, load_tokenizer
+
+    q = np.asarray(embed_texts([SAMPLE_TEXTS[0]],
+                               tokenizer=load_tokenizer(out_dir))[0], dtype=np.float64)
+    qnorm = float(np.linalg.norm(q))
+
+    stored_unit = abs(lo - 1.0) < UNIT_NORM_TOL and abs(hi - 1.0) < UNIT_NORM_TOL
+    print(f"[onnx] metric={space}  stored norms {lo:.4f}..{hi:.4f}  "
+          f"query norm {qnorm:.4f}")
+
+    if space == "cosine":
+        # Cosine normalises internally, so magnitudes are irrelevant here.
+        print("[onnx] OK, collection uses cosine; vector magnitudes do not matter")
+        return
+
+    if not stored_unit and abs(qnorm - 1.0) < UNIT_NORM_TOL:
+        raise SystemExit(
+            f"[onnx] FAILED: the collection ranks by {space}, its stored vectors "
+            f"are not unit length ({lo:.4f}..{hi:.4f}), but this embedder emits "
+            f"unit-length queries ({qnorm:.4f}). The ||d||^2 term would dominate "
+            "||q-d||^2 and retrieval would rank by vector magnitude, not meaning. "
+            "Rebuild the index normalised (scripts/rebuild_index_onnx.py) or set "
+            "CHROMA_COLLECTION to a cosine collection."
+        )
+
+    print("[onnx] OK, query and stored vectors are on a comparable scale")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="/opt/models/onnx", help="output directory")
@@ -163,6 +251,7 @@ def main() -> int:
     download(out_dir)
     if not args.skip_verify:
         verify(out_dir)
+    verify_index_compatibility(out_dir)
     return 0
 
 
