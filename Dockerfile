@@ -37,6 +37,7 @@ RUN useradd -m -u 1000 user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     HF_HOME=/home/user/.cache/huggingface \
+    ONNX_EMBEDDER_DIR=/home/user/models/onnx \
     PYTHONUNBUFFERED=1
 
 WORKDIR /home/user/app
@@ -70,11 +71,30 @@ RUN python -c "\
 from chromadb.utils import embedding_functions; \
 embedding_functions.SentenceTransformerEmbeddingFunction( \
 model_name='paraphrase-multilingual-MiniLM-L12-v2')"
+
+# Bake in the ONNX query embedder (scripts/fetch_onnx_embedder.py).
+#
+# This is what the live retrieval path uses. Loading the model through
+# sentence-transformers costs ~830 MB resident (188 MB importing torch, ~555 MB
+# of fp32 weights) and OOM-killed a 512 MB container at boot; the O4 ONNX build
+# is numerically equivalent (cosine 1.0000 against fp32) and needs no torch.
+#
+# It must be baked in rather than downloaded at start-up: the Space's disk is
+# not persistent, and a Space that wakes after 48h idle cannot afford to fetch
+# weights before answering. The script verifies the download against the fp32
+# model and fails the build if it drifted.
+#
+# Run from the repo copy above: the script resolves the project root from its
+# own location to import src.rag.onnx_embedder, so it has to stay under
+# scripts/ rather than being copied elsewhere.
+RUN python scripts/fetch_onnx_embedder.py --out "$ONNX_EMBEDDER_DIR"
 # Cross-encoder reranker (~470 MB) — pre-downloaded only when reranking is on.
 # Space *Variables* are passed as Docker build-args, so setting the Variable
-# RERANK_ENABLED=false skips this download entirely (smaller image / faster build).
+# RERANK_ENABLED=true pulls it in (smaller image / faster build otherwise).
+# Defaults to false, matching the app's own default: the reranker is the first
+# thing to push memory over an edge, and hybrid.py disables it by default.
 # Best-effort: a download failure never fails the build.
-ARG RERANK_ENABLED=true
+ARG RERANK_ENABLED=false
 RUN if [ "$RERANK_ENABLED" = "true" ]; then \
       python -c "from sentence_transformers import CrossEncoder; \
 CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1')" \

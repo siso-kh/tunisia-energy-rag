@@ -101,12 +101,33 @@ remains for local development and is unchanged by this deployment.
 3. The Space repo starts with a `README.md`; your push (§6) will overwrite it
    with the one that already contains the correct frontmatter.
 
+> **Why HF and not Render.** CPU basic is free and ships **2 vCPU / 16 GB RAM**
+> (verified on the pricing page and Spaces docs). This app's measured peak is
+> ~940 MB — see the Memory section in `README.md`. Render's free and starter
+> tiers are both 512 MB, which cannot hold it: the container was OOM-killed at
+> boot while loading the embedding model and every request answered 502 with no
+> error frame.
+>
+> Two things to expect from the free tier: a Space **sleeps after 48 hours
+> without visitors**, so the first request afterwards pays a cold start (the
+> image is cached, so this is migrations plus the retrieval warm-up — tens of
+> seconds, not a rebuild), and **disk is not persistent**, which is why both the
+> Chroma index and the embedding model are baked into the image.
+>
+> HF has at times gated the Docker SDK on new free accounts and tightened
+> per-account free-Space quotas. Create a throwaway Space first to confirm.
+
 ---
 
 ## 5. Secrets
 
 Space → **Settings → Variables and secrets → New secret**. These are injected as
 environment variables at **runtime**.
+
+> `DATABASE_URL` must be the **asyncpg** form (`postgresql+asyncpg://...?ssl=require`).
+> The entrypoint's `ensure_schema()` converts it for the sync inspection engine,
+> so do not paste the `postgresql://...?sslmode=require` string from the Neon
+> dashboard.
 
 Generate the two local keys first:
 

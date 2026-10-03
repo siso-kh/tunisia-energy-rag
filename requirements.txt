@@ -8,6 +8,14 @@ openai
 tiktoken
 langchain-text-splitters
 
+# Query embedding (src/rag/onnx_embedder.py). The live retrieval path loads the
+# model through ONNX Runtime instead of sentence-transformers: the fp32 model
+# costs ~830 MB resident and was enough to OOM-kill a small container at boot.
+# `tokenizers` reads the tokenizer directly, because going through
+# transformers.AutoTokenizer imports torch and costs 670 MB on its own.
+onnxruntime
+tokenizers
+
 # Document Parsing
 pdfplumber
 pypdf
@@ -36,6 +44,11 @@ email-validator
 sqlalchemy
 asyncpg
 aiosqlite
+greenlet              # required by SQLAlchemy's async engine
+psycopg2-binary       # sync driver for src/database/schema.py:ensure_schema()
+psycopg[binary]       # psycopg3: newer SQLAlchemy resolves a bare
+                      # "postgresql://" URL to psycopg, so without it the seed
+                      # step fails with "No module named 'psycopg'"
 
 # Schema migrations (alembic/versions)
 alembic
