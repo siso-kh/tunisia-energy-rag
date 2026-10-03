@@ -23,7 +23,7 @@ The tunnel service only forwards bytes, so its own free-tier limits apply to
 *bandwidth*, not memory.
 
 ```
-   https://<subdomain>.ngrok-free.app        (public, TLS terminated by ngrok)
+   https://<subdomain>.ngrok-free.dev        (public, TLS terminated by ngrok)
                         │
               ┌─────────┴──────────┐
               │  ngrok agent       │  (container, docker-compose service)
@@ -71,6 +71,24 @@ to build.
 The free plan includes HTTPS with an automatic TLS certificate, so the public
 URL is HTTPS with no extra setup.
 
+> **Check the agent version first — this is the most common failure.** ngrok
+> enforces a *minimum* agent version per account (3.20.0 on the free plan as of
+> writing). An older agent fails at startup with `ERR_NGROK_121` and never opens
+> a tunnel, no matter how correct the token is. Verify with `ngrok version` and
+> update with `ngrok update` if it is below the minimum. If you are on Windows
+> and `ngrok update` reports nothing to do, reinstall via
+> <https://ngrok.com/download> or `winget upgrade ngrok.ngrok`.
+
+To read the assigned URL (works whether you started the agent in the foreground
+or the background):
+
+```bash
+curl -s http://127.0.0.1:4040/api/tunnels | head -c 500     # public_url field
+```
+
+Note the domain suffix is `.ngrok-free.dev`, not `.ngrok-free.app` — older
+documentation shows `.app`.
+
 ---
 
 ## 4. Start the stack
@@ -91,7 +109,14 @@ docker compose ps
 Then read the public URL out of the ngrok log:
 
 ```bash
-docker compose logs ngrok | grep -o 'https://[a-z0-9-]*\.ngrok-free\.app'
+docker compose logs ngrok | grep -oE 'https://[a-z0-9-]+\.ngrok-free\.(dev|app)'
+```
+
+Or query the agent's local API directly (works even when the log format hides
+the line):
+
+```bash
+curl -s http://127.0.0.1:4040/api/tunnels | grep -oE 'https://[a-z0-9-]+\.ngrok-free\.[a-z]+'
 ```
 
 - **ngrok's own dashboard:** <http://localhost:4040>
@@ -112,18 +137,18 @@ readiness, a Postgres read, and a **complete** chat stream, and exits non-zero
 on failure:
 
 ```bash
-python scripts/verify_deployment.py https://<subdomain>.ngrok-free.app --retries 20
+python scripts/verify_deployment.py https://<subdomain>.ngrok-free.dev --retries 5
 ```
 
-There is no cold start here — your machine is already warm — so
-`--retries 5` is normally enough. Use a large `--retries` only while the stack
-is still building.
+There is no cold start here — your machine is already warm — so `--retries 3`
+is normally enough. Use a larger `--retries` only while the stack is still
+building.
 
 Then confirm by hand:
 
 | # | Check | Expected |
 |---|---|---|
-| 1 | Liveness | `curl -s https://<subdomain>.ngrok-free.app/health` → `200` |
+| 1 | Liveness | `curl -s https://<subdomain>.ngrok-free.dev/health` → `200` |
 | 2 | Readiness | `.../ready` → `200`, `{"checks":{"db":true,"chroma":true}}` |
 | 3 | SPA loads | open the ngrok URL in a browser → React app renders |
 | 4 | Chat (SSE) | ask "Quel est le rôle de l'ANME ?" → streamed answer + sources |
@@ -133,6 +158,45 @@ Then confirm by hand:
 
 If the browser shows an ngrok warning page, that is the free-tier interstitial
 (§7) — click *Visit* once and it remembers the domain for 7 days.
+
+> **A failed chat check may not mean the tunnel is broken.** Check
+> `/health` and `streams` on the site first. If `[4/4]` reports
+> `Request failed (APIError)` with `sources returned 5`, the tunnel carried the
+> request fine and the *LLM provider* rejected one call — `combo/freemodels`
+> fails this way intermittently by design (see the model notes in
+> `src/rag/retrieve.py`). Re-run to confirm; the pool fails over automatically.
+
+### Running without Docker
+
+If the Docker daemon isn't available (or you'd rather not start Desktop), run
+the backend directly and point the tunnel at it:
+
+```bash
+set -a; . ./.env; set +a
+export ONNX_EMBEDDER_DIR="$(pwd)/models/onnx"
+.venv/Scripts/python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+```
+
+In another shell:
+
+```bash
+set -a; . ./.env; set +a
+ngrok http 8000
+```
+
+This is fine for the API and the SSE stream, and matches what the compose stack
+does — the backend does not serve `frontend/dist` (there is no `StaticFiles`
+mount), so in this mode the **API only** is reachable through the tunnel and the
+SPA still needs `docker compose up frontend`, or the Vite dev server on
+:5173 pointed at the tunnel URL.
+
+Useful when checking the tunnel or verifying the API. Two gotchas:
+
+- **`.env` lines must not have spaces around `=`.** `JWT_SECRET = abc` parses
+  fine under python-dotenv but breaks `set -a; . ./.env` under bash (it tries to
+  run `abc` as a command). Keep `KEY=value`.
+- **`psycopg[binary]` must be installed** in the venv or the schema check logs
+  `No module named 'psycopg'` and skips `ensure_schema`.
 
 ---
 
@@ -214,6 +278,7 @@ An ngrok URL makes a **development stack public**. Before sharing it:
 | URL returns 502 | The frontend container isn't up yet, or nginx can't reach `backend`. Check `docker compose logs frontend backend`. |
 | Chat streams nothing, then errors | SSE is being buffered somewhere in the chain. `frontend/nginx.conf` already sets `proxy_buffering off` and `X-Accel-Buffering no`; make sure that config is the one in use. |
 | `502` from ngrok only, local works | Backend still importing the embedding model (30–60 s cold start). Wait for `/health`, then retry. |
+| `ERR_NGROK_121` | **Agent too old** for your account (minimum 3.20.0). `ngrok update`, then retry. The token is fine — don't chase it. |
 | `ERR_NGROK_401` | `NGROK_AUTHTOKEN` missing or wrong. Restart: `docker compose up -d --force-recreate ngrok`. |
 | `ERR_NGROK_1058` / agent not connected | Port `4040` is taken by another ngrok agent. `docker compose stop ngrok` on the other project. |
 | URL changed unexpectedly | A different tunnel took the dev domain, or you're on a random URL. `docker compose logs ngrok` shows the bound URL. |
