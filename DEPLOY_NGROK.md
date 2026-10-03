@@ -150,7 +150,7 @@ Then confirm by hand:
 |---|---|---|
 | 1 | Liveness | `curl -s https://<subdomain>.ngrok-free.dev/health` → `200` |
 | 2 | Readiness | `.../ready` → `200`, `{"checks":{"db":true,"chroma":true}}` |
-| 3 | SPA loads | open the ngrok URL in a browser → React app renders |
+| 3 | SPA loads | open the ngrok URL in a browser → React app renders (needs `dev_serve_spa.py` or the compose `frontend`, since uvicorn alone serves no static files) |
 | 4 | Chat (SSE) | ask "Quel est le rôle de l'ANME ?" → streamed answer + sources |
 | 5 | Outage map | open `/map` | seeded reports appear |
 | 6 | Auth | register a user, then log in | `200`, token stored, user chip shown |
@@ -184,13 +184,21 @@ set -a; . ./.env; set +a
 ngrok http 8000
 ```
 
-This is fine for the API and the SSE stream, and matches what the compose stack
-does — the backend does not serve `frontend/dist` (there is no `StaticFiles`
-mount), so in this mode the **API only** is reachable through the tunnel and the
-SPA still needs `docker compose up frontend`, or the Vite dev server on
-:5173 pointed at the tunnel URL.
+This reaches the **API only** — the backend has no `StaticFiles` mount, so
+`frontend/dist` isn't served. To expose the full UI too, run the small
+dependency-free stand-in for nginx on a free port and point the tunnel at that:
 
-Useful when checking the tunnel or verifying the API. Two gotchas:
+```bash
+.venv/Scripts/python.exe scripts/dev_serve_spa.py --port 8090
+ngrok http 8090
+```
+
+It serves `frontend/dist`, falls back to `index.html` for client-side routes
+(`/map`, `/admin`), and streams `/api`, `/health` and `/ready` to uvicorn
+**without buffering** so SSE arrives frame by frame. Pick a port that is free —
+8080 is often taken on a dev machine.
+
+Two gotchas when sourcing `.env` this way:
 
 - **`.env` lines must not have spaces around `=`.** `JWT_SECRET = abc` parses
   fine under python-dotenv but breaks `set -a; . ./.env` under bash (it tries to
