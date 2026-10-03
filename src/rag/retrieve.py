@@ -358,6 +358,89 @@ class ModelFallbackPool:
                     break
         raise last_exc  # type: ignore[misc]
 
+    async def chat_stream_failover(
+        self,
+        messages: List[Dict[str, str]],
+        preferred: Optional[str] = None,
+        timeout: float = LLM_STREAM_TIMEOUT,
+        **kwargs,
+    ):
+        """Async-iterate a chat stream, failing over on a pre-token rejection.
+
+        ``chat_stream`` can only fail over while *opening* the stream. The
+        provider routinely accepts the request and then rejects it once
+        iteration begins -- openai surfaces that as ``APIError: The model
+        rejected this request`` from inside ``_streaming.__stream__``, long
+        after ``chat_stream`` returned. That left the failover loop finished and
+        the error propagating straight out of the SSE endpoint, so a single
+        provider hiccup killed the answer while two healthy models sat unused in
+        the pool. Measured live: the identical payload succeeded on 15/15 direct
+        probes, so the rejection is transient and a retry is the right answer.
+
+        Failover is only safe while nothing has been emitted. Once a content
+        token reaches the client the answer is already partially written and
+        re-running the model would duplicate text, so a later failure is raised
+        instead. Usage-only chunks do not count as emitted: the consumer skips
+        them, so nothing has reached the client yet.
+
+        Yields ``(chunk, model_used)`` so per-model metrics stay attributable.
+        """
+        last_exc: Optional[Exception] = None
+        tried: set = set()
+
+        for _ in range(len(self._models)):
+            model = self._pick_model(preferred)
+            if model in tried:
+                break
+            tried.add(model)
+
+            for attempt in range(SAME_MODEL_RETRIES + 1):
+                try:
+                    coro = self._get_client().chat.completions.create(
+                        model=model, messages=messages, stream=True,
+                        timeout=timeout, **kwargs,
+                    )
+                    stream = await self._call_with_hard_timeout(coro, timeout)
+                except Exception as exc:  # noqa: BLE001 - opening the stream
+                    last_exc = exc
+                    if attempt < SAME_MODEL_RETRIES and self._is_retryable(exc):
+                        logger.warning(
+                            "Model %s could not open a stream (attempt %d/%d): %s"
+                            " — retrying", model, attempt + 1,
+                            SAME_MODEL_RETRIES + 1, exc,
+                        )
+                        continue
+                    self._quarantine(model, exc)
+                    break
+
+                # The stream is open. Iterate it, watching for a rejection
+                # that arrives before any content token.
+                emitted = False
+                try:
+                    async for chunk in stream:
+                        if (chunk.choices and chunk.choices[0].delta
+                                and chunk.choices[0].delta.content):
+                            emitted = True
+                        yield chunk, model
+                except Exception as exc:  # noqa: BLE001 - mid-stream failure
+                    if emitted:
+                        logger.error(
+                            "Model %s failed after the answer had started (%s); "
+                            "not retrying, the client already has a partial answer.",
+                            model, exc,
+                        )
+                        raise
+                    last_exc = exc
+                    logger.warning(
+                        "Model %s rejected mid-stream before any token (%s) — "
+                        "failing over", model, str(exc)[:120],
+                    )
+                    self._quarantine(model, exc)
+                    break
+                return
+
+        raise last_exc  # type: ignore[misc]
+
     # this prevents the event loop from blocking for minutes without returning.
     TIMEOUT: float = 60.0
 
@@ -654,13 +737,14 @@ async def generate_answer_stream(
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": user_query})
 
-    # Streaming LLM call with automatic failover
+    # Streaming LLM call. chat_stream_failover, not chat_stream: the provider
+    # often accepts the request and rejects it once iteration starts, which
+    # chat_stream has already returned by and cannot recover from.
     pool = get_llm_pool()
-    stream, model_used = await pool.chat_stream(
+    async for chunk, model_used in pool.chat_stream_failover(
         messages=messages,
         temperature=0.1,
-    )
-    async for chunk in stream:
+    ):
         if not chunk.choices:
             # The last chunk may carry usage info (prompt_tokens, completion_tokens)
             if hasattr(chunk, "usage") and chunk.usage:
