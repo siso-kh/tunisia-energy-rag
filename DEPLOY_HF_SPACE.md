@@ -140,12 +140,13 @@ python -c "import secrets; print(secrets.token_hex(32))"       # ADMIN_API_KEY
 |---|---|---|
 | `DATABASE_URL` | yes | `postgresql+asyncpg://<role>:<password>@...neon.tech/neondb?ssl=require` |
 | `CUSTOM_API_KEY` | yes | your Mistral/OpenAI-compatible key (chat + triage) |
-| `OPENAI_BASE_URL` | recommended | provider base URL, e.g. `https://api.mistral.ai/v1` |
+| `OPENAI_BASE_URL` | recommended | provider base URL. The verified setup uses `https://router.bynara.id/v1` |
 | `JWT_SECRET` | yes | generated above; without it, auth endpoints return 503 |
 | `ADMIN_API_KEY` | yes | generated above; protects `/api/admin/*` |
 | `CORS_ORIGINS` | recommended | `https://<user>-<space>.hf.space` |
-| `RERANK_ENABLED` | optional | `false` to skip the ~470 MB cross-encoder (faster cold start) |
-| `LLM_MODEL` / `LLM_MODELS` | optional | override the model fallback pool |
+| `RERANK_ENABLED` | optional | `false` (the default) skips the ~470 MB cross-encoder |
+| `LLM_MODEL` / `LLM_MODELS` | recommended | the only models verified against this provider are `agnes-2.5-flash`, `laguna-s-2.1` and `combo/freemodels`. `deepseek-v4-flash` / `qwen3.8-27b` / `stepfun-3.7-flash` return 429 (per-model quota) and `glm-5.3-flash-free` / `nemotron-3-ultra` return 404, so leave them out or failover stalls on them |
+| `SSE_HEARTBEAT_SECONDS` | optional | default `10`; keep-alive comments on the chat stream |
 | `OUTAGE_TTL_HOURS` | optional | default `5` |
 | `RATE_LIMIT_STORAGE_URI` | optional | default `memory://` (fine for one instance) |
 
