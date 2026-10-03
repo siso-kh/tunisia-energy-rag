@@ -1445,14 +1445,35 @@ async def crawl_for_sources(
 @app.get("/dashboard")
 @limiter.exempt
 def dashboard(request: Request):
-    """Built-in metrics dashboard — no Docker/Grafana needed."""
+    """Built-in metrics dashboard — no Docker/Grafana needed.
+
+    Left unauthenticated because it renders no secrets and fetching the values
+    it shows would require the admin key anyway. It does expose which metrics
+    exist, so treat it as internal.
+    """
     return HTMLResponse(content=DASHBOARD_HTML)
 
 
 @app.get("/metrics")
 @limiter.exempt
-def metrics_endpoint(request: Request):
-    """Prometheus scrape endpoint — returns all registered metrics in text format."""
+def metrics_endpoint(request: Request, _: None = Depends(require_admin_key)):
+    """Prometheus scrape endpoint — returns all registered metrics in text format.
+
+    Gated behind ``X-Admin-Key`` like the admin API. The exposition includes
+    per-model token counts, request rates and latency percentiles, which is
+    internal telemetry rather than public data -- and this deployment is
+    reachable from the open internet over the ngrok tunnel. Configure the
+    scraper with a custom header:
+
+        scrape_configs:
+          - job_name: tunisia-energy
+            static_configs:
+              - targets: ['host.docker.internal:8000']
+            metrics_path: /metrics
+            authorization:
+              type: X-Admin-Key
+              credentials: <ADMIN_API_KEY>
+    """
     return PlainTextResponse(
         generate_latest().decode("utf-8"),
         media_type="text/plain; version=0.0.4; charset=utf-8",

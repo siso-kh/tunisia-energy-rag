@@ -39,7 +39,11 @@ DEFAULT_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 # Paths that must reach the API rather than the static bundle. The SPA calls
 # /api/* with relative URLs, so keeping them same-origin avoids CORS entirely.
-API_PREFIXES = ("/api", "/health", "/ready")
+# Proxied to the API rather than served from disk. /metrics and /dashboard
+# belong here too: without them the SPA fallback answers both with index.html,
+# and because that is still HTTP 200 a Prometheus scrape against the public URL
+# would record success while ingesting HTML.
+API_PREFIXES = ("/api", "/health", "/ready", "/metrics", "/dashboard")
 
 # SSE needs the socket kept open well past the default; uvicorn streams for as
 # long as the model takes to answer.
