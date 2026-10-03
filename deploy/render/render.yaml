@@ -21,9 +21,20 @@ services:
     branch: main
 
     # ------------------------------------------------------------------
-    # PLAN: "free" and "starter" are BOTH 512 MB RAM and will OOM.
-    # torch + sentence-transformers + ChromaDB need roughly 1.0-1.4 GB RSS.
-    # "standard" (2 GB) is the first plan that reliably fits.
+    # PLAN: "free" and "starter" are BOTH 512 MB RAM and WILL NOT RUN.
+    #
+    # Measured resident memory of this app (see README §Memory):
+    #   ~135 MB  Python + FastAPI + chromadb + openai
+    #   ~250 MB  tokenizer (XLM-R vocabulary, unavoidable)
+    #   ~280 MB  ONNX embedder (model_O4)
+    #   ~195 MB  Chroma corpus held for BM25 fusion
+    #   ~160 MB  BM25 index
+    #   ------
+    #   ~940 MB  peak, with torch entirely off the query path
+    #
+    # So "standard" (2 GB) is the smallest plan that fits, with room for the
+    # ingestion path. On 512 MB the container was OOM-killed at boot while
+    # loading the embedding model, and every request answered 502.
     # ------------------------------------------------------------------
     plan: standard
 
@@ -85,6 +96,11 @@ services:
       # during that gap the edge drops the response and the client just spins.
       - key: SSE_HEARTBEAT_SECONDS
         value: "10"
+      # Where the image bakes the ONNX query embedder. Point it somewhere
+      # else to use a different build, or leave unset to fall back to the
+      # in-process sentence-transformer (which needs ~830 MB).
+      - key: ONNX_EMBEDDER_DIR
+        value: "/opt/models/onnx"
       - key: OUTAGE_TTL_HOURS
         value: "5"
       - key: RATE_LIMIT_STORAGE_URI

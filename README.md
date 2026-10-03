@@ -295,6 +295,51 @@ python -m src.eval.evaluate --retriever hybrid --k 5   # hybrid (default)
 Baseline (6 golden queries, k=5): vector recall@5 **0.83** → hybrid **1.00**.
 The golden set lives in `data/eval/golden_qa.json` — extend it as the corpus grows.
 
+## Memory
+
+The deployed image embeds queries through **ONNX Runtime**, not
+sentence-transformers. Loading `paraphrase-multilingual-MiniLM-L12-v2` the
+usual way costs ~830 MB resident (188 MB importing torch, ~555 MB of fp32
+weights) and was enough to OOM-kill the container at boot, after which every
+request answered 502 with no error frame — the process was gone before the
+pipeline could report anything.
+
+`scripts/fetch_onnx_embedder.py` bakes an ONNX build of the same weights into
+the image at build time and verifies it against the fp32 model (cosine
+similarity), failing the build on drift. The vectors land in the same space,
+so **the existing Chroma index stays valid and must not be rebuilt**.
+
+| build | size | cosine vs fp32 | top-5 agreement |
+|---|---|---|---|
+| fp32 (sentence-transformers) | 470 MB | 1.000 | 5/5 (reference) |
+| `model_O4` (default) | 235 MB | 1.000 | 4.8/5 |
+| `model_qint8_*` | 118 MB | 0.89–0.99 | 3.7/5 |
+
+Measured resident memory of a warm app, through a full retrieval:
+
+```
+~135 MB  Python + FastAPI + chromadb + openai
+~250 MB  tokenizer (XLM-R vocabulary)
+~280 MB  ONNX embedder (model_O4)
+~195 MB  Chroma corpus held for BM25 fusion
+~160 MB  BM25 index
+------
+~940 MB  peak   (was ~1700 MB before this change)
+```
+
+`standard` (2 GB) is therefore the smallest Render plan that fits. On 512 MB
+(`free` / `starter`) there is no configuration of this app that survives
+startup.
+
+To regenerate the embedder locally (writes to `models/onnx`, git-ignored):
+
+```bash
+python scripts/fetch_onnx_embedder.py --out models/onnx
+```
+
+If the model is missing, retrieval falls back to the in-process model and
+logs the fallback on `/health` (`embedder: sentence-transformers`).
+
 ## Tests
 
 See `tests/auto_test_config.md` for the fast / medium / full run commands and the

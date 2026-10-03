@@ -48,9 +48,12 @@ def _sync_url(url: str) -> str:
     # -> 'No module named psycopg'. Force the dialect to psycopg2 so the sync
     # engine uses psycopg2-binary (already in requirements.runtime.txt).
     url = url.replace("postgresql+asyncpg", "postgresql+psycopg2")
-    # Remove the asyncpg-only query param (asyncpg accepts only 'ssl=require');
-    # psycopg2 needs 'sslmode'. PRESERVE the DB name and credentials.
-    url = re.sub(r"[?&]ssl(?:mode)?=require", "sslmode=require", url)
+    # asyncpg accepts only 'ssl=require'; psycopg2 needs 'sslmode'. PRESERVE
+    # the DB name and credentials -- and the '?' that introduces the query
+    # string, without which the substitution glues the parameter onto the
+    # database name ("/neondbsslmode=require") and points at a database that
+    # does not exist.
+    url = re.sub(r"([?&])ssl(?:mode)?=require", r"\1sslmode=require", url)
     return url
 
 

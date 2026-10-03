@@ -51,15 +51,30 @@ WORKDIR /app
 
 # CPU-only torch FIRST: PyPI's default Linux torch wheel is the CUDA build
 # (~2.5 GB + nvidia-*) which is useless on a CPU instance. Installing it up
-# front means requirements.runtime.txt sees torch already satisfied.
+# front means requirements.runtime.txt sees torch already satisfied. Torch is
+# build-time and ingestion-only: the live query path uses ONNX Runtime, so
+# this heavyweight install never costs runtime memory.
 COPY --from=frontend /frontend/dist /app/frontend/dist
 COPY deploy/render/requirements.runtime.txt ./
 RUN pip install --upgrade pip && \
     pip install torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install -r requirements.runtime.txt
 
-# Pre-download the embedding model so cold starts don't fetch weights.
-# (Needed by chromadb's SentenceTransformerEmbeddingFunction at runtime.)
+# Bake in the ONNX query embedder (scripts/fetch_onnx_embedder.py).
+#
+# This is what the live retrieval path uses. Loading the model through
+# sentence-transformers costs ~830 MB resident (188 MB importing torch, ~555 MB
+# of fp32 weights) and OOM-killed the container at boot; the O4 ONNX build is
+# numerically equivalent (cosine 1.0000 against fp32) and needs no torch.
+#
+# The script verifies the download against the fp32 model and fails the build
+# if it drifted, so a bad export can never reach production unnoticed.
+COPY scripts/fetch_onnx_embedder.py /app/scripts/
+RUN python scripts/fetch_onnx_embedder.py --out /opt/models/onnx
+
+# Pre-download the embedding model too, for the ingestion path and the fp32
+# fallback. Indexing new documents still embeds through Chroma's
+# SentenceTransformerEmbeddingFunction.
 RUN python -c "\
 from chromadb.utils import embedding_functions; \
 embedding_functions.SentenceTransformerEmbeddingFunction( \
@@ -92,12 +107,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HF_HOME=/opt/hf \
-    HF_HUB_DISABLE_TELEMETRY=1
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    ONNX_EMBEDDER_DIR=/opt/models/onnx
 
 # Finished Python environment from the builder (same base image -> ABI safe).
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /opt/hf /opt/hf
+# The ONNX query embedder, baked by the builder and read at runtime.
+COPY --from=builder /opt/models /opt/models
 
 WORKDIR /app
 

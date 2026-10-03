@@ -31,6 +31,11 @@ psycopg2-binary           # REQUIRED: src/database/schema.py:ensure_schema()
                           # inspects via a *sync* engine. Without it the
                           # container's seed step fails silently and the
                           # outage map boots empty.
+psycopg[binary]           # psycopg3. Newer SQLAlchemy resolves a bare
+                          # "postgresql://" URL to psycopg rather than
+                          # psycopg2, so a missing psycopg3 made the seed
+                          # step report "No module named 'psycopg'" in
+                          # production while the rest of the app carried on.
 
 # --- Auth ------------------------------------------------------------
 pyjwt
@@ -40,7 +45,16 @@ email-validator           # pydantic EmailStr validation
 # --- RAG: retrieval + LLM --------------------------------------------
 chromadb                  # src/rag/retrieve.py:6-7, and the collection is
                           # opened AT IMPORT TIME (retrieve.py:263-264)
-sentence-transformers     # chromadb embedding fn + src/rag/hybrid.py:199
+# Query embedding runs through ONNX Runtime (src/rag/onnx_embedder.py): the
+# fp32 model via sentence-transformers needs ~830 MB resident and OOM-killed
+# the deploy at boot. onnxruntime loads the same weights from an ONNX graph
+# instead, and `tokenizers` reads the tokenizer without pulling in transformers
+# (which imports torch and costs 670 MB on its own).
+onnxruntime               # src/rag/onnx_embedder.py
+tokenizers                # src/rag/onnx_embedder.py:load_tokenizer
+sentence-transformers     # ONLY for the ingestion path (indexing new
+                          # documents) and for the fp32 fallback embedder; the
+                          # live query path must never import it
 rank-bm25                 # src/rag/hybrid.py:58 (sparse half of hybrid search)
 openai                    # src/rag/retrieve.py:8, src/utils/triage.py:10
 tiktoken                  # src/utils/token_manager.py:10

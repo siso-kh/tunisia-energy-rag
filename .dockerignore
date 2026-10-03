@@ -63,3 +63,7 @@ docs/
 # --- Safety net: the shipped vector index must always stay in the image ---
 !data/chroma_db
 !data/chroma_db/**
+
+# The ONNX embedder is baked into the image by scripts/fetch_onnx_embedder.py.
+# A copy in the build context would only shadow it and bloat the context.
+models/

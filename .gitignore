@@ -85,3 +85,7 @@ node_modules/
 
 # Build output
 frontend/dist/
+
+# ONNX query embedder (fetched at image build time by
+# scripts/fetch_onnx_embedder.py, ~235 MB). Never commit the weights.
+models/

@@ -181,6 +181,39 @@ def _structured_sources(
     return sources
 
 
+def _dense_query(collection, query: str, n: int) -> Dict[str, Any]:
+    """Run the vector leg, using whichever embedder this deployment has.
+
+    Preferring the int8 ONNX embedder is what makes the app runnable in a
+    512 MB container. Passing ``query_texts`` makes Chroma embed the query
+    with the collection's persisted sentence-transformer, which drags in
+    torch and ~830 MB of weights; embedding here and passing
+    ``query_embeddings`` keeps that memory out of the process entirely.
+
+    Both paths produce vectors in the same space -- the persisted index was
+    built with the fp32 model and the ONNX build is quantized from those same
+    weights -- so the index stays valid and must NOT be rebuilt.
+    """
+    from src.rag import onnx_embedder
+
+    if onnx_embedder.embedder_available() and onnx_embedder.warm():
+        return collection.query(
+            query_embeddings=[onnx_embedder.embed_query(query)],
+            n_results=n,
+            include=["documents", "metadatas"],
+        )
+
+    logger.info(
+        "ONNX embedder unavailable; falling back to the in-process "
+        "sentence-transformer (~800 MB), which does not fit a 512 MB plan."
+    )
+    return collection.query(
+        query_texts=[query],
+        n_results=n,
+        include=["documents", "metadatas"],
+    )
+
+
 def retrieve_hybrid(query: str, n_results: int = DEFAULT_FINAL_K) -> List[Dict[str, Any]]:
     """Fuse vector + BM25 retrieval and return the top ``n_results`` sources.
 
@@ -196,10 +229,8 @@ def retrieve_hybrid(query: str, n_results: int = DEFAULT_FINAL_K) -> List[Dict[s
     texts_by_id = dict(zip(ids, texts))
 
     # Leg 1: dense vector search (Chroma).
-    vector_results = collection.query(
-        query_texts=[query],
-        n_results=min(VECTOR_CANDIDATES, len(ids)),
-        include=["documents", "metadatas"],
+    vector_results = _dense_query(
+        collection, query, n=min(VECTOR_CANDIDATES, len(ids))
     )
     vector_ids: List[str] = (vector_results.get("ids") or [[]])[0]
 

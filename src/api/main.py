@@ -185,16 +185,29 @@ async def lifespan(app: FastAPI):
 
 
 async def _warm_retrieval() -> None:
-    """Load the embedding model and BM25 index before the first request."""
+    """Load the query embedder and BM25 index before the first request."""
     started = time.monotonic()
+    from src.rag import onnx_embedder
     from src.rag.hybrid import _get_bm25
-    from src.rag.retrieve import _get_emb_fn
 
-    # Build both inside the threadpool (blocking CPU work), sequentially so
-    # their peaks do not overlap.
-    await run_in_threadpool(_get_emb_fn)
+    # The embedder to warm is deployment-specific: the int8 ONNX build when the
+    # image provides one, otherwise the in-process sentence-transformer. Warming
+    # the wrong one is how the container was OOM-killed at boot -- loading the
+    # fp32 model needs ~830 MB and the plan has 512 MB.
+    if onnx_embedder.embedder_available():
+        if not await run_in_threadpool(onnx_embedder.warm):
+            logger.warning("ONNX embedder present but failed to load; "
+                           "retrieval will fall back to the fp32 model.")
+    else:
+        from src.rag.retrieve import _get_emb_fn
+
+        await run_in_threadpool(_get_emb_fn)
+
+    # Built inside the threadpool (blocking CPU work), after the embedder, so
+    # the two peaks do not overlap.
     await run_in_threadpool(_get_bm25)
-    logger.info("Retrieval warmed in %.1fs", time.monotonic() - started)
+    logger.info("Retrieval warmed in %.1fs (embedder=%s)", time.monotonic() - started,
+                "onnx" if onnx_embedder.embedder_available() else "sentence-transformers")
 
 
 def _log_startup_diagnostics() -> None:
@@ -1544,6 +1557,9 @@ def _process_diagnostics() -> Dict[str, Any]:
         from src.rag import retrieve as _retrieve
 
         info["retrieval"] = _retrieve.retrieval_stats()
+        from src.rag import onnx_embedder
+
+        info["embedder"] = "onnx" if onnx_embedder.embedder_available() else "sentence-transformers"
         pool = getattr(_retrieve, "_llm_pool", None)
         info["models"] = list(getattr(pool, "_models", None) or _retrieve.FALLBACK_MODELS)
     except Exception:  # noqa: BLE001 - diagnostics must never break the probe

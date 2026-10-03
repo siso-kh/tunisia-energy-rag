@@ -23,14 +23,45 @@ def test_warmup_loads_embedding_model_and_bm25(monkeypatch):
     calls = []
 
     import src.rag.hybrid as hybrid
+    import src.rag.onnx_embedder as onnx_embedder
     import src.rag.retrieve as retrieve
 
     monkeypatch.setattr(retrieve, "_get_emb_fn", lambda: calls.append("emb") or "emb")
     monkeypatch.setattr(hybrid, "_get_bm25", lambda: calls.append("bm25") or "bm25")
+    # The ONNX embedder is the live one when the image ships it; pin the fp32
+    # branch so this test describes the fallback deterministically.
+    monkeypatch.setattr(onnx_embedder, "embedder_available", lambda: False)
 
     asyncio.run(api_main._warm_retrieval())
 
     assert calls == ["emb", "bm25"], "warm-up skipped work: %r" % calls
+
+
+def test_warmup_prefers_the_onnx_embedder_over_the_fp32_model(monkeypatch):
+    """Loading the fp32 model at boot is what OOM-killed the container.
+
+    On a plan without room for ~830 MB, warming the wrong embedder takes the
+    process out before uvicorn ever serves a request.
+    """
+    calls = []
+
+    import src.rag.hybrid as hybrid
+    import src.rag.onnx_embedder as onnx_embedder
+    import src.rag.retrieve as retrieve
+
+    monkeypatch.setattr(onnx_embedder, "embedder_available", lambda: True)
+    monkeypatch.setattr(onnx_embedder, "warm", lambda: calls.append("onnx") or True)
+    monkeypatch.setattr(hybrid, "_get_bm25", lambda: calls.append("bm25") or "bm25")
+    monkeypatch.setattr(
+        retrieve, "_get_emb_fn",
+        lambda: calls.append("fp32-model-loaded") or "emb",
+    )
+
+    asyncio.run(api_main._warm_retrieval())
+
+    assert calls == ["onnx", "bm25"], (
+        "the fp32 embedder must not be loaded when ONNX is available: %r" % calls
+    )
 
 
 def test_warmup_builds_the_two_heaviest_stages_sequentially(monkeypatch):
@@ -38,17 +69,18 @@ def test_warmup_builds_the_two_heaviest_stages_sequentially(monkeypatch):
     order = []
 
     import src.rag.hybrid as hybrid
-    import src.rag.retrieve as retrieve
+    import src.rag.onnx_embedder as onnx_embedder
 
     def emb():
         order.append("emb-start")
-        return "emb"
+        return True
 
     def bm25():
         order.append("bm25-start")
         return "bm25"
 
-    monkeypatch.setattr(retrieve, "_get_emb_fn", emb)
+    monkeypatch.setattr(onnx_embedder, "embedder_available", lambda: True)
+    monkeypatch.setattr(onnx_embedder, "warm", emb)
     monkeypatch.setattr(hybrid, "_get_bm25", bm25)
 
     asyncio.run(api_main._warm_retrieval())
