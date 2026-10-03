@@ -44,9 +44,10 @@ remains for local development and is unchanged by this deployment.
 
 ## 2. Prerequisites
 
-- [ ] Hugging Face account, with **Docker SDK available on the free CPU-basic tier**
-      (HF has been gating the Docker SDK to paid for some new accounts — verify
-      by creating a throwaway Space first).
+- [ ] Hugging Face account that is **allowed to create a Docker Space**. This is
+      the single hardest requirement in this runbook — see §4.1. Verify it
+      *before* writing any code changes; if the account is not eligible, the
+      free tier offers no viable host at all (§4.2).
 - [ ] A Neon project (free tier, no credit card) with the schema migrated and
       seeded (see §3).
 - [ ] `git` and `git-lfs` installed locally.
@@ -101,21 +102,82 @@ remains for local development and is unchanged by this deployment.
 3. The Space repo starts with a `README.md`; your push (§6) will overwrite it
    with the one that already contains the correct frontmatter.
 
-> **Why HF and not Render.** CPU basic is free and ships **2 vCPU / 16 GB RAM**
-> (verified on the pricing page and Spaces docs). This app's measured peak is
-> ~940 MB — see the Memory section in `README.md`. Render's free and starter
-> tiers are both 512 MB, which cannot hold it: the container was OOM-killed at
-> boot while loading the embedding model and every request answered 502 with no
-> error frame.
+Equivalent CLI (from <https://huggingface.co/new-space/agents.md>):
+
+```bash
+hf auth login                                   # prints a URL + one-time code
+hf repos create <user>/tunisia-energy-rag \
+  --type space --space-sdk docker --public
+```
+
+The CLI is free and the docs it points at are worth reading, but note that
+HF's own Spaces Overview currently states: *"Gradio and Docker Spaces run on
+compute and **require a paid plan to create**"* — see §4.1. Use whichever route
+you prefer; they create the same repo and the rest of this runbook is unchanged.
+
+> **Why HF and not Render.** CPU basic hardware itself is free and ships
+> **2 vCPU / 16 GB RAM**, far above this app's measured peak of ~940 MB (see the
+> Memory section in `README.md`). Render's free *and* starter tiers are both
+> 512 MB and cannot hold it: the container was OOM-killed at boot while loading
+> the embedding model, and every request then answered 502 with no error frame.
+> Trimming the in-memory BM25 corpus would still leave ~746 MB — over the wall.
 >
-> Two things to expect from the free tier: a Space **sleeps after 48 hours
-> without visitors**, so the first request afterwards pays a cold start (the
-> image is cached, so this is migrations plus the retrieval warm-up — tens of
-> seconds, not a rebuild), and **disk is not persistent**, which is why both the
-> Chroma index and the embedding model are baked into the image.
->
-> HF has at times gated the Docker SDK on new free accounts and tightened
-> per-account free-Space quotas. Create a throwaway Space first to confirm.
+> Two things to expect from the free tier **if you are eligible**: a Space
+> **sleeps after 48 hours without visitors**, so the first request afterwards
+> pays a cold start (the image is cached, so this is migrations plus the
+> retrieval warm-up — tens of seconds, not a rebuild), and **disk is not
+> persistent**, which is why both the Chroma index and the embedding model are
+> baked into the image.
+
+### 4.1 Verify the account may create a Docker Space (do this first)
+
+CPU Basic is free *hardware*; creating the Space that would run on it is
+**gated**. As of the docs' current wording, Gradio and Docker Spaces require
+PRO / Team / Enterprise. Community measurement on a free account: Docker
+refused, Gradio refused, Static created fine; new accounts report a free
+CPU-basic quota of **0**. Some long-standing accounts still hold a
+grandfathered allowance.
+
+Check, cheapest first:
+
+```bash
+hf auth whoami                     # inspect the `canPay` / `isPro` flags
+```
+
+```bash
+# definitive: the API reports the account's actual quota
+curl -s https://huggingface.co/api/whoami-v2 \
+  -H "Authorization: Bearer $HF_TOKEN"     # write-scoped token from /settings/tokens
+```
+
+`isPro: false` means a new Docker Space will very likely be refused. The only
+authoritative test is an actual attempt — the create call either succeeds or
+returns *"hosting Gradio and Docker Spaces on free cpu-basic requires a PRO
+subscription."* The browser route makes this obvious: open `new-space` and see
+whether **SDK = Docker** is selectable at all.
+
+If you already own one qualifying Space, **do not delete and recreate it** —
+creation is what's gated, so a rebuild from an existing Space keeps working.
+Update with `git push`, not a fresh create.
+
+### 4.2 If the account is not eligible
+
+There is no free container host with enough RAM for this app:
+
+| Host | Free tier | Fits ~940 MB? |
+|---|---|---|
+| HF Spaces CPU Basic | 16 GB, but creation gated | only if grandfathered |
+| Render free / starter | 512 MB | no |
+| Koyeb / Northflank free | 512 MB | no |
+| Google Cloud Run free | 450k GiB-s/mo (~62 h at 2 GiB) | yes, **requires a credit card** |
+| Oracle Always Free A1 | 12 GB (halved from 24 GB in June 2026) | yes, **requires a card** + capacity lottery |
+| Google e2-micro (Always Free) | 1 GB | no |
+
+Cloud Run and Oracle are the two options that fit, and both require a payment
+method on file even at $0 spend. Without one of those, or an eligible HF
+account, this app has no $0 host — the ~940 MB floor is set by the XLM-R
+tokenizer (~250 MB), the ONNX embedder (~280 MB) and the Chroma corpus
+(~195 MB), none of which can be shed without changing retrieval quality.
 
 ---
 
