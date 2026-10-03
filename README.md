@@ -30,6 +30,12 @@ conversations and the crowdsourced outage map.
 | `frontend` | React SPA (Vite build → Nginx, proxies `/api` to backend) | http://localhost |
 | `ngrok` | Public tunnel to the frontend (requires `NGROK_AUTHTOKEN`) | http://localhost:4040 |
 
+To share the running app publicly over a tunnel, see
+[`DEPLOY_NGROK.md`](DEPLOY_NGROK.md). The free ngrok tier is also the $0
+fallback when no cloud host is available — the tunnel forwards bytes, so the
+app runs on your machine and the ~940 MB memory ceiling simply doesn't apply.
+See [`DEPLOY_HF_SPACE.md`](DEPLOY_HF_SPACE.md) §4.2 for the host comparison.
+
 ### Environment
 
 ```bash
