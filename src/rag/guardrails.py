@@ -224,11 +224,18 @@ def validate_output(answer: str) -> dict:
     violations = []
     
     # 1. Check for system prompt leakage (L1 additional protection)
+    #
+    # Only fragments that carry the *instructions* belong here. The
+    # "I do not have enough information..." sentence used to be listed, but the
+    # system prompt explicitly tells the model to emit exactly that when the
+    # context does not support an answer -- so every correct refusal was
+    # flagged as a leak and thrown away, replaced by a generic message. It
+    # fired 7 times in one battery run. Being unable to answer is the desired
+    # behaviour, not a breach.
     system_prompt_fragments = [
         "expert AI assistant specializing in the Tunisian energy sector",
         "Use ONLY the following context",
         "do not hallucinate or use outside knowledge",
-        "I do not have enough information to answer that based on the provided documents",
         "Answer in the same language as the user's query",
     ]
     
@@ -471,15 +478,33 @@ def verify_claims(answer: str, context: str) -> list:
     for num in answer_numbers:
         try:
             num_val = float(num.replace('%', '').replace('percent', ''))
-            if num not in context_numbers and num_val > 100:
+            if num in context_numbers or num_val <= 100:
+                continue
+            # A bare four-digit year is a date, not a quantitative claim.
+            # Law 2015-12 and "mise en service en 2016" are legitimate and were
+            # being flagged whenever the supporting passage fell outside the
+            # 1000-character window each source is truncated to for the prompt.
+            # Requiring an exact context match for years produced false
+            # "Unsupported number: 2015" failures that discarded correct answers.
+            if num_val.is_integer() and 1900 <= num_val <= 2100:
+                continue
+            if num not in context_numbers:
                 violations.append(f"Unsupported number: {num}")
         except ValueError:
             pass
     
     # Check for absolute claims
+    #
+    # Word boundaries are essential here. Without them the pattern matches
+    # "all" inside ordinary words -- "installations", "smaller", "allocation",
+    # "metallique" -- and because a single violation discards the entire
+    # answer, a perfectly good response was being replaced by a canned
+    # "I cannot verify some claims" message. Measured on a 20-case battery,
+    # that silently ate correct answers to "what is the role of STEG" and
+    # "compare solar and wind".
     absolute_patterns = [
-        r"(?i)(always|never|all|none|every|only)",
-        r"(?i)(first|last|best|worst|most|least)",
+        r"(?i)\b(always|never|all|none|every|only)\b",
+        r"(?i)\b(first|last|best|worst|most|least)\b",
     ]
     
     for pattern in absolute_patterns:
