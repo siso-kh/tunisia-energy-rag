@@ -185,7 +185,18 @@ The Space rebuilds automatically on every push. Watch progress in the
 
 ## 7. Post-deploy verification
 
-Replace `<user>-<space>` below.
+Run the automated smoke test first — it checks liveness, readiness, a Postgres
+read and a **complete** chat stream, and exits non-zero on failure:
+
+```bash
+python scripts/verify_deployment.py https://<user>-<space>.hf.space --retries 20
+```
+
+`--retries 20` is worth using for a Space: after a push the container is still
+building, and a free Space additionally sleeps after 48 h idle, so the first
+request pays a cold start before it answers.
+
+Then check the following by hand. Replace `<user>-<space>` below.
 
 | # | Check | Command / action | Expected |
 |---|---|---|---|
