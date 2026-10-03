@@ -1,0 +1,7 @@
+# The ChromaDB index is a single ~111 MB SQLite file, which plain git refuses
+# ("exceeds 100 MB"). Hugging Face Spaces need it *in the image*, because Space
+# disk is not persistent, so the index is pushed to the Space repo with LFS.
+#
+# data/chroma_db is also gitignored (the file is far too large for GitHub), so
+# it needs `git add -f` on top of this tracking. See DEPLOY_HF_SPACE.md §6.
+*.sqlite3 filter=lfs diff=lfs merge=lfs -text
