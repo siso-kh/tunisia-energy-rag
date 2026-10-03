@@ -23,11 +23,41 @@ def test_health_stays_green_and_reports_process_facts():
     assert payload["api"] == "online"
     assert payload["boot_id"] and payload["uptime_s"] >= 0
     assert "rss_mb" in payload and "peak_rss_mb" in payload
+    assert "mem_limit_mb" in payload
     assert set(payload["streams"]) == {
         "started", "done", "truncated", "timeout", "cancelled", "error",
     }
     assert "retrieval" in payload
     assert "models" in payload
+
+
+def test_memory_limit_is_read_from_cgroups(monkeypatch, tmp_path):
+    """A 512 MB plan is the difference between a working app and an OOM kill."""
+    cgroup = tmp_path / "memory.max"
+    cgroup.write_text("536870912\n", encoding="utf-8")
+    real_open = open
+
+    def fake_open(path, *a, **k):
+        if str(path).endswith("memory.max"):
+            return real_open(str(cgroup), *a, **k)
+        raise OSError("not found")
+
+    monkeypatch.setattr("builtins.open", fake_open)
+    assert api_main._memory_limit_mb() == 512
+
+    cgroup.write_text("max\n", encoding="utf-8")
+    assert api_main._memory_limit_mb() is None, "'max' means unlimited, not 0"
+
+
+def test_undersized_container_is_reported_not_ignored(monkeypatch, caplog):
+    monkeypatch.setattr(api_main, "_memory_limit_mb", lambda: 512)
+    with caplog.at_level("ERROR", logger="src.api.main"):
+        limit = api_main._check_memory_budget()
+
+    assert limit == 512
+    assert any("memory limit is 512 MB" in r.message for r in caplog.records), (
+        "an undersized container must be reported, not silently accepted"
+    )
 
 
 def test_stream_outcomes_are_counted_separately():

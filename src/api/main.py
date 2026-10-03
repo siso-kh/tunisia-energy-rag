@@ -170,6 +170,7 @@ async def lifespan(app: FastAPI):
                            exc_info=True)
 
     try:
+        _check_memory_budget()
         _log_startup_diagnostics()
     except Exception:  # noqa: BLE001 - diagnostics must never block boot
         logger.warning("Startup diagnostics failed", exc_info=True)
@@ -1464,6 +1465,52 @@ _STREAM_STATS: Dict[str, int] = {
 }
 
 
+def _memory_limit_mb() -> Optional[int]:
+    """Container memory ceiling in MB, or None when it cannot be determined.
+
+    Read from cgroup v2 then v1. Both files use a sentinel ("max", or a value
+    near 2**63) to mean "unlimited", which is filtered out so a nonsensical
+    limit is never reported.
+    """
+    for path in ("/sys/fs/cgroup/memory.max",
+                 "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                raw = fh.read().strip()
+        except OSError:
+            continue
+        if not raw or raw == "max":
+            continue
+        try:
+            value = int(raw)
+        except ValueError:
+            continue
+        if 0 < value < 2**53:
+            return round(value / (1024 * 1024))
+    return None
+
+
+# The retrieval stack (torch + a 118M-parameter multilingual sentence
+# transformer + the Chroma corpus + BM25 over 15k documents) needs roughly
+# 1.2 GB resident. Below this the process is OOM-killed in the middle of a
+# request, which is indistinguishable from a hung app from the outside.
+MIN_MEMORY_MB = int(os.getenv("MIN_MEMORY_MB", "1536") or 1536)
+
+
+def _check_memory_budget() -> Optional[int]:
+    """Warn loudly when the container is too small for this workload."""
+    limit = _memory_limit_mb()
+    if limit is not None and limit < MIN_MEMORY_MB:
+        logger.error(
+            "Container memory limit is %d MB but the retrieval stack needs "
+            "about %d MB. Live chat will be OOM-killed mid-request: raise the "
+            "Render plan (standard = 2 GB) or lower MIN_MEMORY_MB only if the "
+            "workload really has been trimmed.",
+            limit, MIN_MEMORY_MB,
+        )
+    return limit
+
+
 def _proc_status_kb(field: str) -> Optional[int]:
     """Read a kB-valued field out of /proc/self/status (Linux only)."""
     try:
@@ -1485,6 +1532,7 @@ def _process_diagnostics() -> Dict[str, Any]:
         "uptime_s": int(time.time() - _BOOTED_AT),
         "rss_mb": round(rss / 1024, 1) if rss else None,
         "peak_rss_mb": round(peak / 1024, 1) if peak else None,
+        "mem_limit_mb": _memory_limit_mb(),
         "threads": None,
         "streams": dict(_STREAM_STATS),
     }
