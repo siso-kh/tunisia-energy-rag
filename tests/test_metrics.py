@@ -1,7 +1,8 @@
 """Tests for the /metrics Prometheus endpoint and metrics middleware.
 
 Verifies that:
-  - GET /metrics returns a 200 with Prometheus text format
+  - GET /metrics returns a 200 with Prometheus text format once the admin key
+    is presented (the endpoint is no longer public)
   - The response contains expected metric families (http_requests_total, etc.)
   - The metrics middleware records request duration
   - The logging config produces structured JSON output
@@ -22,24 +23,33 @@ def client():
         yield c
 
 
+@pytest.fixture()
+def admin_headers(monkeypatch):
+    """Auth headers for /metrics, which is gated behind X-Admin-Key."""
+    from src.api import main
+
+    monkeypatch.setattr(main, "ADMIN_API_KEY", "test-admin-key", raising=False)
+    return {"X-Admin-Key": "test-admin-key"}
+
+
 # -----------------------------------------------------------------------
 # /metrics endpoint
 # -----------------------------------------------------------------------
 
 
-def test_metrics_returns_200(client):
-    resp = client.get("/metrics")
+def test_metrics_returns_200(client, admin_headers):
+    resp = client.get("/metrics", headers=admin_headers)
     assert resp.status_code == 200
 
 
-def test_metrics_content_type_is_prometheus_text(client):
-    resp = client.get("/metrics")
+def test_metrics_content_type_is_prometheus_text(client, admin_headers):
+    resp = client.get("/metrics", headers=admin_headers)
     ct = resp.headers["content-type"]
     assert "text/plain" in ct
 
 
-def test_metrics_contains_expected_metric_families(client):
-    resp = client.get("/metrics")
+def test_metrics_contains_expected_metric_families(client, admin_headers):
+    resp = client.get("/metrics", headers=admin_headers)
     body = resp.text
     # Core metrics defined in src/api/metrics.py
     assert "http_requests_total" in body
@@ -52,9 +62,9 @@ def test_metrics_contains_expected_metric_families(client):
     assert "ingestions_total" in body
 
 
-def test_metrics_body_is_valid_prometheus_text(client):
+def test_metrics_body_is_valid_prometheus_text(client, admin_headers):
     """Every non-comment line should start with a metric name or be blank/comment."""
-    resp = client.get("/metrics")
+    resp = client.get("/metrics", headers=admin_headers)
     for line in resp.text.splitlines():
         if not line or line.startswith("#"):
             continue
@@ -72,10 +82,10 @@ def test_metrics_body_is_valid_prometheus_text(client):
 # -----------------------------------------------------------------------
 
 
-def test_metrics_recorded_after_request(client):
+def test_metrics_recorded_after_request(client, admin_headers):
     """Hitting any endpoint should increment http_requests_total."""
     client.get("/health")
-    resp = client.get("/metrics")
+    resp = client.get("/metrics", headers=admin_headers)
     body = resp.text
     # http_requests_total should have at least one sample
     assert "http_requests_total" in body
@@ -83,12 +93,12 @@ def test_metrics_recorded_after_request(client):
     assert "/health" in body or "http_requests_total" in body
 
 
-def test_metrics_endpoint_itself_not_recorded(client):
+def test_metrics_endpoint_itself_not_recorded(client, admin_headers):
     """GET /metrics should not add noise to the metrics output."""
     # Hit /metrics multiple times
     for _ in range(3):
-        client.get("/metrics")
-    resp = client.get("/metrics")
+        client.get("/metrics", headers=admin_headers)
+    resp = client.get("/metrics", headers=admin_headers)
     body = resp.text
     # /metrics should not appear as a path label in http_requests_total
     # (the middleware skips it)
