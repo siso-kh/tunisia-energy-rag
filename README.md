@@ -358,3 +358,32 @@ per-test timing baseline.
 3. **Ingest** — `src/ingestion/ingest_chunks.py` extracts text (pdfplumber + EasyOCR for Arabic), chunks, and writes `data/processed/processed_chunks.json`.
 4. **Embed & index** — sentence-transformers embeddings into ChromaDB (`data/chroma_db`).
 5. **Serve** — `src/api/main.py` exposes `/api/chat`, `/api/chat/stream` (SSE), `/api/outages` and `/api/conversations`; the React SPA consumes them.
+
+## Reports
+
+The LaTeX deliverables live in [`docs/rapports/`](docs/rapports). Each is kept
+as a `.tex` source next to its rendered `.pdf`; only the final version of each
+document is tracked.
+
+| Document | Source | Pages | Covers |
+|---|---|---|---|
+| Rapport de stage — ATER | [`rapport_stage.tex`](docs/rapports/rapport_stage.tex) · [PDF](docs/rapports/rapport_stage.pdf) | 57 | Internship report: ATER context, RAG architecture, ingestion pipeline, administration & security, evaluation, deployment |
+| Exemples de tests du chatbot | [`rapport_tests_final.tex`](docs/rapports/rapport_tests_final.tex) · [PDF](docs/rapports/rapport_tests_final.pdf) | 13 | Real request/response samples from the running system, incl. Arabic queries and prompt-injection probes |
+
+### Rebuilding
+
+Both sources resolve their figures from the top-level `image/` directory via
+`\graphicspath`, so compile them from their own folder:
+
+```bash
+cd docs/rapports
+pdflatex rapport_stage.tex          # pdflatex: pdfLaTeX fonts
+pdflatex rapport_stage.tex          # run twice to settle the TOC / page refs
+
+xelatex rapport_tests_final.tex     # xelatex: fontspec + polyglossia (Arabic)
+xelatex rapport_tests_final.tex
+```
+
+`rapport_tests_final.tex` needs **XeLaTeX or LuaLaTeX** — it uses `fontspec`
+and renders Arabic text via `polyglossia` (Traditional Arabic). Intermediates
+(`*.aux`, `*.log`, `*.toc`, `*.out`, `*.lof`, `*.lot`) are git-ignored.

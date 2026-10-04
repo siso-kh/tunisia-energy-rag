@@ -72,10 +72,9 @@ backups/
 *.snm
 *.vrb
 
-# Compiled PDFs (keep only the final one)
-rapport_stage_v2.pdf
-rapport_stage_final.pdf
-rapport_rest.pdf
+# ===== Reports (docs/rapports) =====
+# Only the final LaTeX sources and their rendered PDFs are tracked. Any extra
+# build output produced when recompiling them locally is ignored by the rules above.
 
 # Lock files
 skills-lock.json

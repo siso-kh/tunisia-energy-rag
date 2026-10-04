@@ -9,6 +9,10 @@
 \usepackage[dvipsnames,table]{xcolor}
 \usepackage{geometry,setspace,graphicx,float,array,booktabs,caption,hyperref,fancyhdr,titlesec,enumitem,tikz}
 
+% Figures would be referenced as "image/<file>", but this file lives in docs/rapports/.
+% \graphicspath entries are prepended to that path, so point them at the repo root.
+\graphicspath{{../../}{../}{../../../}}
+
 \geometry{top=2.5cm,bottom=2.5cm,left=2.7cm,right=2.5cm}
 \onehalfspacing
 

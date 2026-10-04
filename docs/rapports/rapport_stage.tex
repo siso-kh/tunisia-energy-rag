@@ -15,6 +15,11 @@
 
 \usepackage{geometry,setspace,graphicx,float,array,booktabs,caption,subcaption,hyperref,fancyhdr,titlesec,tocloft,lastpage,titling,enumitem,longtable,listings,tabularx,multicol,tikz,multirow}
 
+% Figures are referenced as "image/<file>" but this file lives in docs/rapports/.
+% \graphicspath entries are prepended to that path, so point them at the repo
+% root (and its parents) where the image/ directory actually sits.
+\graphicspath{{../../}{../}{../../../}}
+
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,calc,shadows}
 
 \geometry{top=2.5cm,bottom=2.5cm,left=2.7cm,right=2.5cm}
