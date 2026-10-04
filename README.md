@@ -377,10 +377,10 @@ Both sources resolve their figures from the top-level `image/` directory via
 
 ```bash
 cd docs/rapports
-pdflatex rapport_stage.tex          # pdflatex: pdfLaTeX fonts
-pdflatex rapport_stage.tex          # run twice to settle the TOC / page refs
+pdflatex rapport_stage.tex          # two passes to settle the TOC / page refs
+pdflatex rapport_stage.tex
 
-xelatex rapport_tests_final.tex     # xelatex: fontspec + polyglossia (Arabic)
+xelatex rapport_tests_final.tex     # two passes as well
 xelatex rapport_tests_final.tex
 ```
 
