@@ -1,13 +1,3 @@
----
-title: Tunisia Energy RAG
-emoji: ⚡
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # Tunisia Energy RAG ⚡
 
 A retrieval-augmented generation (RAG) assistant that answers questions about
