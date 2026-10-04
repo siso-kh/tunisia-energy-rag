@@ -8,27 +8,55 @@ app_port: 7860
 pinned: false
 ---
 
-# Tunisia Energy RAG
+# Tunisia Energy RAG ⚡
 
-RAG pipeline for the Tunisian energy sector: PDF collection, Arabic/OCR ingestion,
-LLM-based triage, ChromaDB vector retrieval, an async FastAPI backend, a React
-frontend (Vite build served by Nginx), and an async SQLAlchemy/PostgreSQL layer for
-conversations and the crowdsourced outage map.
+A retrieval-augmented generation (RAG) assistant that answers questions about
+Tunisia's energy sector from a corpus of official PDF documents — in French,
+Arabic and English.
+
+## What it does
+
+- **Grounded answers** — every reply ships the source documents it drew from, and
+  questions outside the corpus are refused rather than invented.
+- **Arabic-aware ingestion** — `pdfplumber` text extraction with an EasyOCR
+  fallback for scanned and Arabic documents.
+- **Hybrid retrieval** — BM25 keyword search blended with multilingual vector
+  embeddings in ChromaDB, then reranked by a multilingual cross-encoder.
+- **Crowdsourced outage map** — users report and browse live energy outages by region.
+- **Admin console** — upload PDFs or ingest a URL; an LLM triages each document
+  into the index or the blacklist.
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Ingestion & triage | pdfplumber, EasyOCR, LLM triage |
+| Retrieval | ChromaDB, BM25, multilingual sentence-transformers, cross-encoder rerank |
+| Backend | FastAPI (async), SQLAlchemy, PostgreSQL, Alembic |
+| Frontend | React + Vite, served by Nginx |
 
 > **Deployment:** [`DEPLOY_HF_SPACE.md`](DEPLOY_HF_SPACE.md) is the runbook for the
 > Hugging Face Docker Space (secrets, push commands, post-deploy verification).
 
 ## Quick start (Docker Compose)
 
-`docker compose up` starts the full stack with **PostgreSQL** and **auto-seeding**:
+Brings up the entire stack — PostgreSQL included — and migrates + seeds the
+database on first boot:
 
-| Service | Purpose | URL |
+```bash
+cp .env.example .env      # fill in CUSTOM_API_KEY, JWT_SECRET, ADMIN_API_KEY, NGROK_AUTHTOKEN
+docker compose up --build
+```
+
+Then open **http://localhost**.
+
+| Service | What it does | URL |
 |---|---|---|
-| `postgres` | PostgreSQL 16 (port `127.0.0.1:5433`, internal `postgres:5432`) | — |
-| `db-seed` | One-shot seeder — runs `src/database/seed.py` once Postgres is healthy, then exits | — |
-| `backend` | FastAPI (healthcheck on `/health`) | http://localhost:8000 |
-| `frontend` | React SPA (Vite build → Nginx, proxies `/api` to backend) | http://localhost |
-| `ngrok` | Public tunnel to the frontend (requires `NGROK_AUTHTOKEN`) | http://localhost:4040 |
+| `frontend` | React SPA — chat, outage map, solar ROI calculator | [http://localhost](http://localhost) |
+| `backend` | FastAPI API — health check at `/health` | [http://localhost:8000](http://localhost:8000) |
+| `ngrok` | Public tunnel to the frontend (needs `NGROK_AUTHTOKEN`) | [http://localhost:4040](http://localhost:4040) |
+| `postgres` | PostgreSQL 16 — host port `5433`, internal `5432` | not web-facing |
+| `db-seed` | One-shot job — migrates and seeds once Postgres is healthy, then exits | — |
 
 To share the running app publicly over a tunnel, see
 [`DEPLOY_NGROK.md`](DEPLOY_NGROK.md). The free ngrok tier is also the $0
@@ -38,10 +66,17 @@ See [`DEPLOY_HF_SPACE.md`](DEPLOY_HF_SPACE.md) §4.2 for the host comparison.
 
 ### Environment
 
-```bash
-cp .env.example .env      # then fill in NGROK_AUTHTOKEN (and CUSTOM_API_KEY / OPENAI_BASE_URL)
-docker compose up --build
-```
+`docker compose` reads `.env`. These four must be set before the first start:
+
+| Variable | Why |
+|---|---|
+| `CUSTOM_API_KEY` | LLM credential used for answering and triage |
+| `JWT_SECRET` | Signs user session tokens |
+| `ADMIN_API_KEY` | Guards the `/api/admin/*` endpoints |
+| `NGROK_AUTHTOKEN` | Lets the `ngrok` service start — the stack refuses to boot without it |
+
+`OPENAI_BASE_URL` is optional; set it only for a non-default OpenAI-compatible
+endpoint. See [`.env.example`](.env.example) for every option.
 
 The React frontend lives in [`frontend/`](frontend/): chat (SSE streaming from
 `/api/chat/stream`), the outage map (`/api/outages`), and a solar ROI calculator.
@@ -97,7 +132,6 @@ Notes:
 - `schema.sql` is a **generated reference snapshot** of the Postgres schema
   (`python -m alembic upgrade head --sql > schema.sql`) — do not edit it by hand;
   the migrations are authoritative.
-```
 
 - Connect from the host (e.g. `psql`): `postgresql://postgres:postgres@localhost:5433/energie_tunisie`
 
@@ -110,7 +144,7 @@ Notes:
 
 The two probes serve different jobs:
 
-| Endpoint | Meaning | Returns
+| Endpoint | Meaning | Returns |
 |---|---|---|
 | `GET /health` | **Liveness** — the process is up and serving | `200` always (even if DB/Chroma are down) |
 | `GET /ready` | **Readiness** — Postgres and ChromaDB both respond | `200` + `{"checks":{"db":true,"chroma":true}}`, else `503` listing what failed |
